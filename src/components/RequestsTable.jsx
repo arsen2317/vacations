@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import StatusBadge from './StatusBadge'
-import { MY_REQUESTS } from '../data/mockData'
+import { useApp } from '../context/AppContext'
 
 function formatDateRange(start, end) {
   const opts = { day: 'numeric', month: 'short' }
@@ -8,19 +8,20 @@ function formatDateRange(start, end) {
 }
 
 const FILTERS = [
-  { key: 'all',       label: 'Все' },
-  { key: 'approved',  label: 'Согласованные' },
-  { key: 'pending',   label: 'На согласовании' },
-  { key: 'draft',     label: 'Черновики' },
-  { key: 'rejected',  label: 'Отклонённые' },
+  { key: 'all',      label: 'Все' },
+  { key: 'approved', label: 'Согласованные' },
+  { key: 'pending',  label: 'На согласовании' },
+  { key: 'draft',    label: 'Черновики' },
+  { key: 'rejected', label: 'Отклонённые' },
 ]
 
 export default function RequestsTable({ onSelectRequest }) {
+  const { requests } = useApp()
   const [filter, setFilter] = useState('all')
 
   const filtered = filter === 'all'
-    ? MY_REQUESTS
-    : MY_REQUESTS.filter(r => r.status === filter)
+    ? requests
+    : requests.filter(r => r.status === filter)
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100">
@@ -41,7 +42,6 @@ export default function RequestsTable({ onSelectRequest }) {
         ))}
       </div>
 
-      {/* Table */}
       {filtered.length === 0 ? (
         <div className="py-12 text-center text-gray-400 text-sm">
           Заявок в этом статусе нет

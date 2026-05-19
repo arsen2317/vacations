@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, toKey, fmtDate, pluralDays } from '../utils/dateUtils'
 
-// Fixed "today" for prototype demo — matches mock data year
 const TODAY = new Date('2026-05-19T00:00:00')
 
 const MONTH_NAMES = [
@@ -70,8 +69,8 @@ function MonthMini({ year, month, highlighted }) {
 
 function segStatus(seg) {
   const start = new Date(seg.startDate + 'T00:00:00')
-  const end = new Date(seg.endDate + 'T00:00:00')
-  if (TODAY > end) return 'past'
+  const end   = new Date(seg.endDate   + 'T00:00:00')
+  if (TODAY > end)   return 'past'
   if (TODAY >= start) return 'ongoing'
   return 'upcoming'
 }
@@ -86,8 +85,6 @@ const SEG_STATUS_UI = {
   ongoing:  { label: 'Идёт',      cls: 'bg-blue-100 text-blue-700' },
   upcoming: { label: 'Предстоит', cls: 'bg-indigo-50 text-indigo-600' },
 }
-
-// ── Pending view ──────────────────────────────────────────────────────────────
 
 function PendingView({ segments, year }) {
   const highlighted = useMemo(() => getHighlightedSet(segments), [segments])
@@ -149,8 +146,6 @@ function PendingView({ segments, year }) {
   )
 }
 
-// ── Approved view ─────────────────────────────────────────────────────────────
-
 function ApprovedView({ segments, year, reschedules, setReschedules }) {
   const [expandedId, setExpandedId] = useState(null)
   const [rStart, setRStart] = useState('')
@@ -174,24 +169,21 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
     if (!rStart || !rEnd) { setRError('Укажите обе даты'); return }
     if (rStart > rEnd) { setRError('Дата начала должна быть раньше даты окончания'); return }
     const start = new Date(rStart + 'T00:00:00')
-    const end = new Date(rEnd + 'T00:00:00')
+    const end   = new Date(rEnd   + 'T00:00:00')
     if (start.getFullYear() !== year || end.getFullYear() !== year) {
       setRError(`Даты должны быть в ${year} году`); return
     }
     for (const s of segments) {
       if (s.id === seg.id) continue
       const sStart = new Date(s.startDate + 'T00:00:00')
-      const sEnd = new Date(s.endDate + 'T00:00:00')
+      const sEnd   = new Date(s.endDate   + 'T00:00:00')
       if (start <= sEnd && end >= sStart) {
         setRError('Период пересекается с другим отрезком'); return
       }
     }
     setReschedules(prev => ({
       ...prev,
-      [seg.id]: {
-        count: prev[seg.id]?.count ?? 0,
-        pending: { startDate: rStart, endDate: rEnd },
-      },
+      [seg.id]: { count: prev[seg.id]?.count ?? 0, pending: { startDate: rStart, endDate: rEnd } },
     }))
     setExpandedId(null)
   }
@@ -218,7 +210,6 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        {/* Segments list */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
@@ -227,19 +218,18 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
             {segments.map((seg, i) => {
               const status = segStatus(seg)
               const { label: statusLabel, cls: statusCls } = SEG_STATUS_UI[status]
-              const rInfo = reschedules[seg.id] ?? { count: 0, pending: null }
+              const rInfo    = reschedules[seg.id] ?? { count: 0, pending: null }
               const daysLeft = daysUntilStart(seg)
-
               const canReschedule =
                 status === 'upcoming' && daysLeft >= 10 && rInfo.count < 2 && !rInfo.pending
 
               let cantReason = null
               if (!canReschedule) {
-                if (status === 'past') cantReason = 'Отрезок уже прошёл'
+                if (status === 'past')       cantReason = 'Отрезок уже прошёл'
                 else if (status === 'ongoing') cantReason = 'Отрезок уже начался'
-                else if (daysLeft < 10) cantReason = 'Менее 10 дней до начала'
-                else if (rInfo.count >= 2) cantReason = 'Исчерпан лимит переносов (2/2)'
-                else if (rInfo.pending) cantReason = 'Перенос уже на согласовании'
+                else if (daysLeft < 10)      cantReason = 'Менее 10 дней до начала'
+                else if (rInfo.count >= 2)   cantReason = 'Исчерпан лимит переносов (2/2)'
+                else if (rInfo.pending)      cantReason = 'Перенос уже на согласовании'
               }
 
               const isExpanded = expandedId === seg.id
@@ -258,9 +248,7 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
                           {statusLabel}
                         </span>
                         {rInfo.count > 0 && (
-                          <span className="text-[11px] text-gray-400">
-                            Переносов: {rInfo.count}/2
-                          </span>
+                          <span className="text-[11px] text-gray-400">Переносов: {rInfo.count}/2</span>
                         )}
                         {rInfo.pending && (
                           <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
@@ -275,7 +263,6 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
                       )}
                     </div>
 
-                    {/* Reschedule button */}
                     <div className="shrink-0">
                       {canReschedule ? (
                         <button
@@ -309,7 +296,6 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
                     </div>
                   </div>
 
-                  {/* Inline reschedule form */}
                   {isExpanded && (
                     <div className="mx-4 mb-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
                       <p className="text-xs font-semibold text-indigo-700 mb-2">Новые даты для отрезка</p>
@@ -317,10 +303,8 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
                         <div className="flex-1">
                           <label className="text-[11px] text-indigo-500 block mb-0.5">Начало</label>
                           <input
-                            type="date"
-                            value={rStart}
-                            min={`${year}-01-01`}
-                            max={`${year}-12-31`}
+                            type="date" value={rStart}
+                            min={`${year}-01-01`} max={`${year}-12-31`}
                             onChange={e => { setRStart(e.target.value); setRError('') }}
                             className="w-full px-2 py-1.5 text-sm border border-indigo-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                           />
@@ -328,10 +312,8 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
                         <div className="flex-1">
                           <label className="text-[11px] text-indigo-500 block mb-0.5">Конец</label>
                           <input
-                            type="date"
-                            value={rEnd}
-                            min={rStart || `${year}-01-01`}
-                            max={`${year}-12-31`}
+                            type="date" value={rEnd}
+                            min={rStart || `${year}-01-01`} max={`${year}-12-31`}
                             onChange={e => { setREnd(e.target.value); setRError('') }}
                             className="w-full px-2 py-1.5 text-sm border border-indigo-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                           />
@@ -360,7 +342,6 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
           </div>
         </div>
 
-        {/* Calendar */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>
@@ -378,11 +359,9 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
   )
 }
 
-// ── Main PlanningPage ─────────────────────────────────────────────────────────
-
-export default function PlanningPage() {
+export default function PlanningPage({ onGoToRequests }) {
   const {
-    campaign, segments, setSegments, draftSaved, setDraftSaved,
+    campaign, role, segments, setSegments, draftSaved, setDraftSaved,
     planStatus, setPlanStatus, approvedSegments, reschedules, setReschedules,
   } = useApp()
   const [newStart, setNewStart] = useState('')
@@ -405,14 +384,11 @@ export default function PlanningPage() {
     try {
       return countVacationDays(
         new Date(newStart + 'T00:00:00'),
-        new Date(newEnd + 'T00:00:00'),
+        new Date(newEnd   + 'T00:00:00'),
       )
-    } catch {
-      return null
-    }
+    } catch { return null }
   }, [newStart, newEnd])
 
-  // Demo state switcher — shown on all active states
   const demoSwitcher = (
     <div className="flex items-center gap-1 mb-5 p-1 bg-gray-100 rounded-lg w-fit">
       {['draft', 'pending', 'approved'].map(s => (
@@ -420,9 +396,7 @@ export default function PlanningPage() {
           key={s}
           onClick={() => setPlanStatus(s)}
           className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
-            planStatus === s
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
+            planStatus === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           {PLAN_LABELS[s]}
@@ -441,11 +415,31 @@ export default function PlanningPage() {
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <h2 className="text-base font-semibold text-gray-800 mb-2">Кампания по планированию не активна</h2>
-        <p className="text-sm text-gray-500 max-w-xs mx-auto">
-          Распределение дней отпуска доступно только в период активной кампании.
-          Следите за уведомлениями — HR-админ сообщит о её начале.
-        </p>
+        <h2 className="text-base font-semibold text-gray-800 mb-2">
+          Кампания по планированию не активна
+        </h2>
+        {role === 'employee' ? (
+          <>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-5">
+              Распределение дней отпуска доступно только в период активной кампании.
+              Если вам нужен отпуск прямо сейчас — оформите внеплановую заявку.
+            </p>
+            <button
+              onClick={onGoToRequests}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Подать внеплановую заявку
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500 max-w-xs mx-auto">
+            Распределение дней отпуска доступно только в период активной кампании.
+            Следите за уведомлениями — HR-админ сообщит о её начале.
+          </p>
+        )}
       </div>
     )
   }
@@ -473,20 +467,18 @@ export default function PlanningPage() {
     )
   }
 
-  // ── Draft state ──
-
   function addSegment() {
     setAddError('')
     if (!newStart || !newEnd) { setAddError('Укажите обе даты'); return }
     if (newStart > newEnd) { setAddError('Дата начала должна быть раньше даты окончания'); return }
     const start = new Date(newStart + 'T00:00:00')
-    const end = new Date(newEnd + 'T00:00:00')
+    const end   = new Date(newEnd   + 'T00:00:00')
     if (start.getFullYear() !== year || end.getFullYear() !== year) {
       setAddError(`Даты должны быть в ${year} году`); return
     }
     for (const s of segments) {
       const sStart = new Date(s.startDate + 'T00:00:00')
-      const sEnd = new Date(s.endDate + 'T00:00:00')
+      const sEnd   = new Date(s.endDate   + 'T00:00:00')
       if (start <= sEnd && end >= sStart) {
         setAddError('Период пересекается с существующим отрезком'); return
       }
@@ -509,7 +501,7 @@ export default function PlanningPage() {
 
   const submitBlockers = []
   if (remainingDays > 0) submitBlockers.push(`нераспределено ${pluralDays(remainingDays)}`)
-  if (!hasLongSegment) submitBlockers.push('нет отрезка ≥ 14 дней')
+  if (!hasLongSegment)   submitBlockers.push('нет отрезка ≥ 14 дней')
 
   const canAdd = newStart && newEnd && newStart <= newEnd
 
@@ -524,10 +516,8 @@ export default function PlanningPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
-        {/* Left panel */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
 
-          {/* Header with progress */}
           <div className="px-4 pt-4 pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
@@ -551,7 +541,6 @@ export default function PlanningPage() {
             </div>
           </div>
 
-          {/* Segments list */}
           <div className="divide-y divide-gray-50">
             {segments.length === 0 ? (
               <p className="px-4 py-5 text-sm text-gray-400 text-center">Нет добавленных отрезков</p>
@@ -583,17 +572,14 @@ export default function PlanningPage() {
             )}
           </div>
 
-          {/* Add form */}
           <div className="border-t border-gray-100 bg-gray-50 px-4 py-4 space-y-2">
             <p className="text-xs font-medium text-gray-600">Добавить отрезок</p>
             <div className="flex gap-2 items-end">
               <div className="flex-1">
                 <label className="text-[11px] text-gray-400 block mb-0.5">Начало</label>
                 <input
-                  type="date"
-                  value={newStart}
-                  min={`${year}-01-01`}
-                  max={`${year}-12-31`}
+                  type="date" value={newStart}
+                  min={`${year}-01-01`} max={`${year}-12-31`}
                   onChange={e => { setNewStart(e.target.value); setAddError('') }}
                   className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 />
@@ -601,10 +587,8 @@ export default function PlanningPage() {
               <div className="flex-1">
                 <label className="text-[11px] text-gray-400 block mb-0.5">Конец</label>
                 <input
-                  type="date"
-                  value={newEnd}
-                  min={newStart || `${year}-01-01`}
-                  max={`${year}-12-31`}
+                  type="date" value={newEnd}
+                  min={newStart || `${year}-01-01`} max={`${year}-12-31`}
                   onChange={e => { setNewEnd(e.target.value); setAddError('') }}
                   className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 />
@@ -612,7 +596,6 @@ export default function PlanningPage() {
               <button
                 onClick={addSegment}
                 disabled={!canAdd}
-                title="Добавить отрезок"
                 className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -631,7 +614,6 @@ export default function PlanningPage() {
             {addError && <p className="text-xs text-red-500">{addError}</p>}
           </div>
 
-          {/* Footer: draft + submit */}
           <div className="border-t border-gray-200 px-4 py-3 flex items-center gap-2 bg-white">
             <button
               onClick={() => setDraftSaved(true)}
@@ -659,7 +641,6 @@ export default function PlanningPage() {
           </div>
         </div>
 
-        {/* Right panel: calendar */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>

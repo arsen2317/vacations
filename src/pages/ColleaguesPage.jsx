@@ -1,213 +1,208 @@
 import { useState, useMemo } from 'react'
 import { COLLEAGUES } from '../data/mockData'
-import { fmtDate } from '../utils/dateUtils'
 
 const YEAR = 2026
-const MONTH_NAMES_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
-const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
-const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-// Cumulative start day of each month (0-indexed from Jan 1)
-const MONTH_START_DAY = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+const MONTH_SHORT = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
 
-const QUICK_FILTERS = [
-  { key: 'year', label: 'Весь год', startDay: 0,   endDay: 364 },
-  { key: 'q1',   label: 'I кв.',   startDay: 0,   endDay: 89  },
-  { key: 'q2',   label: 'II кв.',  startDay: 90,  endDay: 180 },
-  { key: 'q3',   label: 'III кв.', startDay: 181, endDay: 272 },
-  { key: 'q4',   label: 'IV кв.',  startDay: 273, endDay: 364 },
+const PERSON_COLORS = [
+  'bg-indigo-400', 'bg-blue-400', 'bg-emerald-400', 'bg-amber-400',
+  'bg-rose-400',   'bg-purple-400', 'bg-teal-400', 'bg-orange-400',
 ]
 
-function dayOfYear2026(dateStr) {
-  const date = new Date(dateStr + 'T00:00:00')
-  const yearStart = new Date(YEAR, 0, 1)
-  return Math.floor((date - yearStart) / 86400000)
+const LEGEND_COLORS = [
+  'bg-indigo-400', 'bg-blue-400', 'bg-emerald-400', 'bg-amber-400',
+  'bg-rose-400',   'bg-purple-400', 'bg-teal-400', 'bg-orange-400',
+]
+
+function daysInMonth(month) {
+  return new Date(YEAR, month + 1, 0).getDate()
 }
 
+const QUARTER_RANGES = [
+  { months: [0, 1, 2],  label: 'Q1' },
+  { months: [3, 4, 5],  label: 'Q2' },
+  { months: [6, 7, 8],  label: 'Q3' },
+  { months: [9, 10, 11], label: 'Q4' },
+]
+
 export default function ColleaguesPage() {
-  const [filterKey, setFilterKey] = useState('year')
-  const [monthFilter, setMonthFilter] = useState(null)
+  const [filter, setFilter] = useState('year') // 'year' | 'q0'–'q3' | 'm0'–'m11'
 
-  const { startDay, endDay } = useMemo(() => {
-    if (monthFilter !== null) {
+  const { rangeStart, rangeEnd, visibleMonths } = useMemo(() => {
+    if (filter === 'year') {
       return {
-        startDay: MONTH_START_DAY[monthFilter],
-        endDay: MONTH_START_DAY[monthFilter] + DAYS_IN_MONTH[monthFilter] - 1,
+        rangeStart: new Date(YEAR, 0, 1),
+        rangeEnd:   new Date(YEAR, 11, 31),
+        visibleMonths: Array.from({ length: 12 }, (_, i) => i),
       }
     }
-    const f = QUICK_FILTERS.find(f => f.key === filterKey)
-    return { startDay: f.startDay, endDay: f.endDay }
-  }, [filterKey, monthFilter])
-
-  const rangeDays = endDay - startDay + 1
-
-  const visibleMonths = useMemo(() => (
-    DAYS_IN_MONTH.map((days, m) => {
-      const mStart = MONTH_START_DAY[m]
-      const mEnd = mStart + days - 1
-      const visStart = Math.max(mStart, startDay)
-      const visEnd = Math.min(mEnd, endDay)
-      if (visStart > visEnd) return null
+    if (filter.startsWith('q')) {
+      const qi = parseInt(filter[1])
+      const startM = qi * 3
       return {
-        m,
-        leftPct: ((visStart - startDay) / rangeDays) * 100,
-        widthPct: ((visEnd - visStart + 1) / rangeDays) * 100,
+        rangeStart: new Date(YEAR, startM, 1),
+        rangeEnd:   new Date(YEAR, startM + 3, 0),
+        visibleMonths: [startM, startM + 1, startM + 2],
       }
-    }).filter(Boolean)
-  ), [startDay, endDay, rangeDays])
-
-  function getBarStyle(segStartStr, segEndStr) {
-    const segStart = dayOfYear2026(segStartStr)
-    const segEnd = dayOfYear2026(segEndStr)
-    const visStart = Math.max(segStart, startDay)
-    const visEnd = Math.min(segEnd, endDay)
-    if (visStart > visEnd) return null
+    }
+    const m = parseInt(filter.slice(1))
     return {
-      left: `${((visStart - startDay) / rangeDays) * 100}%`,
-      width: `${Math.max(((visEnd - visStart + 1) / rangeDays) * 100, 0.5)}%`,
+      rangeStart: new Date(YEAR, m, 1),
+      rangeEnd:   new Date(YEAR, m + 1, 0),
+      visibleMonths: [m],
+    }
+  }, [filter])
+
+  const rangeDays = Math.round((rangeEnd - rangeStart) / 86400000) + 1
+  const totalMonthDays = visibleMonths.reduce((s, m) => s + daysInMonth(m), 0)
+
+  function getBar(segStart, segEnd) {
+    const s = new Date(segStart + 'T00:00:00')
+    const e = new Date(segEnd + 'T00:00:00')
+    const clampStart = s < rangeStart ? rangeStart : s
+    const clampEnd   = e > rangeEnd   ? rangeEnd   : e
+    if (clampStart > rangeEnd || clampEnd < rangeStart) return null
+    const offset   = Math.round((clampStart - rangeStart) / 86400000)
+    const duration = Math.round((clampEnd - clampStart) / 86400000) + 1
+    return {
+      left:  `${(offset / rangeDays) * 100}%`,
+      width: `${(duration / rangeDays) * 100}%`,
     }
   }
 
-  function getBarTitle(seg) {
-    return `${fmtDate(seg.startDate)} — ${fmtDate(seg.endDate)}`
-  }
-
-  const isSingleMonth = monthFilter !== null
-  const headerLabel = (m, widthPct) => {
-    if (isSingleMonth) return MONTH_NAMES[m]
-    if (widthPct > 12) return MONTH_NAMES_SHORT[m]
-    if (widthPct > 5) return MONTH_NAMES_SHORT[m].slice(0, 1)
-    return ''
-  }
+  const hasAnyVacation = COLLEAGUES.some(c =>
+    c.segments.some(seg => {
+      const s = new Date(seg.startDate + 'T00:00:00')
+      const e = new Date(seg.endDate   + 'T00:00:00')
+      return s <= rangeEnd && e >= rangeStart
+    })
+  )
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">Коллеги</h1>
-        <p className="text-sm text-gray-500 mt-0.5">График отпусков — Продуктовая разработка, {YEAR} год</p>
-      </div>
+      <h1 className="text-lg font-semibold text-gray-900 mb-5">Отпуска коллег {YEAR}</h1>
 
-      {/* Filters */}
-      <div className="flex items-center gap-1.5 flex-wrap mb-5">
-        {QUICK_FILTERS.map(f => (
+      {/* Filter bar */}
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <button
+          onClick={() => setFilter('year')}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            filter === 'year' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Весь год
+        </button>
+        {QUARTER_RANGES.map((q, qi) => (
           <button
-            key={f.key}
-            onClick={() => { setFilterKey(f.key); setMonthFilter(null) }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              filterKey === f.key && monthFilter === null
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            key={q.label}
+            onClick={() => setFilter(`q${qi}`)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filter === `q${qi}` ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
             }`}
           >
-            {f.label}
+            {q.label}
           </button>
         ))}
-        <div className="w-px h-5 bg-gray-200 mx-1" />
-        {MONTH_NAMES_SHORT.map((m, i) => (
+        {MONTH_SHORT.map((name, mi) => (
           <button
-            key={i}
-            onClick={() => { setMonthFilter(i); setFilterKey('year') }}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              monthFilter === i
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            key={mi}
+            onClick={() => setFilter(`m${mi}`)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filter === `m${mi}` ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
             }`}
           >
-            {m}
+            {name}
           </button>
         ))}
       </div>
 
-      {/* Gantt chart */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        {/* Month header */}
-        <div className="flex border-b border-gray-100 bg-gray-50">
-          <div className="w-44 shrink-0 px-4 py-2">
-            <span className="text-xs text-gray-400 font-medium">Сотрудник</span>
-          </div>
-          <div className="flex-1 relative" style={{ height: 32 }}>
-            {visibleMonths.map(({ m, leftPct, widthPct }) => (
+      {/* Gantt */}
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        {/* Month header row */}
+        <div className="flex border-b border-gray-100">
+          <div className="w-32 shrink-0 border-r border-gray-100" />
+          <div className="flex-1 flex">
+            {visibleMonths.map(m => (
               <div
                 key={m}
-                className="absolute flex items-center justify-center overflow-hidden border-l border-gray-200 text-xs text-gray-500 font-medium"
-                style={{ left: `${leftPct}%`, width: `${widthPct}%`, top: 0, bottom: 0 }}
+                style={{ width: `${(daysInMonth(m) / totalMonthDays) * 100}%` }}
+                className="text-[11px] text-gray-400 font-medium py-2 text-center border-r border-gray-50 last:border-r-0"
               >
-                {headerLabel(m, widthPct)}
+                {MONTH_SHORT[m]}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Rows */}
-        {COLLEAGUES.map(person => (
-          <div
-            key={person.id}
-            className={`flex items-center border-b border-gray-50 last:border-b-0 ${
-              person.isSelf ? 'bg-indigo-50/40' : 'hover:bg-gray-50/50'
-            }`}
-          >
-            {/* Name column */}
-            <div className="w-44 shrink-0 px-4 py-2 flex items-center gap-2.5">
-              <div
-                className={`w-7 h-7 rounded-full ${person.colorClass} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}
-              >
-                {person.initials}
-              </div>
-              <div className="min-w-0">
-                <p className={`text-xs font-medium truncate leading-tight ${person.isSelf ? 'text-indigo-700' : 'text-gray-800'}`}>
-                  {person.name.split(' ').slice(0, 2).join(' ')}
-                </p>
-                {person.isSelf && (
-                  <p className="text-[10px] text-indigo-400 leading-tight">Вы</p>
-                )}
-              </div>
+        {!hasAnyVacation ? (
+          <div className="py-16 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
+              <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
-
-            {/* Timeline */}
-            <div className="flex-1 relative" style={{ height: 44 }}>
-              {/* Month gridlines */}
-              {visibleMonths.map(({ m, leftPct }) => (
-                <div
-                  key={m}
-                  className="absolute inset-y-0 border-l border-gray-100"
-                  style={{ left: `${leftPct}%` }}
-                />
-              ))}
-              {/* Vacation bars */}
-              {person.segments.map((seg, i) => {
-                const style = getBarStyle(seg.startDate, seg.endDate)
-                if (!style) return null
-                return (
-                  <div
-                    key={i}
-                    title={getBarTitle(seg)}
-                    className={`absolute rounded-md ${person.colorClass} opacity-75 hover:opacity-95 transition-opacity cursor-default`}
-                    style={{ ...style, top: 10, height: 24 }}
-                  />
-                )
-              })}
-              {/* Empty placeholder when no bars visible in range */}
-              {person.segments.every(seg => !getBarStyle(seg.startDate, seg.endDate)) && (
-                <div className="absolute inset-0 flex items-center">
-                  <span className="text-[10px] text-gray-300 pl-2">нет отпуска в периоде</span>
-                </div>
-              )}
-            </div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Нет отпусков в этом периоде</p>
+            <p className="text-sm text-gray-400">
+              {filter === 'year'
+                ? 'Никто из коллег ещё не распланировал отпуска на этот год'
+                : 'Никто из коллег не запланировал отпуск в выбранном периоде'}
+            </p>
           </div>
-        ))}
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {COLLEAGUES.map((person, pi) => {
+              const bars = person.segments
+                .map(seg => ({ style: getBar(seg.startDate, seg.endDate), seg }))
+                .filter(b => b.style !== null)
+
+              return (
+                <div key={person.id} className="flex items-center h-11">
+                  <div className="w-32 shrink-0 px-3 border-r border-gray-100 h-full flex flex-col justify-center">
+                    <span className="text-xs font-medium text-gray-700 leading-tight truncate">
+                      {person.name.split(' ')[0]}
+                    </span>
+                    <span className="text-[11px] text-gray-400 truncate">
+                      {person.name.split(' ')[1]}
+                    </span>
+                  </div>
+                  <div className="flex-1 relative h-full px-1">
+                    {bars.map(({ style, seg }, bi) => (
+                      <div
+                        key={bi}
+                        className={`absolute top-1/2 -translate-y-1/2 h-5 rounded-full opacity-80 ${
+                          PERSON_COLORS[pi % PERSON_COLORS.length]
+                        }`}
+                        style={style}
+                        title={`${person.name}: ${seg.startDate} — ${seg.endDate}`}
+                      />
+                    ))}
+                    {bars.length === 0 && (
+                      <span className="absolute inset-0 flex items-center px-2">
+                        <span className="text-[11px] text-gray-300">нет отпуска</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex items-center gap-x-4 gap-y-1.5 flex-wrap">
-        <span className="text-xs text-gray-400">Легенда:</span>
-        {COLLEAGUES.map(person => (
-          <div key={person.id} className="flex items-center gap-1.5">
-            <div className={`w-3 h-3 rounded-sm ${person.colorClass} opacity-75`} />
-            <span className={`text-xs ${person.isSelf ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
-              {person.name.split(' ')[0]}
-            </span>
-          </div>
-        ))}
-      </div>
+      {hasAnyVacation && (
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
+          {COLLEAGUES.map((person, pi) => (
+            <div key={person.id} className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 rounded-full ${LEGEND_COLORS[pi % LEGEND_COLORS.length]}`} />
+              <span className="text-xs text-gray-600">
+                {person.name}{person.me ? ' (я)' : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

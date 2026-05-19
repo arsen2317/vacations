@@ -77,150 +77,6 @@ export const STATUS_CONFIG = {
   cancelled: { label: 'Отменена',        color: 'bg-gray-100 text-gray-500' },
 }
 
-export const COLLEAGUES = [
-  {
-    id: 1,
-    name: 'Алексей Морозов',
-    initials: 'АМ',
-    colorClass: 'bg-indigo-400',
-    isSelf: true,
-    segments: [
-      { startDate: '2026-07-14', endDate: '2026-07-27' },
-      { startDate: '2026-09-01', endDate: '2026-09-14' },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Мария Соколова',
-    initials: 'МС',
-    colorClass: 'bg-pink-400',
-    isSelf: false,
-    segments: [
-      { startDate: '2026-06-08', endDate: '2026-06-21' },
-      { startDate: '2026-11-02', endDate: '2026-11-15' },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Дмитрий Козлов',
-    initials: 'ДК',
-    colorClass: 'bg-emerald-400',
-    isSelf: false,
-    segments: [
-      { startDate: '2026-07-20', endDate: '2026-08-09' },
-    ],
-  },
-  {
-    id: 4,
-    name: 'Анна Петрова',
-    initials: 'АП',
-    colorClass: 'bg-amber-400',
-    isSelf: false,
-    segments: [
-      { startDate: '2026-03-09', endDate: '2026-03-22' },
-      { startDate: '2026-08-03', endDate: '2026-08-16' },
-    ],
-  },
-  {
-    id: 5,
-    name: 'Сергей Новиков',
-    initials: 'СН',
-    colorClass: 'bg-violet-400',
-    isSelf: false,
-    segments: [
-      { startDate: '2026-05-04', endDate: '2026-05-17' },
-      { startDate: '2026-10-12', endDate: '2026-10-25' },
-    ],
-  },
-  {
-    id: 6,
-    name: 'Екатерина Волкова',
-    initials: 'ЕВ',
-    colorClass: 'bg-rose-400',
-    isSelf: false,
-    segments: [
-      { startDate: '2026-07-27', endDate: '2026-08-09' },
-    ],
-  },
-]
-
-export const SUBORDINATES = [
-  {
-    id: 2,
-    name: 'Мария Соколова',
-    initials: 'МС',
-    colorClass: 'bg-pink-400',
-    planStatus: 'approved',
-    rejectComment: null,
-    segments: [
-      { startDate: '2026-06-08', endDate: '2026-06-21', days: 14 },
-      { startDate: '2026-11-02', endDate: '2026-11-15', days: 14 },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Дмитрий Козлов',
-    initials: 'ДК',
-    colorClass: 'bg-emerald-400',
-    planStatus: 'pending',
-    rejectComment: null,
-    segments: [
-      { startDate: '2026-07-20', endDate: '2026-08-09', days: 21 },
-      { startDate: '2026-12-01', endDate: '2026-12-07', days: 7 },
-    ],
-  },
-  {
-    id: 4,
-    name: 'Анна Петрова',
-    initials: 'АП',
-    colorClass: 'bg-amber-400',
-    planStatus: 'pending',
-    rejectComment: null,
-    segments: [
-      { startDate: '2026-03-09', endDate: '2026-03-22', days: 14 },
-      { startDate: '2026-08-03', endDate: '2026-08-16', days: 14 },
-    ],
-  },
-  {
-    id: 5,
-    name: 'Сергей Новиков',
-    initials: 'СН',
-    colorClass: 'bg-violet-400',
-    planStatus: 'draft',
-    rejectComment: null,
-    segments: [
-      { startDate: '2026-05-04', endDate: '2026-05-17', days: 14 },
-    ],
-  },
-  {
-    id: 6,
-    name: 'Екатерина Волкова',
-    initials: 'ЕВ',
-    colorClass: 'bg-rose-400',
-    planStatus: 'draft',
-    rejectComment: null,
-    segments: [],
-  },
-]
-
-export const ALL_EMPLOYEES = [
-  { id: 1,  name: 'Алексей Морозов',   team: 'Продуктовая разработка', planStatus: 'approved' },
-  { id: 2,  name: 'Мария Соколова',    team: 'Продуктовая разработка', planStatus: 'approved' },
-  { id: 3,  name: 'Дмитрий Козлов',    team: 'Продуктовая разработка', planStatus: 'pending'  },
-  { id: 4,  name: 'Анна Петрова',      team: 'Продуктовая разработка', planStatus: 'pending'  },
-  { id: 5,  name: 'Сергей Новиков',    team: 'Продуктовая разработка', planStatus: 'draft'    },
-  { id: 6,  name: 'Екатерина Волкова', team: 'Продуктовая разработка', planStatus: 'draft'    },
-  { id: 7,  name: 'Игорь Смирнов',     team: 'Дизайн',                 planStatus: 'approved' },
-  { id: 8,  name: 'Ольга Кузнецова',   team: 'Дизайн',                 planStatus: 'approved' },
-  { id: 9,  name: 'Павел Попов',       team: 'Аналитика',              planStatus: 'pending'  },
-  { id: 10, name: 'Наталья Лебедева',  team: 'Аналитика',              planStatus: null       },
-  { id: 11, name: 'Роман Зайцев',      team: 'Backend',                planStatus: 'approved' },
-  { id: 12, name: 'Валерия Морозова',  team: 'Backend',                planStatus: 'draft'    },
-  { id: 13, name: 'Андрей Николаев',   team: 'Backend',                planStatus: null       },
-  { id: 14, name: 'Тамара Орлова',     team: 'QA',                     planStatus: 'approved' },
-  { id: 15, name: 'Владимир Фёдоров',  team: 'QA',                     planStatus: null       },
-]
-
 export const HOLIDAYS_2026 = new Set([
   '2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05',
   '2026-01-06', '2026-01-07', '2026-01-08',
@@ -241,7 +97,6 @@ export const INITIAL_SEGMENTS = [
   },
 ]
 
-// Pre-approved segments used for the "Согласован" demo state
 export const APPROVED_SEGMENTS = [
   {
     id: 101,
@@ -255,4 +110,133 @@ export const APPROVED_SEGMENTS = [
     endDate: '2026-09-14',
     days: 14,
   },
+]
+
+export const COLLEAGUES = [
+  {
+    id: 1,
+    name: 'Алексей Морозов',
+    me: true,
+    team: 'Продуктовая разработка',
+    segments: [
+      { startDate: '2026-07-14', endDate: '2026-07-27' },
+      { startDate: '2026-09-01', endDate: '2026-09-14' },
+    ],
+  },
+  {
+    id: 2,
+    name: 'Дмитрий Соколов',
+    team: 'Продуктовая разработка',
+    segments: [
+      { startDate: '2026-06-01', endDate: '2026-06-14' },
+      { startDate: '2026-10-05', endDate: '2026-10-18' },
+    ],
+  },
+  {
+    id: 3,
+    name: 'Мария Иванова',
+    team: 'Продуктовая разработка',
+    segments: [
+      { startDate: '2026-08-04', endDate: '2026-08-17' },
+      { startDate: '2026-11-10', endDate: '2026-11-23' },
+    ],
+  },
+  {
+    id: 4,
+    name: 'Анна Петрова',
+    team: 'Продуктовая разработка',
+    segments: [
+      { startDate: '2026-03-02', endDate: '2026-03-15' },
+      { startDate: '2026-07-20', endDate: '2026-08-02' },
+    ],
+  },
+  {
+    id: 5,
+    name: 'Игорь Смирнов',
+    team: 'Дизайн',
+    segments: [
+      { startDate: '2026-05-25', endDate: '2026-06-07' },
+      { startDate: '2026-08-24', endDate: '2026-09-06' },
+    ],
+  },
+  {
+    id: 6,
+    name: 'Сергей Николаев',
+    team: 'Продуктовая разработка',
+    segments: [
+      { startDate: '2026-06-15', endDate: '2026-06-28' },
+    ],
+  },
+  {
+    id: 7,
+    name: 'Елена Козлова',
+    team: 'Продуктовая разработка',
+    segments: [
+      { startDate: '2026-07-01', endDate: '2026-07-14' },
+      { startDate: '2026-10-12', endDate: '2026-10-25' },
+    ],
+  },
+]
+
+export const SUBORDINATES = [
+  {
+    id: 3,
+    name: 'Мария Иванова',
+    position: 'Frontend-разработчик',
+    planStatus: 'pending',
+    distributedDays: 28,
+    totalDays: 28,
+    segments: [
+      { startDate: '2026-08-04', endDate: '2026-08-17', days: 14 },
+      { startDate: '2026-11-10', endDate: '2026-11-23', days: 14 },
+    ],
+  },
+  {
+    id: 4,
+    name: 'Анна Петрова',
+    position: 'Backend-разработчик',
+    planStatus: 'pending',
+    distributedDays: 28,
+    totalDays: 28,
+    segments: [
+      { startDate: '2026-03-02', endDate: '2026-03-15', days: 14 },
+      { startDate: '2026-07-20', endDate: '2026-08-02', days: 14 },
+    ],
+  },
+  {
+    id: 6,
+    name: 'Сергей Николаев',
+    position: 'QA-инженер',
+    planStatus: 'draft',
+    distributedDays: 14,
+    totalDays: 28,
+    segments: [
+      { startDate: '2026-06-15', endDate: '2026-06-28', days: 14 },
+    ],
+  },
+  {
+    id: 7,
+    name: 'Елена Козлова',
+    position: 'Аналитик',
+    planStatus: 'approved',
+    distributedDays: 28,
+    totalDays: 28,
+    segments: [
+      { startDate: '2026-07-01', endDate: '2026-07-14', days: 14 },
+      { startDate: '2026-10-12', endDate: '2026-10-25', days: 14 },
+    ],
+  },
+]
+
+export const ALL_EMPLOYEES = [
+  { id: 1,  name: 'Алексей Морозов',  team: 'Продуктовая разработка', planStatus: 'approved' },
+  { id: 2,  name: 'Дмитрий Соколов',  team: 'Продуктовая разработка', planStatus: 'approved' },
+  { id: 3,  name: 'Мария Иванова',    team: 'Продуктовая разработка', planStatus: 'pending'  },
+  { id: 4,  name: 'Анна Петрова',     team: 'Продуктовая разработка', planStatus: 'pending'  },
+  { id: 6,  name: 'Сергей Николаев',  team: 'Продуктовая разработка', planStatus: 'draft'    },
+  { id: 7,  name: 'Елена Козлова',    team: 'Продуктовая разработка', planStatus: 'approved' },
+  { id: 5,  name: 'Игорь Смирнов',   team: 'Дизайн',                  planStatus: 'approved' },
+  { id: 8,  name: 'Ольга Васильева',  team: 'Дизайн',                  planStatus: 'draft'    },
+  { id: 9,  name: 'Павел Морозов',    team: 'HR',                      planStatus: 'approved' },
+  { id: 10, name: 'Ирина Лебедева',   team: 'HR',                      planStatus: 'pending'  },
 ]

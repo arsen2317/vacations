@@ -1,19 +1,19 @@
 import { useApp } from '../context/AppContext'
 
 const BASE_TABS = [
-  { key: 'home',       label: 'Главная'      },
+  { key: 'home',       label: 'Главная' },
   { key: 'planning',   label: 'Планирование' },
-  { key: 'colleagues', label: 'Коллеги'      },
+  { key: 'colleagues', label: 'Коллеги' },
 ]
-
-const ROLE_EXTRA_TABS = {
-  manager:  [{ key: 'team', label: 'Команда' }],
-  hr_admin: [{ key: 'hr',   label: 'HR'      }],
-}
 
 export default function TabNav({ activeTab, onTabChange }) {
   const { role } = useApp()
-  const tabs = [...BASE_TABS, ...(ROLE_EXTRA_TABS[role] || [])]
+
+  const tabs = [
+    ...BASE_TABS,
+    ...(role === 'manager' || role === 'hr_admin' ? [{ key: 'team', label: 'Команда' }] : []),
+    ...(role === 'hr_admin' ? [{ key: 'hr', label: 'HR' }] : []),
+  ]
 
   return (
     <nav className="bg-white border-b border-gray-200">
