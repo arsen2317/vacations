@@ -1,7 +1,6 @@
 const TABS = [
   { key: 'home',       label: 'Главная' },
   { key: 'planning',   label: 'Планирование' },
-  { key: 'requests',   label: 'Мои заявки' },
   { key: 'colleagues', label: 'Коллеги' },
 ]
 
