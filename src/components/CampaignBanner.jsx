@@ -1,8 +1,9 @@
 import { useApp } from '../context/AppContext'
 
-export default function CampaignBanner() {
-  const { campaign } = useApp()
-  const remaining = campaign.totalDays - campaign.distributedDays
+export default function CampaignBanner({ onGoToPlanning }) {
+  const { campaign, segments } = useApp()
+  const distributedDays = segments.reduce((acc, s) => acc + s.days, 0)
+  const remaining = campaign.totalDays - distributedDays
 
   if (campaign.active) {
     return (
@@ -13,16 +14,22 @@ export default function CampaignBanner() {
             Идёт кампания по планированию отпусков на {campaign.year} год
           </p>
           <p className="text-sm text-indigo-600 mt-0.5">
-            Нераспределено: <span className="font-semibold">{remaining} из {campaign.totalDays} дней</span>
+            Нераспределено:{' '}
+            <span className="font-semibold">{remaining} из {campaign.totalDays} дней</span>
             {remaining > 0
               ? ' — распределите все дни и отправьте план на согласование'
               : ' — все дни распределены, можно отправлять на согласование'
             }
           </p>
         </div>
-        <button className="shrink-0 text-sm font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors px-3 py-1.5 rounded-lg">
-          Перейти к планированию
-        </button>
+        {onGoToPlanning && (
+          <button
+            onClick={onGoToPlanning}
+            className="shrink-0 text-sm font-medium text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors px-3 py-1.5 rounded-lg"
+          >
+            Перейти к планированию
+          </button>
+        )}
       </div>
     )
   }

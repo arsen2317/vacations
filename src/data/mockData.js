@@ -1,7 +1,7 @@
 export const CURRENT_USER = {
   id: 1,
   name: 'Алексей Морозов',
-  role: 'employee', // 'employee' | 'manager' | 'hr_admin'
+  role: 'employee',
   team: 'Продуктовая разработка',
   managerId: 2,
   balanceDays: 18,
@@ -12,13 +12,12 @@ export const CAMPAIGN = {
   active: true,
   year: 2026,
   totalDays: 28,
-  distributedDays: 10,
 }
 
 export const UPCOMING_VACATION = {
-  startDate: new Date(2026, 6, 14), // 14 июля
-  endDate: new Date(2026, 6, 27),   // 27 июля
-  status: 'approved',               // 'approved' | 'draft' | 'pending'
+  startDate: new Date(2026, 6, 14),
+  endDate: new Date(2026, 6, 27),
+  status: 'approved',
 }
 
 export const MY_REQUESTS = [
@@ -71,9 +70,29 @@ export const MY_REQUESTS = [
 ]
 
 export const STATUS_CONFIG = {
-  draft:    { label: 'Черновик',        color: 'bg-gray-100 text-gray-600' },
-  pending:  { label: 'На согласовании', color: 'bg-amber-100 text-amber-700' },
-  approved: { label: 'Согласована',     color: 'bg-green-100 text-green-700' },
-  rejected: { label: 'Отклонена',       color: 'bg-red-100 text-red-700' },
-  cancelled:{ label: 'Отменена',        color: 'bg-gray-100 text-gray-500' },
+  draft:     { label: 'Черновик',        color: 'bg-gray-100 text-gray-600' },
+  pending:   { label: 'На согласовании', color: 'bg-amber-100 text-amber-700' },
+  approved:  { label: 'Согласована',     color: 'bg-green-100 text-green-700' },
+  rejected:  { label: 'Отклонена',       color: 'bg-red-100 text-red-700' },
+  cancelled: { label: 'Отменена',        color: 'bg-gray-100 text-gray-500' },
 }
+
+export const HOLIDAYS_2026 = new Set([
+  '2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05',
+  '2026-01-06', '2026-01-07', '2026-01-08',
+  '2026-02-23',
+  '2026-03-09',
+  '2026-05-01',
+  '2026-05-11',
+  '2026-06-12',
+  '2026-11-04',
+])
+
+export const INITIAL_SEGMENTS = [
+  {
+    id: 1,
+    startDate: '2026-07-14',
+    endDate: '2026-07-27',
+    days: 14,
+  },
+]
