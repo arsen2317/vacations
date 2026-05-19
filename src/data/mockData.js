@@ -96,3 +96,19 @@ export const INITIAL_SEGMENTS = [
     days: 14,
   },
 ]
+
+// Pre-approved segments used for the "Согласован" demo state
+export const APPROVED_SEGMENTS = [
+  {
+    id: 101,
+    startDate: '2026-07-14',
+    endDate: '2026-07-27',
+    days: 14,
+  },
+  {
+    id: 102,
+    startDate: '2026-09-01',
+    endDate: '2026-09-14',
+    days: 14,
+  },
+]

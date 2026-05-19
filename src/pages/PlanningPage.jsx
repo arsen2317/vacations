@@ -2,11 +2,16 @@ import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, toKey, fmtDate, pluralDays } from '../utils/dateUtils'
 
+// Fixed "today" for prototype demo — matches mock data year
+const TODAY = new Date('2026-05-19T00:00:00')
+
 const MONTH_NAMES = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
   'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
 ]
 const DAY_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+const PLAN_LABELS = { draft: 'Черновик', pending: 'На согласовании', approved: 'Согласован' }
 
 function getHighlightedSet(segments) {
   const set = new Set()
@@ -63,12 +68,326 @@ function MonthMini({ year, month, highlighted }) {
   )
 }
 
+function segStatus(seg) {
+  const start = new Date(seg.startDate + 'T00:00:00')
+  const end = new Date(seg.endDate + 'T00:00:00')
+  if (TODAY > end) return 'past'
+  if (TODAY >= start) return 'ongoing'
+  return 'upcoming'
+}
+
+function daysUntilStart(seg) {
+  const start = new Date(seg.startDate + 'T00:00:00')
+  return Math.ceil((start - TODAY) / 86400000)
+}
+
+const SEG_STATUS_UI = {
+  past:     { label: 'Прошёл',    cls: 'bg-gray-100 text-gray-500' },
+  ongoing:  { label: 'Идёт',      cls: 'bg-blue-100 text-blue-700' },
+  upcoming: { label: 'Предстоит', cls: 'bg-indigo-50 text-indigo-600' },
+}
+
+// ── Pending view ──────────────────────────────────────────────────────────────
+
+function PendingView({ segments, year }) {
+  const highlighted = useMemo(() => getHighlightedSet(segments), [segments])
+  return (
+    <>
+      <div className="mb-5">
+        <h1 className="text-lg font-semibold text-gray-900">Планирование отпуска на {year} год</h1>
+      </div>
+
+      <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+          <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-amber-800">Ожидает согласования</p>
+          <p className="text-xs text-amber-600">План отправлен руководителю. Ожидайте ответа.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900">Отправленные отрезки</h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {segments.length === 0 ? (
+              <p className="px-4 py-5 text-sm text-gray-400 text-center">Нет отрезков</p>
+            ) : segments.map((seg, i) => (
+              <div key={seg.id} className="flex items-center px-4 py-3 gap-3">
+                <span className="text-xs text-gray-300 w-4 shrink-0 text-right">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">
+                    {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">{pluralDays(seg.days)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>
+          </div>
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-5">
+              {Array.from({ length: 12 }, (_, m) => (
+                <MonthMini key={m} year={year} month={m} highlighted={highlighted} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Approved view ─────────────────────────────────────────────────────────────
+
+function ApprovedView({ segments, year, reschedules, setReschedules }) {
+  const [expandedId, setExpandedId] = useState(null)
+  const [rStart, setRStart] = useState('')
+  const [rEnd, setREnd] = useState('')
+  const [rError, setRError] = useState('')
+  const highlighted = useMemo(() => getHighlightedSet(segments), [segments])
+
+  function openReschedule(id) {
+    if (expandedId === id) {
+      setExpandedId(null)
+    } else {
+      setExpandedId(id)
+      setRStart('')
+      setREnd('')
+      setRError('')
+    }
+  }
+
+  function submitReschedule(seg) {
+    setRError('')
+    if (!rStart || !rEnd) { setRError('Укажите обе даты'); return }
+    if (rStart > rEnd) { setRError('Дата начала должна быть раньше даты окончания'); return }
+    const start = new Date(rStart + 'T00:00:00')
+    const end = new Date(rEnd + 'T00:00:00')
+    if (start.getFullYear() !== year || end.getFullYear() !== year) {
+      setRError(`Даты должны быть в ${year} году`); return
+    }
+    for (const s of segments) {
+      if (s.id === seg.id) continue
+      const sStart = new Date(s.startDate + 'T00:00:00')
+      const sEnd = new Date(s.endDate + 'T00:00:00')
+      if (start <= sEnd && end >= sStart) {
+        setRError('Период пересекается с другим отрезком'); return
+      }
+    }
+    setReschedules(prev => ({
+      ...prev,
+      [seg.id]: {
+        count: prev[seg.id]?.count ?? 0,
+        pending: { startDate: rStart, endDate: rEnd },
+      },
+    }))
+    setExpandedId(null)
+  }
+
+  return (
+    <>
+      <div className="mb-5">
+        <h1 className="text-lg font-semibold text-gray-900">Согласованный план на {year} год</h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Перенос возможен за 10 и более дней до начала — не более 2 переносов на отрезок
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
+        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+          <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-green-800">План согласован</p>
+          <p className="text-xs text-green-600">Руководитель одобрил ваш план отпуска на {year} год</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {/* Segments list */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {segments.map((seg, i) => {
+              const status = segStatus(seg)
+              const { label: statusLabel, cls: statusCls } = SEG_STATUS_UI[status]
+              const rInfo = reschedules[seg.id] ?? { count: 0, pending: null }
+              const daysLeft = daysUntilStart(seg)
+
+              const canReschedule =
+                status === 'upcoming' && daysLeft >= 10 && rInfo.count < 2 && !rInfo.pending
+
+              let cantReason = null
+              if (!canReschedule) {
+                if (status === 'past') cantReason = 'Отрезок уже прошёл'
+                else if (status === 'ongoing') cantReason = 'Отрезок уже начался'
+                else if (daysLeft < 10) cantReason = 'Менее 10 дней до начала'
+                else if (rInfo.count >= 2) cantReason = 'Исчерпан лимит переносов (2/2)'
+                else if (rInfo.pending) cantReason = 'Перенос уже на согласовании'
+              }
+
+              const isExpanded = expandedId === seg.id
+
+              return (
+                <div key={seg.id}>
+                  <div className="flex items-center px-4 py-3 gap-3">
+                    <span className="text-xs text-gray-300 w-4 shrink-0 text-right">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800">
+                        {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-gray-500">{pluralDays(seg.days)}</span>
+                        <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${statusCls}`}>
+                          {statusLabel}
+                        </span>
+                        {rInfo.count > 0 && (
+                          <span className="text-[11px] text-gray-400">
+                            Переносов: {rInfo.count}/2
+                          </span>
+                        )}
+                        {rInfo.pending && (
+                          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                            Перенос на согласовании
+                          </span>
+                        )}
+                      </div>
+                      {rInfo.pending && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Новые даты: {fmtDate(rInfo.pending.startDate)} — {fmtDate(rInfo.pending.endDate)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Reschedule button */}
+                    <div className="shrink-0">
+                      {canReschedule ? (
+                        <button
+                          onClick={() => openReschedule(seg.id)}
+                          className={`text-xs px-2.5 py-1.5 rounded-lg font-medium border transition-colors ${
+                            isExpanded
+                              ? 'bg-gray-100 text-gray-600 border-gray-200'
+                              : 'text-indigo-600 border-indigo-200 hover:bg-indigo-50'
+                          }`}
+                        >
+                          {isExpanded ? 'Закрыть' : 'Перенести'}
+                        </button>
+                      ) : (
+                        <div className="relative group">
+                          <button
+                            disabled
+                            className="text-xs px-2.5 py-1.5 rounded-lg font-medium border border-gray-200 text-gray-300 cursor-not-allowed"
+                          >
+                            Перенести
+                          </button>
+                          {cantReason && (
+                            <div className="absolute right-0 bottom-full mb-2 z-10 hidden group-hover:block pointer-events-none">
+                              <div className="bg-gray-800 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+                                {cantReason}
+                                <div className="absolute top-full right-4 border-4 border-transparent border-t-gray-800" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Inline reschedule form */}
+                  {isExpanded && (
+                    <div className="mx-4 mb-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                      <p className="text-xs font-semibold text-indigo-700 mb-2">Новые даты для отрезка</p>
+                      <div className="flex gap-2 mb-2">
+                        <div className="flex-1">
+                          <label className="text-[11px] text-indigo-500 block mb-0.5">Начало</label>
+                          <input
+                            type="date"
+                            value={rStart}
+                            min={`${year}-01-01`}
+                            max={`${year}-12-31`}
+                            onChange={e => { setRStart(e.target.value); setRError('') }}
+                            className="w-full px-2 py-1.5 text-sm border border-indigo-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[11px] text-indigo-500 block mb-0.5">Конец</label>
+                          <input
+                            type="date"
+                            value={rEnd}
+                            min={rStart || `${year}-01-01`}
+                            max={`${year}-12-31`}
+                            onChange={e => { setREnd(e.target.value); setRError('') }}
+                            className="w-full px-2 py-1.5 text-sm border border-indigo-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                          />
+                        </div>
+                      </div>
+                      {rError && <p className="text-xs text-red-500 mb-2">{rError}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => submitReschedule(seg)}
+                          className="flex-1 py-1.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                        >
+                          Отправить на согласование
+                        </button>
+                        <button
+                          onClick={() => { setExpandedId(null); setRError('') }}
+                          className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Calendar */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>
+          </div>
+          <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-5">
+              {Array.from({ length: 12 }, (_, m) => (
+                <MonthMini key={m} year={year} month={m} highlighted={highlighted} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// ── Main PlanningPage ─────────────────────────────────────────────────────────
+
 export default function PlanningPage() {
-  const { campaign, segments, setSegments, draftSaved, setDraftSaved } = useApp()
+  const {
+    campaign, segments, setSegments, draftSaved, setDraftSaved,
+    planStatus, setPlanStatus, approvedSegments, reschedules, setReschedules,
+  } = useApp()
   const [newStart, setNewStart] = useState('')
   const [newEnd, setNewEnd] = useState('')
   const [addError, setAddError] = useState('')
-  const [submitted, setSubmitted] = useState(false)
 
   const year = campaign.year
   const distributedDays = useMemo(
@@ -93,6 +412,26 @@ export default function PlanningPage() {
     }
   }, [newStart, newEnd])
 
+  // Demo state switcher — shown on all active states
+  const demoSwitcher = (
+    <div className="flex items-center gap-1 mb-5 p-1 bg-gray-100 rounded-lg w-fit">
+      {['draft', 'pending', 'approved'].map(s => (
+        <button
+          key={s}
+          onClick={() => setPlanStatus(s)}
+          className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
+            planStatus === s
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {PLAN_LABELS[s]}
+        </button>
+      ))}
+      <span className="text-[10px] text-gray-400 mx-1.5 select-none">демо</span>
+    </div>
+  )
+
   if (!campaign.active) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
@@ -111,19 +450,30 @@ export default function PlanningPage() {
     )
   }
 
-  if (submitted) {
+  if (planStatus === 'pending') {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100 mb-4">
-          <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2 className="text-base font-semibold text-gray-800 mb-2">План отправлен на согласование</h2>
-        <p className="text-sm text-gray-500">Ожидайте ответа руководителя</p>
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        {demoSwitcher}
+        <PendingView segments={segments} year={year} />
       </div>
     )
   }
+
+  if (planStatus === 'approved') {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        {demoSwitcher}
+        <ApprovedView
+          segments={approvedSegments}
+          year={year}
+          reschedules={reschedules}
+          setReschedules={setReschedules}
+        />
+      </div>
+    )
+  }
+
+  // ── Draft state ──
 
   function addSegment() {
     setAddError('')
@@ -165,6 +515,8 @@ export default function PlanningPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
+      {demoSwitcher}
+
       <div className="mb-5">
         <h1 className="text-lg font-semibold text-gray-900">Планирование отпуска на {year} год</h1>
         <p className="text-sm text-gray-500 mt-0.5">Один из отрезков должен быть не менее 14 дней</p>
@@ -289,7 +641,7 @@ export default function PlanningPage() {
             </button>
             <div className="relative group flex-1">
               <button
-                onClick={() => canSubmit && setSubmitted(true)}
+                onClick={() => canSubmit && setPlanStatus('pending')}
                 disabled={!canSubmit}
                 className="w-full py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
