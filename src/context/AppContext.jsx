@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react'
-import { CURRENT_USER, CAMPAIGN, INITIAL_SEGMENTS, APPROVED_SEGMENTS } from '../data/mockData'
+import { CURRENT_USER, CAMPAIGN, INITIAL_SEGMENTS, APPROVED_SEGMENTS, SUBORDINATES } from '../data/mockData'
 
 const AppContext = createContext(null)
 
@@ -12,6 +12,7 @@ export function AppProvider({ children }) {
   const [approvedSegments] = useState(APPROVED_SEGMENTS)
   // reschedules: { [segId]: { count: number, pending: null | { startDate, endDate } } }
   const [reschedules, setReschedules] = useState({})
+  const [subordinates, setSubordinates] = useState(SUBORDINATES)
 
   return (
     <AppContext.Provider value={{
@@ -22,6 +23,7 @@ export function AppProvider({ children }) {
       planStatus, setPlanStatus,
       approvedSegments,
       reschedules, setReschedules,
+      subordinates, setSubordinates,
     }}>
       {children}
     </AppContext.Provider>

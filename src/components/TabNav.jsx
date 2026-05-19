@@ -1,15 +1,25 @@
-const TABS = [
-  { key: 'home',       label: 'Главная' },
+import { useApp } from '../context/AppContext'
+
+const BASE_TABS = [
+  { key: 'home',       label: 'Главная'      },
   { key: 'planning',   label: 'Планирование' },
-  { key: 'colleagues', label: 'Коллеги' },
+  { key: 'colleagues', label: 'Коллеги'      },
 ]
 
+const ROLE_EXTRA_TABS = {
+  manager:  [{ key: 'team', label: 'Команда' }],
+  hr_admin: [{ key: 'hr',   label: 'HR'      }],
+}
+
 export default function TabNav({ activeTab, onTabChange }) {
+  const { role } = useApp()
+  const tabs = [...BASE_TABS, ...(ROLE_EXTRA_TABS[role] || [])]
+
   return (
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex">
-          {TABS.map(tab => (
+          {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => onTabChange(tab.key)}
