@@ -1,7 +1,7 @@
-import { CURRENT_USER } from '../data/mockData'
+import { useApp } from '../context/AppContext'
 
 export default function BalanceCard() {
-  const { balanceDays, balanceExtra } = CURRENT_USER
+  const { balance } = useApp()
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -12,7 +12,7 @@ export default function BalanceCard() {
             <p className="text-sm text-gray-600">Основной оплачиваемый</p>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-gray-900">{balanceDays}</span>
+            <span className="text-2xl font-bold text-gray-900">{balance.main}</span>
             <span className="text-sm text-gray-500">дн.</span>
           </div>
         </div>
@@ -24,7 +24,7 @@ export default function BalanceCard() {
             <p className="text-sm text-gray-600">Дополнительный</p>
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-gray-900">{balanceExtra}</span>
+            <span className="text-2xl font-bold text-gray-900">{balance.extra}</span>
             <span className="text-sm text-gray-500">дн.</span>
           </div>
         </div>

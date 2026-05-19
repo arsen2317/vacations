@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import TopBar from './components/TopBar'
 import TabNav from './components/TabNav'
@@ -9,8 +8,7 @@ import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
 
 function AppInner() {
-  const { role } = useApp()
-  const [activeTab, setActiveTab] = useState('home')
+  const { role, activeTab, setActiveTab } = useApp()
 
   return (
     <div className="min-h-screen bg-gray-50">

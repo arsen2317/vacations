@@ -152,27 +152,20 @@ export default function NewRequestModal({ onClose }) {
           {/* Type */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-2">Тип отпуска</label>
-            <div className="space-y-2">
+            <select
+              value={type}
+              onChange={e => { setType(e.target.value); setErrors(errs => ({ ...errs, type: undefined })) }}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+            >
+              <option value="">Выберите тип отпуска</option>
               {REQUEST_TYPES.map(t => (
-                <button
-                  key={t.key}
-                  onClick={() => { setType(t.key); setErrors(e => ({ ...e, type: undefined })) }}
-                  className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
-                    type === t.key
-                      ? 'border-indigo-400 bg-indigo-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <p className={`text-sm font-medium ${
-                    type === t.key ? 'text-indigo-700' : 'text-gray-800'
-                  }`}>{t.label}</p>
-                  <p className={`text-xs mt-0.5 ${
-                    type === t.key ? 'text-indigo-500' : 'text-gray-400'
-                  }`}>{t.desc}</p>
-                </button>
+                <option key={t.key} value={t.key}>{t.label}</option>
               ))}
-            </div>
-            {errors.type && <p className="text-xs text-red-500 mt-1.5">{errors.type}</p>}
+            </select>
+            {selectedType && (
+              <p className="text-xs text-gray-500 mt-1.5">{selectedType.desc}</p>
+            )}
+            {errors.type && <p className="text-xs text-red-500 mt-1">{errors.type}</p>}
           </div>
 
           {/* Dates */}

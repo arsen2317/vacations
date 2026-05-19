@@ -8,7 +8,12 @@ const ROLES = [
 ]
 
 export default function TopBar() {
-  const { role, setRole } = useApp()
+  const { role, setRole, setActiveTab } = useApp()
+
+  function handleRoleChange(key) {
+    setRole(key)
+    setActiveTab('home')
+  }
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
@@ -29,7 +34,7 @@ export default function TopBar() {
           {ROLES.map(r => (
             <button
               key={r.key}
-              onClick={() => setRole(r.key)}
+              onClick={() => handleRoleChange(r.key)}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                 role === r.key
                   ? 'bg-indigo-600 text-white'
