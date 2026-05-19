@@ -81,7 +81,7 @@ export default function HRAdminPage() {
             className={`shrink-0 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
               campaign.active
                 ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
-                : 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-[#0066ff] text-white hover:bg-[#0052cc]'
             }`}
           >
             {campaign.active ? 'Завершить кампанию' : 'Запустить кампанию'}

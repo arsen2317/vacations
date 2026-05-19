@@ -8,11 +8,13 @@ function formatDateRange(start, end) {
 }
 
 const FILTERS = [
-  { key: 'all',      label: 'Все' },
-  { key: 'approved', label: 'Согласованные' },
-  { key: 'pending',  label: 'На согласовании' },
-  { key: 'draft',    label: 'Черновики' },
-  { key: 'rejected', label: 'Отклонённые' },
+  { key: 'all',       label: 'Все' },
+  { key: 'approved',  label: 'Согласованные' },
+  { key: 'pending',   label: 'На согласовании' },
+  { key: 'reviewing', label: 'На ознакомлении' },
+  { key: 'draft',     label: 'Черновики' },
+  { key: 'rejected',  label: 'Отклонённые' },
+  { key: 'cancelled', label: 'Отменённые' },
 ]
 
 export default function RequestsTable({ onSelectRequest }) {
@@ -55,10 +57,18 @@ export default function RequestsTable({ onSelectRequest }) {
               className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{req.typeLabel}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900 truncate">{req.typeLabel}</p>
+                  <span className="text-xs text-gray-400 shrink-0">#{req.id}</span>
+                </div>
                 <p className="text-sm text-gray-500 mt-0.5">
                   {formatDateRange(req.startDate, req.endDate)} · {req.days} дн.
                 </p>
+                {req.type === 'planned' && req.rescheduleCount !== undefined && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Переносов: {req.rescheduleCount}/{req.rescheduleLimit ?? 2}
+                  </p>
+                )}
               </div>
               <StatusBadge status={req.status} />
               <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

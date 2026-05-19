@@ -29,6 +29,9 @@ export const MY_REQUESTS = [
     endDate: new Date(2026, 6, 27),
     days: 14,
     status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
   },
   {
     id: 2,
@@ -38,6 +41,9 @@ export const MY_REQUESTS = [
     endDate: new Date(2026, 8, 14),
     days: 14,
     status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 1,
+    rescheduleLimit: 2,
   },
   {
     id: 3,
@@ -47,6 +53,7 @@ export const MY_REQUESTS = [
     endDate: new Date(2026, 11, 26),
     days: 5,
     status: 'pending',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
   },
   {
     id: 4,
@@ -57,6 +64,7 @@ export const MY_REQUESTS = [
     days: 3,
     status: 'rejected',
     rejectionComment: 'Период высокой нагрузки на команду',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
   },
   {
     id: 5,
@@ -66,15 +74,19 @@ export const MY_REQUESTS = [
     endDate: new Date(2025, 4, 18),
     days: 14,
     status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
   },
 ]
 
 export const STATUS_CONFIG = {
-  draft:     { label: 'Черновик',        color: 'bg-gray-100 text-gray-600' },
-  pending:   { label: 'На согласовании', color: 'bg-amber-100 text-amber-700' },
-  approved:  { label: 'Согласована',     color: 'bg-green-100 text-green-700' },
-  rejected:  { label: 'Отклонена',       color: 'bg-red-100 text-red-700' },
-  cancelled: { label: 'Отменена',        color: 'bg-gray-100 text-gray-500' },
+  draft:      { label: 'Черновик',          color: 'bg-gray-100 text-gray-600' },
+  pending:    { label: 'На согласовании',   color: 'bg-amber-100 text-amber-700' },
+  reviewing:  { label: 'На ознакомлении',   color: 'bg-orange-100 text-orange-700' },
+  approved:   { label: 'Согласована',       color: 'bg-green-100 text-green-700' },
+  rejected:   { label: 'Отклонена',         color: 'bg-red-100 text-red-700' },
+  cancelled:  { label: 'Отменена',          color: 'bg-gray-100 text-gray-500' },
 }
 
 export const HOLIDAYS_2026 = new Set([
@@ -119,8 +131,8 @@ export const COLLEAGUES = [
     me: true,
     team: 'Продуктовая разработка',
     segments: [
-      { startDate: '2026-07-14', endDate: '2026-07-27' },
-      { startDate: '2026-09-01', endDate: '2026-09-14' },
+      { startDate: '2026-07-14', endDate: '2026-07-27', status: 'approved' },
+      { startDate: '2026-09-01', endDate: '2026-09-14', status: 'pending' },
     ],
   },
   {
@@ -128,8 +140,8 @@ export const COLLEAGUES = [
     name: 'Дмитрий Соколов',
     team: 'Продуктовая разработка',
     segments: [
-      { startDate: '2026-06-01', endDate: '2026-06-14' },
-      { startDate: '2026-10-05', endDate: '2026-10-18' },
+      { startDate: '2026-06-01', endDate: '2026-06-14', status: 'approved' },
+      { startDate: '2026-10-05', endDate: '2026-10-18', status: 'approved' },
     ],
   },
   {
@@ -137,8 +149,8 @@ export const COLLEAGUES = [
     name: 'Мария Иванова',
     team: 'Продуктовая разработка',
     segments: [
-      { startDate: '2026-08-04', endDate: '2026-08-17' },
-      { startDate: '2026-11-10', endDate: '2026-11-23' },
+      { startDate: '2026-08-04', endDate: '2026-08-17', status: 'reviewing' },
+      { startDate: '2026-11-10', endDate: '2026-11-23', status: 'draft' },
     ],
   },
   {
@@ -146,8 +158,8 @@ export const COLLEAGUES = [
     name: 'Анна Петрова',
     team: 'Продуктовая разработка',
     segments: [
-      { startDate: '2026-03-02', endDate: '2026-03-15' },
-      { startDate: '2026-07-20', endDate: '2026-08-02' },
+      { startDate: '2026-03-02', endDate: '2026-03-15', status: 'approved' },
+      { startDate: '2026-07-20', endDate: '2026-08-02', status: 'approved' },
     ],
   },
   {
@@ -155,8 +167,8 @@ export const COLLEAGUES = [
     name: 'Игорь Смирнов',
     team: 'Дизайн',
     segments: [
-      { startDate: '2026-05-25', endDate: '2026-06-07' },
-      { startDate: '2026-08-24', endDate: '2026-09-06' },
+      { startDate: '2026-05-25', endDate: '2026-06-07', status: 'approved' },
+      { startDate: '2026-08-24', endDate: '2026-09-06', status: 'pending' },
     ],
   },
   {
@@ -164,7 +176,7 @@ export const COLLEAGUES = [
     name: 'Сергей Николаев',
     team: 'Продуктовая разработка',
     segments: [
-      { startDate: '2026-06-15', endDate: '2026-06-28' },
+      { startDate: '2026-06-15', endDate: '2026-06-28', status: 'approved' },
     ],
   },
   {
@@ -172,8 +184,8 @@ export const COLLEAGUES = [
     name: 'Елена Козлова',
     team: 'Продуктовая разработка',
     segments: [
-      { startDate: '2026-07-01', endDate: '2026-07-14' },
-      { startDate: '2026-10-12', endDate: '2026-10-25' },
+      { startDate: '2026-07-01', endDate: '2026-07-14', status: 'approved' },
+      { startDate: '2026-10-12', endDate: '2026-10-25', status: 'approved' },
     ],
   },
 ]

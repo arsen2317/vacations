@@ -118,7 +118,7 @@ export default function ManagerPage() {
                       className={`shrink-0 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                         isExpanded
                           ? 'bg-gray-100 border-gray-200 text-gray-600'
-                          : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                          : 'border-[#0066ff] text-[#0066ff] hover:bg-blue-50'
                       }`}
                     >
                       {isExpanded ? 'Скрыть' : 'Рассмотреть'}

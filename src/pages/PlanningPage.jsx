@@ -1,6 +1,27 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, toKey, fmtDate, pluralDays } from '../utils/dateUtils'
+import { COLLEAGUES } from '../data/mockData'
+
+const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
+const EXTRA_APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me)
+
+function DateInput({ value, onChange, min, max, className }) {
+  const [asDate, setAsDate] = useState(Boolean(value))
+  return (
+    <input
+      type={asDate || value ? 'date' : 'text'}
+      placeholder="дд.мм.гггг"
+      value={value}
+      min={min}
+      max={max}
+      onFocus={() => setAsDate(true)}
+      onBlur={() => { if (!value) setAsDate(false) }}
+      onChange={onChange}
+      className={className}
+    />
+  )
+}
 
 const TODAY = new Date('2026-05-19T00:00:00')
 
@@ -25,7 +46,7 @@ function getHighlightedSet(segments) {
   return set
 }
 
-function MonthMini({ year, month, highlighted }) {
+function MonthMini({ year, month, highlighted, hlBg = 'bg-indigo-500', hlText = 'text-white' }) {
   const first = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0).getDate()
   let startDow = first.getDay()
@@ -52,7 +73,7 @@ function MonthMini({ year, month, highlighted }) {
               key={i}
               className={`text-[10px] text-center leading-5 rounded-[2px] ${
                 isHl
-                  ? 'bg-indigo-500 text-white font-medium'
+                  ? `${hlBg} ${hlText} font-medium`
                   : isWeekend
                   ? 'text-gray-300'
                   : 'text-gray-600'
@@ -136,7 +157,8 @@ function PendingView({ segments, year }) {
           <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
             <div className="grid grid-cols-3 gap-x-4 gap-y-5">
               {Array.from({ length: 12 }, (_, m) => (
-                <MonthMini key={m} year={year} month={m} highlighted={highlighted} />
+                <MonthMini key={m} year={year} month={m} highlighted={highlighted}
+                  hlBg="bg-amber-200" hlText="text-amber-800" />
               ))}
             </div>
           </div>
@@ -323,7 +345,7 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
                       <div className="flex gap-2">
                         <button
                           onClick={() => submitReschedule(seg)}
-                          className="flex-1 py-1.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                          className="flex-1 py-1.5 text-sm font-medium rounded-lg bg-[#0066ff] text-white hover:bg-[#0052cc] transition-colors"
                         >
                           Отправить на согласование
                         </button>
@@ -349,7 +371,8 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
           <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
             <div className="grid grid-cols-3 gap-x-4 gap-y-5">
               {Array.from({ length: 12 }, (_, m) => (
-                <MonthMini key={m} year={year} month={m} highlighted={highlighted} />
+                <MonthMini key={m} year={year} month={m} highlighted={highlighted}
+                  hlBg="bg-green-400" hlText="text-white" />
               ))}
             </div>
           </div>
@@ -367,6 +390,8 @@ export default function PlanningPage({ onGoToRequests }) {
   const [newStart, setNewStart] = useState('')
   const [newEnd, setNewEnd] = useState('')
   const [addError, setAddError] = useState('')
+  const [showApproverStep, setShowApproverStep] = useState(false)
+  const [planExtraApprover, setPlanExtraApprover] = useState('')
 
   const year = campaign.year
   const distributedDays = useMemo(
@@ -426,7 +451,7 @@ export default function PlanningPage({ onGoToRequests }) {
             </p>
             <button
               onClick={onGoToRequests}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0066ff] hover:bg-[#0052cc] text-white text-sm font-medium rounded-xl transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -577,8 +602,8 @@ export default function PlanningPage({ onGoToRequests }) {
             <div className="flex gap-2 items-end">
               <div className="flex-1">
                 <label className="text-[11px] text-gray-400 block mb-0.5">Начало</label>
-                <input
-                  type="date" value={newStart}
+                <DateInput
+                  value={newStart}
                   min={`${year}-01-01`} max={`${year}-12-31`}
                   onChange={e => { setNewStart(e.target.value); setAddError('') }}
                   className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
@@ -586,8 +611,8 @@ export default function PlanningPage({ onGoToRequests }) {
               </div>
               <div className="flex-1">
                 <label className="text-[11px] text-gray-400 block mb-0.5">Конец</label>
-                <input
-                  type="date" value={newEnd}
+                <DateInput
+                  value={newEnd}
                   min={newStart || `${year}-01-01`} max={`${year}-12-31`}
                   onChange={e => { setNewEnd(e.target.value); setAddError('') }}
                   className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
@@ -596,7 +621,7 @@ export default function PlanningPage({ onGoToRequests }) {
               <button
                 onClick={addSegment}
                 disabled={!canAdd}
-                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -614,31 +639,72 @@ export default function PlanningPage({ onGoToRequests }) {
             {addError && <p className="text-xs text-red-500">{addError}</p>}
           </div>
 
-          <div className="border-t border-gray-200 px-4 py-3 flex items-center gap-2 bg-white">
-            <button
-              onClick={() => setDraftSaved(true)}
-              className="flex-1 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              {draftSaved ? '✓ Черновик сохранён' : 'Сохранить черновик'}
-            </button>
-            <div className="relative group flex-1">
-              <button
-                onClick={() => canSubmit && setPlanStatus('pending')}
-                disabled={!canSubmit}
-                className="w-full py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                Отправить на согласование
-              </button>
-              {!canSubmit && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 z-10 hidden group-hover:block pointer-events-none">
-                  <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 text-center shadow-lg">
-                    {submitBlockers.join(' · ')}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
-                  </div>
+          {showApproverStep ? (
+            <div className="border-t border-gray-200 px-4 py-4 bg-white space-y-3">
+              <p className="text-xs font-semibold text-gray-700">Согласующий</p>
+              <div className="flex items-center justify-between px-3 py-2 border border-gray-200 rounded-xl bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{DEFAULT_APPROVER.name}</p>
+                  <p className="text-xs text-gray-500">{DEFAULT_APPROVER.role}</p>
                 </div>
-              )}
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">
+                  Дополнительный согласующий <span className="text-gray-400">(необязательно)</span>
+                </label>
+                <select
+                  value={planExtraApprover}
+                  onChange={e => setPlanExtraApprover(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                >
+                  <option value="">Не назначать</option>
+                  {EXTRA_APPROVER_OPTIONS.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setPlanStatus('pending'); setShowApproverStep(false) }}
+                  className="flex-1 py-2 text-sm font-medium rounded-lg bg-[#0066ff] text-white hover:bg-[#0052cc] transition-colors"
+                >
+                  Отправить
+                </button>
+                <button
+                  onClick={() => setShowApproverStep(false)}
+                  className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Отмена
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="border-t border-gray-200 px-4 py-3 flex items-center gap-2 bg-white">
+              <button
+                onClick={() => setDraftSaved(true)}
+                className="flex-1 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                {draftSaved ? '✓ Черновик сохранён' : 'Сохранить черновик'}
+              </button>
+              <div className="relative group flex-1">
+                <button
+                  onClick={() => canSubmit && setShowApproverStep(true)}
+                  disabled={!canSubmit}
+                  className="w-full py-2 text-sm font-medium rounded-lg bg-[#0066ff] text-white hover:bg-[#0052cc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Отправить на согласование
+                </button>
+                {!canSubmit && (
+                  <div className="absolute bottom-full left-0 right-0 mb-2 z-10 hidden group-hover:block pointer-events-none">
+                    <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 text-center shadow-lg">
+                      {submitBlockers.join(' · ')}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -648,7 +714,8 @@ export default function PlanningPage({ onGoToRequests }) {
           <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
             <div className="grid grid-cols-3 gap-x-4 gap-y-5">
               {Array.from({ length: 12 }, (_, m) => (
-                <MonthMini key={m} year={year} month={m} highlighted={highlighted} />
+                <MonthMini key={m} year={year} month={m} highlighted={highlighted}
+                  hlBg="bg-blue-100" hlText="text-blue-600" />
               ))}
             </div>
           </div>

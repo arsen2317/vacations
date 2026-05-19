@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, pluralDays } from '../utils/dateUtils'
-import { COLLEAGUES } from '../data/mockData'
+import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 
 const REQUEST_TYPES = [
   {
@@ -37,6 +37,8 @@ const TYPE_LABEL_MAP = {
   study_unpaid:'Внеплановый — учебный без сохранения зарплаты',
 }
 
+const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
+
 export default function NewRequestModal({ onClose }) {
   const { requests, setRequests, balance, setBalance } = useApp()
   const [type, setType] = useState('')
@@ -44,6 +46,8 @@ export default function NewRequestModal({ onClose }) {
   const [endDate, setEndDate] = useState('')
   const [comment, setComment] = useState('')
   const [extraApprover, setExtraApprover] = useState('')
+  const [changeApprover, setChangeApprover] = useState(false)
+  const [approverOverride, setApproverOverride] = useState('')
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
 
@@ -85,6 +89,9 @@ export default function NewRequestModal({ onClose }) {
       setErrors(errs)
       return
     }
+    const approverName = approverOverride
+      ? (COLLEAGUES.find(c => String(c.id) === approverOverride)?.name ?? DEFAULT_APPROVER.name)
+      : DEFAULT_APPROVER.name
     const newReq = {
       id: Date.now(),
       type: 'unplanned',
@@ -93,6 +100,7 @@ export default function NewRequestModal({ onClose }) {
       endDate: new Date(endDate + 'T00:00:00'),
       days: previewDays,
       status: 'pending',
+      approver: { name: approverName, role: 'Руководитель' },
       comment: comment || undefined,
       extraApprover: extraApprover || undefined,
     }
@@ -122,7 +130,7 @@ export default function NewRequestModal({ onClose }) {
           </p>
           <button
             onClick={onClose}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+            className="w-full py-2.5 bg-[#0066ff] hover:bg-[#0052cc] text-white text-sm font-medium rounded-xl transition-colors"
           >
             Закрыть
           </button>
@@ -152,26 +160,15 @@ export default function NewRequestModal({ onClose }) {
           {/* Type */}
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-2">Тип отпуска</label>
-            <div className="space-y-2">
-              {REQUEST_TYPES.map(t => (
-                <button
-                  key={t.key}
-                  onClick={() => { setType(t.key); setErrors(e => ({ ...e, type: undefined })) }}
-                  className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
-                    type === t.key
-                      ? 'border-indigo-400 bg-indigo-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <p className={`text-sm font-medium ${
-                    type === t.key ? 'text-indigo-700' : 'text-gray-800'
-                  }`}>{t.label}</p>
-                  <p className={`text-xs mt-0.5 ${
-                    type === t.key ? 'text-indigo-500' : 'text-gray-400'
-                  }`}>{t.desc}</p>
-                </button>
-              ))}
-            </div>
+            <select
+              value={type}
+              onChange={e => { setType(e.target.value); setErrors(errs => ({ ...errs, type: undefined })) }}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+            >
+              <option value="">Выберите тип отпуска</option>
+              {REQUEST_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+            </select>
+            {selectedType && <p className="text-xs text-gray-500 mt-1.5">{selectedType.desc}</p>}
             {errors.type && <p className="text-xs text-red-500 mt-1.5">{errors.type}</p>}
           </div>
 
@@ -245,10 +242,40 @@ export default function NewRequestModal({ onClose }) {
             </select>
           </div>
 
+          {/* Approver */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-2">Согласующий</label>
+            {!changeApprover ? (
+              <div className="flex items-center justify-between px-3 py-2 border border-gray-200 rounded-xl bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{DEFAULT_APPROVER.name}</p>
+                  <p className="text-xs text-gray-500">{DEFAULT_APPROVER.role}</p>
+                </div>
+                <button
+                  onClick={() => setChangeApprover(true)}
+                  className="text-xs text-[#0066ff] hover:underline"
+                >
+                  Изменить
+                </button>
+              </div>
+            ) : (
+              <select
+                value={approverOverride}
+                onChange={e => setApproverOverride(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+              >
+                <option value="">По умолчанию — {DEFAULT_APPROVER.name}</option>
+                {COLLEAGUES.filter(c => !c.me).map(c => (
+                  <option key={c.id} value={String(c.id)}>{c.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
           {/* Submit */}
           <button
             onClick={handleSubmit}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors"
+            className="w-full py-3 bg-[#0066ff] hover:bg-[#0052cc] text-white text-sm font-medium rounded-xl transition-colors"
           >
             Отправить на согласование
           </button>
