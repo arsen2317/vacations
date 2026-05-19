@@ -21,21 +21,6 @@ function getHighlightedSet(segments) {
   return set
 }
 
-function Pill({ label, value, color }) {
-  const styles = {
-    neutral: 'bg-white border-gray-200 text-gray-500',
-    indigo:  'bg-indigo-50 border-indigo-200 text-indigo-700',
-    amber:   'bg-amber-50 border-amber-200 text-amber-700',
-    green:   'bg-green-50 border-green-200 text-green-700',
-  }
-  return (
-    <div className={`border rounded-xl px-4 py-2.5 flex items-center gap-2 ${styles[color]}`}>
-      <span className="text-sm">{label}:</span>
-      <span className="text-sm font-semibold">{value}</span>
-    </div>
-  )
-}
-
 function MonthMini({ year, month, highlighted }) {
   const first = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0).getDate()
@@ -94,6 +79,7 @@ export default function PlanningPage() {
   const hasLongSegment = segments.some(s => s.days >= 14)
   const canSubmit = remainingDays === 0 && hasLongSegment
   const highlighted = useMemo(() => getHighlightedSet(segments), [segments])
+  const progressPct = Math.round((distributedDays / campaign.totalDays) * 100)
 
   const previewDays = useMemo(() => {
     if (!newStart || !newEnd || newStart > newEnd) return null
@@ -141,37 +127,26 @@ export default function PlanningPage() {
 
   function addSegment() {
     setAddError('')
-    if (!newStart || !newEnd) {
-      setAddError('Укажите обе даты')
-      return
-    }
-    if (newStart > newEnd) {
-      setAddError('Дата начала должна быть раньше даты окончания')
-      return
-    }
+    if (!newStart || !newEnd) { setAddError('Укажите обе даты'); return }
+    if (newStart > newEnd) { setAddError('Дата начала должна быть раньше даты окончания'); return }
     const start = new Date(newStart + 'T00:00:00')
     const end = new Date(newEnd + 'T00:00:00')
     if (start.getFullYear() !== year || end.getFullYear() !== year) {
-      setAddError(`Даты должны быть в ${year} году`)
-      return
+      setAddError(`Даты должны быть в ${year} году`); return
     }
     for (const s of segments) {
       const sStart = new Date(s.startDate + 'T00:00:00')
       const sEnd = new Date(s.endDate + 'T00:00:00')
       if (start <= sEnd && end >= sStart) {
-        setAddError('Период пересекается с существующим отрезком')
-        return
+        setAddError('Период пересекается с существующим отрезком'); return
       }
     }
     const days = countVacationDays(start, end)
     if (days > remainingDays) {
-      setAddError(`Отрезок займёт ${pluralDays(days)}, осталось только ${pluralDays(remainingDays)}`)
-      return
+      setAddError(`Отрезок займёт ${pluralDays(days)}, осталось только ${pluralDays(remainingDays)}`); return
     }
     const seg = { id: Date.now(), startDate: newStart, endDate: newEnd, days }
-    setSegments(prev =>
-      [...prev, seg].sort((a, b) => a.startDate.localeCompare(b.startDate)),
-    )
+    setSegments(prev => [...prev, seg].sort((a, b) => a.startDate.localeCompare(b.startDate)))
     setNewStart('')
     setNewEnd('')
     setDraftSaved(false)
@@ -187,37 +162,43 @@ export default function PlanningPage() {
   if (!hasLongSegment) submitBlockers.push('нет отрезка ≥ 14 дней')
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-gray-900">
-          Планирование отпуска на {year} год
-        </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Распределите все {campaign.totalDays} дней по отрезкам. Один из отрезков должен быть не менее 14 дней.
-        </p>
-      </div>
-
-      <div className="flex gap-3 flex-wrap">
-        <Pill label="Всего" value={pluralDays(campaign.totalDays)} color="neutral" />
-        <Pill label="Распределено" value={pluralDays(distributedDays)} color="indigo" />
-        <Pill
-          label="Осталось"
-          value={pluralDays(remainingDays)}
-          color={remainingDays === 0 ? 'green' : 'amber'}
-        />
+    <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="mb-5">
+        <h1 className="text-lg font-semibold text-gray-900">Планирование отпуска на {year} год</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Один из отрезков должен быть не менее 14 дней</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
-        {/* Table panel */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
+        {/* Left panel */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
+
+          <div className="px-4 pt-4 pb-3 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
+              <span className={`text-xs font-medium ${
+                remainingDays === 0 ? 'text-green-600' : 'text-amber-600'
+              }`}>
+                {remainingDays === 0 ? 'Все дни распределены ✓' : `Осталось: ${pluralDays(remainingDays)}`}
+              </span>
+            </div>
+            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  remainingDays === 0 ? 'bg-green-500' : 'bg-indigo-500'
+                }`}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[11px] text-gray-400">{distributedDays} из {campaign.totalDays} дней</span>
+              <span className="text-[11px] text-gray-400">{progressPct}%</span>
+            </div>
           </div>
 
-          <div className="divide-y divide-gray-50 min-h-[60px]">
+          <div className="divide-y divide-gray-50">
             {segments.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-400 text-center">Нет добавленных отрезков</p>
+              <p className="px-4 py-5 text-sm text-gray-400 text-center">Нет добавленных отрезков</p>
             ) : (
               segments.map((seg, i) => (
                 <div key={seg.id} className="flex items-center px-4 py-3 gap-3">
@@ -238,8 +219,7 @@ export default function PlanningPage() {
                     className="p-1 text-gray-300 hover:text-red-400 transition-colors rounded"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
@@ -290,9 +270,35 @@ export default function PlanningPage() {
               Добавить
             </button>
           </div>
+
+          <div className="border-t border-gray-200 px-4 py-3 flex items-center gap-2 bg-white">
+            <button
+              onClick={() => setDraftSaved(true)}
+              className="flex-1 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              {draftSaved ? '✓ Черновик сохранён' : 'Сохранить черновик'}
+            </button>
+            <div className="relative group flex-1">
+              <button
+                onClick={() => canSubmit && setSubmitted(true)}
+                disabled={!canSubmit}
+                className="w-full py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Отправить на согласование
+              </button>
+              {!canSubmit && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 z-10 hidden group-hover:block pointer-events-none">
+                  <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 text-center shadow-lg">
+                    {submitBlockers.join(' · ')}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Calendar panel */}
+        {/* Right panel: calendar */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>
@@ -306,33 +312,6 @@ export default function PlanningPage() {
           </div>
         </div>
 
-      </div>
-
-      <div className="flex items-center gap-3 pb-4">
-        <button
-          onClick={() => setDraftSaved(true)}
-          className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          {draftSaved ? '✓ Черновик сохранён' : 'Сохранить черновик'}
-        </button>
-
-        <div className="relative group">
-          <button
-            onClick={() => canSubmit && setSubmitted(true)}
-            disabled={!canSubmit}
-            className="px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            Отправить на согласование
-          </button>
-          {!canSubmit && (
-            <div className="absolute bottom-full left-0 mb-2 z-10 hidden group-hover:block pointer-events-none">
-              <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                Для отправки: {submitBlockers.join(', ')}
-                <div className="absolute top-full left-5 border-4 border-transparent border-t-gray-800" />
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )

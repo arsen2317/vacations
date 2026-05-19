@@ -4,7 +4,6 @@ import TopBar from './components/TopBar'
 import TabNav from './components/TabNav'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import PlanningPage from './pages/PlanningPage'
-import RequestsPage from './pages/RequestsPage'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
@@ -18,7 +17,6 @@ export default function App() {
           <EmployeeDashboard onGoToPlanning={() => setActiveTab('planning')} />
         )}
         {activeTab === 'planning' && <PlanningPage />}
-        {activeTab === 'requests' && <RequestsPage />}
         {activeTab === 'colleagues' && <ColleaguesPlaceholder />}
       </div>
     </AppProvider>
