@@ -161,6 +161,8 @@ export default function PlanningPage() {
   if (remainingDays > 0) submitBlockers.push(`нераспределено ${pluralDays(remainingDays)}`)
   if (!hasLongSegment) submitBlockers.push('нет отрезка ≥ 14 дней')
 
+  const canAdd = newStart && newEnd && newStart <= newEnd
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
       <div className="mb-5">
@@ -173,6 +175,7 @@ export default function PlanningPage() {
         {/* Left panel */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
 
+          {/* Header with progress */}
           <div className="px-4 pt-4 pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
@@ -196,6 +199,7 @@ export default function PlanningPage() {
             </div>
           </div>
 
+          {/* Segments list */}
           <div className="divide-y divide-gray-50">
             {segments.length === 0 ? (
               <p className="px-4 py-5 text-sm text-gray-400 text-center">Нет добавленных отрезков</p>
@@ -227,9 +231,10 @@ export default function PlanningPage() {
             )}
           </div>
 
-          <div className="border-t border-gray-100 bg-gray-50 px-4 py-4 space-y-3">
+          {/* Add form */}
+          <div className="border-t border-gray-100 bg-gray-50 px-4 py-4 space-y-2">
             <p className="text-xs font-medium text-gray-600">Добавить отрезок</p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-end">
               <div className="flex-1">
                 <label className="text-[11px] text-gray-400 block mb-0.5">Начало</label>
                 <input
@@ -252,6 +257,16 @@ export default function PlanningPage() {
                   className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 />
               </div>
+              <button
+                onClick={addSegment}
+                disabled={!canAdd}
+                title="Добавить отрезок"
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
             </div>
             {previewDays !== null && !addError && (
               <p className="text-xs text-indigo-600">
@@ -262,15 +277,9 @@ export default function PlanningPage() {
               </p>
             )}
             {addError && <p className="text-xs text-red-500">{addError}</p>}
-            <button
-              onClick={addSegment}
-              disabled={!newStart || !newEnd}
-              className="w-full py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Добавить
-            </button>
           </div>
 
+          {/* Footer: draft + submit */}
           <div className="border-t border-gray-200 px-4 py-3 flex items-center gap-2 bg-white">
             <button
               onClick={() => setDraftSaved(true)}
