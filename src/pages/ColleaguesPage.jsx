@@ -1,4 +1,6 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { Typography, AutoComplete, Select, Switch, Card, Tooltip, Space } from 'antd'
+import { CloseOutlined } from '@ant-design/icons'
 import { COLLEAGUES, ALL_EMPLOYEES, CURRENT_USER } from '../data/mockData'
 
 const MONTH_FULL = [
@@ -13,9 +15,11 @@ const SEG_COLORS = {
   draft:     { bar: '#dbeafe', label: 'Черновик', border: '#bfdbfe' },
 }
 
+const LEGEND_ITEMS = ['approved', 'pending', 'reviewing', 'draft']
+
 const AVATAR_COLORS = [
-  '#6366f1','#0ea5e9','#10b981','#f59e0b',
-  '#ef4444','#8b5cf6','#14b8a6','#f97316',
+  '#6366f1', '#0ea5e9', '#10b981', '#f59e0b',
+  '#ef4444', '#8b5cf6', '#14b8a6', '#f97316',
 ]
 
 const COLLEAGUES_MAP = Object.fromEntries(COLLEAGUES.map(c => [c.id, c]))
@@ -23,15 +27,25 @@ const INITIAL_IDS = COLLEAGUES
   .filter(c => c.team === CURRENT_USER.team)
   .map(c => c.id)
 
+const YEAR_OPTIONS = [
+  { value: 2025, label: '2025' },
+  { value: 2026, label: '2026' },
+]
+
+const HALF_YEAR_OPTIONS = [
+  { value: 'h1', label: 'I полугодие' },
+  { value: 'h2', label: 'II полугодие' },
+]
+
 function daysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate()
 }
 
 function getRange(year, halfYear) {
   if (halfYear === 'h1') {
-    return { start: new Date(year, 0, 1), end: new Date(year, 5, 30), months: [0,1,2,3,4,5] }
+    return { start: new Date(year, 0, 1), end: new Date(year, 5, 30), months: [0, 1, 2, 3, 4, 5] }
   }
-  return { start: new Date(year, 6, 1), end: new Date(year, 11, 31), months: [6,7,8,9,10,11] }
+  return { start: new Date(year, 6, 1), end: new Date(year, 11, 31), months: [6, 7, 8, 9, 10, 11] }
 }
 
 function getBarStyle(segStart, segEnd, rangeStart, rangeEnd, totalDays) {
@@ -53,12 +67,7 @@ export default function ColleaguesPage() {
   const [halfYear, setHalfYear] = useState('h1')
   const [showDrafts, setShowDrafts] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showDropdown, setShowDropdown] = useState(false)
   const [comparisonIds, setComparisonIds] = useState(INITIAL_IDS)
-  const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0, text: '' })
-
-  const tooltipTimer = useRef(null)
-  const searchRef = useRef(null)
 
   const { start: rangeStart, end: rangeEnd, months: visibleMonths } = useMemo(
     () => getRange(year, halfYear),
@@ -72,12 +81,22 @@ export default function ColleaguesPage() {
 
   const rangeDays = Math.round((rangeEnd - rangeStart) / 86400000) + 1
 
-  const searchResults = useMemo(() => {
+  const searchOptions = useMemo(() => {
     if (!searchQuery.trim()) return []
     const q = searchQuery.toLowerCase()
     return ALL_EMPLOYEES
       .filter(e => !comparisonIds.includes(e.id) && e.name.toLowerCase().includes(q))
       .slice(0, 8)
+      .map(emp => ({
+        value: emp.name,
+        label: (
+          <div>
+            <div style={{ fontSize: 14 }}>{emp.name}</div>
+            <div style={{ fontSize: 12, color: '#8c8c8c' }}>{emp.team}</div>
+          </div>
+        ),
+        emp,
+      }))
   }, [searchQuery, comparisonIds])
 
   const comparisonPeople = useMemo(() => {
@@ -93,230 +112,182 @@ export default function ColleaguesPage() {
     })
   }, [comparisonIds, showDrafts])
 
-  const presentStatuses = useMemo(() => {
-    const set = new Set()
-    for (const person of comparisonPeople) {
-      for (const seg of person.segments) {
-        const bar = getBarStyle(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
-        if (bar) set.add(seg.status ?? 'approved')
-      }
+  function addPerson(value, option) {
+    if (option?.emp) {
+      setComparisonIds(prev => [...prev, option.emp.id])
+      setSearchQuery('')
     }
-    return ['approved', 'reviewing', 'pending', 'draft'].filter(s => set.has(s))
-  }, [comparisonPeople, rangeStart, rangeEnd, rangeDays])
-
-  function addPerson(emp) {
-    setComparisonIds(prev => [...prev, emp.id])
-    setSearchQuery('')
-    setShowDropdown(false)
   }
 
   function removePerson(id) {
     setComparisonIds(prev => prev.filter(x => x !== id))
   }
 
-  function handleMouseEnter(e, text) {
-    const x = e.clientX
-    const y = e.clientY
-    tooltipTimer.current = setTimeout(() => {
-      setTooltip({ visible: true, x, y, text })
-    }, 300)
-  }
-
-  function handleMouseLeave() {
-    clearTimeout(tooltipTimer.current)
-    setTooltip(t => ({ ...t, visible: false }))
-  }
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setShowDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-4">Отпуска коллег</h1>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
+      <Space direction="vertical" style={{ width: '100%' }} size={16}>
 
-      {/* Controls */}
-      <div className="flex flex-wrap gap-3 mb-5 items-center">
-        {/* Search */}
-        <div className="relative flex-1 min-w-48" ref={searchRef}>
-          <input
+        <Typography.Title level={4} style={{ margin: 0 }}>Отпуска коллег</Typography.Title>
+
+        <Space wrap>
+          <AutoComplete
             value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true) }}
-            onFocus={() => setShowDropdown(true)}
+            onChange={setSearchQuery}
+            onSelect={addPerson}
+            options={searchOptions}
             placeholder="Добавить сотрудника..."
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+            style={{ width: 240 }}
           />
-          {showDropdown && searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
-              {searchResults.map(emp => (
-                <button
-                  key={emp.id}
-                  onClick={() => addPerson(emp)}
-                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors"
+          <Select value={year} onChange={setYear} options={YEAR_OPTIONS} style={{ width: 90 }} />
+          <Select value={halfYear} onChange={setHalfYear} options={HALF_YEAR_OPTIONS} style={{ width: 148 }} />
+          <Space size={8}>
+            <Switch size="small" checked={showDrafts} onChange={setShowDrafts} />
+            <Typography.Text style={{ fontSize: 14 }}>Показывать черновики</Typography.Text>
+          </Space>
+        </Space>
+
+        <Card styles={{ body: { padding: 0 } }}>
+          {/* Month header */}
+          <div style={{ display: 'flex', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ width: 208, flexShrink: 0, borderRight: '1px solid #f0f0f0', padding: '8px 12px' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>ФИО</Typography.Text>
+            </div>
+            <div style={{ flex: 1, display: 'flex' }}>
+              {visibleMonths.map(m => (
+                <div
+                  key={m}
+                  style={{
+                    width: `${(daysInMonth(year, m) / totalMonthDays) * 100}%`,
+                    fontSize: 11,
+                    color: '#8c8c8c',
+                    fontWeight: 500,
+                    padding: '8px 0',
+                    textAlign: 'center',
+                    borderRight: '1px solid #fafafa',
+                  }}
                 >
-                  <p className="text-sm font-medium text-gray-800">{emp.name}</p>
-                  <p className="text-xs text-gray-400">{emp.team}</p>
-                </button>
+                  {MONTH_FULL[m]}
+                </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Year */}
-        <select
-          value={year}
-          onChange={e => setYear(Number(e.target.value))}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-        >
-          <option value={2025}>2025</option>
-          <option value={2026}>2026</option>
-        </select>
-
-        {/* Half year */}
-        <select
-          value={halfYear}
-          onChange={e => setHalfYear(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-        >
-          <option value="h1">I полугодие</option>
-          <option value="h2">II полугодие</option>
-        </select>
-
-        {/* Show drafts */}
-        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={showDrafts}
-            onChange={e => setShowDrafts(e.target.checked)}
-            className="rounded"
-          />
-          Показывать черновики
-        </label>
-      </div>
-
-      {/* Gantt table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        {/* Month header */}
-        <div className="flex border-b border-gray-100">
-          <div className="w-52 shrink-0 border-r border-gray-100 px-3 py-2">
-            <span className="text-xs font-semibold text-gray-500">ФИО</span>
           </div>
-          <div className="flex-1 flex">
-            {visibleMonths.map(m => (
-              <div
-                key={m}
-                style={{ width: `${(daysInMonth(year, m) / totalMonthDays) * 100}%` }}
-                className="text-[11px] text-gray-400 font-medium py-2 text-center border-r border-gray-50 last:border-r-0"
-              >
-                {MONTH_FULL[m]}
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {comparisonPeople.length === 0 ? (
-          <div className="py-12 text-center text-sm text-gray-400">
-            Нет сотрудников для сравнения
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {comparisonPeople.map(person => {
-              const avatarColor = AVATAR_COLORS[person.idx % AVATAR_COLORS.length]
-              const initials = person.name.split(' ').slice(0, 2).map(w => w[0]).join('')
-
-              return (
-                <div key={person.id} className="flex items-center h-12">
-                  <div className="w-52 shrink-0 px-3 border-r border-gray-100 h-full flex items-center gap-2">
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold text-white shrink-0"
-                      style={{ backgroundColor: avatarColor }}
-                    >
-                      {initials}
+          {comparisonPeople.length === 0 ? (
+            <div style={{ padding: '48px 0', textAlign: 'center' }}>
+              <Typography.Text type="secondary">Нет сотрудников для сравнения</Typography.Text>
+            </div>
+          ) : (
+            <div>
+              {comparisonPeople.map(person => {
+                const avatarColor = AVATAR_COLORS[person.idx % AVATAR_COLORS.length]
+                const initials = person.name.split(' ').slice(0, 2).map(w => w[0]).join('')
+                return (
+                  <div
+                    key={person.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      height: 48,
+                      borderBottom: '1px solid #fafafa',
+                    }}
+                  >
+                    <div style={{
+                      width: 208,
+                      flexShrink: 0,
+                      padding: '0 12px',
+                      borderRight: '1px solid #f0f0f0',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}>
+                      <div style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: '#fff',
+                        flexShrink: 0,
+                        background: avatarColor,
+                      }}>
+                        {initials}
+                      </div>
+                      <Typography.Text style={{
+                        fontSize: 12,
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {person.name}{person.me ? ' (я)' : ''}
+                      </Typography.Text>
+                      <CloseOutlined
+                        style={{ fontSize: 11, color: '#bfbfbf', cursor: 'pointer', flexShrink: 0 }}
+                        onClick={() => removePerson(person.id)}
+                      />
                     </div>
-                    <span className="text-xs font-medium text-gray-700 truncate flex-1">
-                      {person.name}{person.me ? ' (я)' : ''}
-                    </span>
-                    <button
-                      onClick={() => removePerson(person.id)}
-                      className="shrink-0 p-0.5 text-gray-300 hover:text-gray-500 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="flex-1 relative h-full px-1">
-                    {person.segments.map((seg, bi) => {
-                      const barStyle = getBarStyle(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
-                      if (!barStyle) return null
-                      const segStatus = seg.status ?? 'approved'
-                      const color = SEG_COLORS[segStatus] ?? SEG_COLORS.approved
-                      const isDraft = segStatus === 'draft'
-                      const tooltipText = `${person.name}: ${seg.startDate} — ${seg.endDate} (${color.label})`
-                      return (
-                        <div
-                          key={bi}
-                          className="absolute top-1/2 -translate-y-1/2 h-5 rounded-full"
-                          style={{
-                            ...barStyle,
-                            backgroundColor: color.bar,
-                            border: isDraft ? `1.5px dashed ${color.border}` : 'none',
-                            opacity: 0.9,
-                          }}
-                          onMouseEnter={e => handleMouseEnter(e, tooltipText)}
-                          onMouseLeave={handleMouseLeave}
-                          onMouseMove={e => {
-                            clearTimeout(tooltipTimer.current)
-                            setTooltip(t => ({ ...t, x: e.clientX, y: e.clientY }))
-                          }}
-                        />
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
 
-      {/* Legend */}
-      {presentStatuses.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-          {presentStatuses.map(s => {
+                    <div style={{ flex: 1, position: 'relative', height: '100%', padding: '0 4px' }}>
+                      {person.segments.map((seg, bi) => {
+                        const barStyle = getBarStyle(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
+                        if (!barStyle) return null
+                        const segStatus = seg.status ?? 'approved'
+                        const color = SEG_COLORS[segStatus] ?? SEG_COLORS.approved
+                        const isDraft = segStatus === 'draft'
+                        return (
+                          <Tooltip
+                            key={bi}
+                            title={`${person.name}: ${seg.startDate} — ${seg.endDate} (${color.label})`}
+                          >
+                            <div style={{
+                              position: 'absolute',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              height: 20,
+                              borderRadius: 10,
+                              backgroundColor: color.bar,
+                              border: isDraft ? `1.5px dashed ${color.border}` : 'none',
+                              opacity: 0.9,
+                              cursor: 'default',
+                              ...barStyle,
+                            }} />
+                          </Tooltip>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Card>
+
+        {/* Legend — always shows all statuses */}
+        <Space wrap size={[16, 8]}>
+          {LEGEND_ITEMS.map(s => {
             const color = SEG_COLORS[s]
             const isDraft = s === 'draft'
             return (
-              <div key={s} className="flex items-center gap-1.5">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor: color.bar,
-                    border: isDraft ? `1.5px dashed ${color.border}` : 'none',
-                  }}
-                />
-                <span className="text-xs text-gray-600">{color.label}</span>
-              </div>
+              <Space key={s} size={6}>
+                <div style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  background: color.bar,
+                  border: isDraft ? `1.5px dashed ${color.border}` : 'none',
+                  flexShrink: 0,
+                }} />
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>{color.label}</Typography.Text>
+              </Space>
             )
           })}
-        </div>
-      )}
+        </Space>
 
-      {/* Tooltip */}
-      {tooltip.visible && (
-        <div
-          className="fixed z-50 pointer-events-none bg-gray-800 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap"
-          style={{ left: tooltip.x - 10, top: tooltip.y - 40 }}
-        >
-          {tooltip.text}
-        </div>
-      )}
+      </Space>
     </div>
   )
 }
