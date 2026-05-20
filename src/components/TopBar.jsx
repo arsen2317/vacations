@@ -1,49 +1,60 @@
+import { Avatar, Segmented, Typography } from 'antd'
 import { useApp } from '../context/AppContext'
 import { CURRENT_USER } from '../data/mockData'
 
 const ROLES = [
-  { key: 'employee',  label: 'Сотрудник' },
-  { key: 'manager',   label: 'Руководитель' },
-  { key: 'hr_admin',  label: 'HR-админ' },
+  { value: 'employee', label: 'Сотрудник' },
+  { value: 'manager', label: 'Руководитель' },
+  { value: 'hr_admin', label: 'HR-админ' },
 ]
 
 export default function TopBar() {
   const { role, setRole, setActiveTab } = useApp()
 
-  function handleRoleChange(key) {
-    setRole(key)
+  function handleRoleChange(value) {
+    setRole(value)
     setActiveTab('home')
   }
 
   return (
-    <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-semibold">
+    <header style={{
+      background: '#fff',
+      borderBottom: '1px solid #f0f0f0',
+      position: 'sticky',
+      top: 0,
+      zIndex: 40,
+    }}>
+      <div style={{
+        maxWidth: 960,
+        margin: '0 auto',
+        padding: '0 16px',
+        height: 56,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Avatar style={{ backgroundColor: '#6366f1', flexShrink: 0 }}>
             {CURRENT_USER.name.charAt(0)}
-          </div>
+          </Avatar>
           <div>
-            <p className="text-sm font-medium text-gray-900 leading-tight">{CURRENT_USER.name}</p>
-            <p className="text-xs text-gray-400">{CURRENT_USER.team}</p>
+            <Typography.Text strong style={{ display: 'block', lineHeight: 1.3, fontSize: 14 }}>
+              {CURRENT_USER.name}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {CURRENT_USER.team}
+            </Typography.Text>
           </div>
         </div>
 
-        {/* Role switcher — prototype helper */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 mr-1">Роль:</span>
-          {ROLES.map(r => (
-            <button
-              key={r.key}
-              onClick={() => handleRoleChange(r.key)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                role === r.key
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>Роль:</Typography.Text>
+          <Segmented
+            size="small"
+            options={ROLES}
+            value={role}
+            onChange={handleRoleChange}
+          />
         </div>
       </div>
     </header>

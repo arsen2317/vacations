@@ -1,34 +1,39 @@
+import { Card, Statistic, Divider, Typography } from 'antd'
 import { useApp } from '../context/AppContext'
 
 export default function BalanceCard() {
   const { balance } = useApp()
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5">
-      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Остаток дней</p>
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Основной оплачиваемый</p>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-gray-900">{balance.main}</span>
-            <span className="text-sm text-gray-500">дн.</span>
-          </div>
+    <Card style={{ height: '100%' }}>
+      <Typography.Text
+        type="secondary"
+        style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}
+      >
+        Остаток дней
+      </Typography.Text>
+
+      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography.Text type="secondary" style={{ fontSize: 14 }}>Основной оплачиваемый</Typography.Text>
+          <Statistic
+            value={balance.main}
+            suffix="дн."
+            valueStyle={{ fontSize: 24, fontWeight: 700, color: '#111827' }}
+          />
         </div>
 
-        <div className="h-px bg-gray-100" />
+        <Divider style={{ margin: 0 }} />
 
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Дополнительный</p>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-gray-900">{balance.extra}</span>
-            <span className="text-sm text-gray-500">дн.</span>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography.Text type="secondary" style={{ fontSize: 14 }}>Дополнительный</Typography.Text>
+          <Statistic
+            value={balance.extra}
+            suffix="дн."
+            valueStyle={{ fontSize: 24, fontWeight: 700, color: '#111827' }}
+          />
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
