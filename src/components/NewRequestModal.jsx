@@ -1,83 +1,66 @@
 import { useState, useMemo } from 'react'
+import { Modal, Form, Select, DatePicker, Input, Button, Result, Typography } from 'antd'
+import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, pluralDays } from '../utils/dateUtils'
-import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
+import { COLLEAGUES } from '../data/mockData'
+
+dayjs.locale('ru')
 
 const REQUEST_TYPES = [
-  {
-    key: 'annual',
-    label: 'Ежегодный оплачиваемый',
-    desc: 'Списывается из баланса основного отпуска',
-    deductsBalance: true,
-  },
-  {
-    key: 'unpaid',
-    label: 'Без сохранения зарплаты',
-    desc: 'Не списывается из баланса',
-    deductsBalance: false,
-  },
-  {
-    key: 'study_paid',
-    label: 'Учебный оплачиваемый',
-    desc: 'Не списывается из баланса',
-    deductsBalance: false,
-  },
-  {
-    key: 'study_unpaid',
-    label: 'Учебный без сохранения зарплаты',
-    desc: 'Не списывается из баланса',
-    deductsBalance: false,
-  },
+  { value: 'annual',       label: 'Ежегодный оплачиваемый',                 desc: 'Списывается из баланса основного отпуска', deductsBalance: true  },
+  { value: 'unpaid',       label: 'Без сохранения зарплаты',                 desc: 'Не списывается из баланса',                deductsBalance: false },
+  { value: 'study_paid',   label: 'Учебный оплачиваемый',                    desc: 'Не списывается из баланса',                deductsBalance: false },
+  { value: 'study_unpaid', label: 'Учебный без сохранения зарплаты',         desc: 'Не списывается из баланса',                deductsBalance: false },
 ]
 
 const TYPE_LABEL_MAP = {
-  annual:      'Внеплановый — ежегодный оплачиваемый',
-  unpaid:      'Внеплановый — без сохранения зарплаты',
-  study_paid:  'Внеплановый — учебный оплачиваемый',
-  study_unpaid:'Внеплановый — учебный без сохранения зарплаты',
+  annual:       'Внеплановый — ежегодный оплачиваемый',
+  unpaid:       'Внеплановый — без сохранения зарплаты',
+  study_paid:   'Внеплановый — учебный оплачиваемый',
+  study_unpaid: 'Внеплановый — учебный без сохранения зарплаты',
 }
 
 const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
 
+const EXTRA_APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({
+  value: String(c.id),
+  label: c.name,
+}))
+
+const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({
+  value: String(c.id),
+  label: c.name,
+}))
+
 export default function NewRequestModal({ onClose }) {
   const { requests, setRequests, balance, setBalance } = useApp()
-  const [type, setType] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [type, setType] = useState(undefined)
+  const [dateRange, setDateRange] = useState(null)
   const [comment, setComment] = useState('')
-  const [extraApprover, setExtraApprover] = useState('')
+  const [extraApprover, setExtraApprover] = useState(undefined)
   const [changeApprover, setChangeApprover] = useState(false)
-  const [approverOverride, setApproverOverride] = useState('')
+  const [approverOverride, setApproverOverride] = useState(undefined)
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
 
-  const selectedType = REQUEST_TYPES.find(t => t.key === type)
+  const selectedType = REQUEST_TYPES.find(t => t.value === type)
 
   const previewDays = useMemo(() => {
-    if (!startDate || !endDate || startDate > endDate) return null
+    if (!dateRange?.[0] || !dateRange?.[1]) return null
     try {
-      return countVacationDays(
-        new Date(startDate + 'T00:00:00'),
-        new Date(endDate + 'T00:00:00'),
-      )
+      return countVacationDays(dateRange[0].toDate(), dateRange[1].toDate())
     } catch {
       return null
     }
-  }, [startDate, endDate])
+  }, [dateRange])
 
   function validate() {
     const errs = {}
     if (!type) errs.type = 'Выберите тип отпуска'
-    if (!startDate) errs.startDate = 'Укажите дату начала'
-    if (!endDate) errs.endDate = 'Укажите дату окончания'
-    if (startDate && endDate && startDate > endDate) {
-      errs.endDate = 'Дата окончания раньше даты начала'
-    }
-    if (
-      selectedType?.deductsBalance &&
-      previewDays !== null &&
-      previewDays > balance.main
-    ) {
+    if (!dateRange?.[0] || !dateRange?.[1]) errs.dates = 'Укажите период'
+    if (selectedType?.deductsBalance && previewDays !== null && previewDays > balance.main) {
       errs.dates = `Недостаточно дней: нужно ${pluralDays(previewDays)}, доступно ${pluralDays(balance.main)}`
     }
     return errs
@@ -96,8 +79,8 @@ export default function NewRequestModal({ onClose }) {
       id: Date.now(),
       type: 'unplanned',
       typeLabel: TYPE_LABEL_MAP[type],
-      startDate: new Date(startDate + 'T00:00:00'),
-      endDate: new Date(endDate + 'T00:00:00'),
+      startDate: dateRange[0].toDate(),
+      endDate: dateRange[1].toDate(),
       days: previewDays,
       status: 'pending',
       approver: { name: approverName, role: 'Руководитель' },
@@ -111,176 +94,133 @@ export default function NewRequestModal({ onClose }) {
     setSubmitted(true)
   }
 
-  const approvers = COLLEAGUES.filter(c => !c.me)
-
   if (submitted) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-8 shadow-2xl text-center">
-          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Заявка отправлена</h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Заявка передана на согласование руководителю
-            {extraApprover ? ' и дополнительному согласующему' : ''}.
-          </p>
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 bg-[#0066ff] hover:bg-[#0052cc] text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            Закрыть
-          </button>
-        </div>
-      </div>
+      <Modal open={true} onCancel={onClose} footer={null} width={480}>
+        <Result
+          status="success"
+          title="Заявка отправлена"
+          subTitle={`Заявка передана на согласование руководителю${extraApprover ? ' и дополнительному согласующему' : ''}.`}
+          extra={[
+            <Button key="close" type="primary" onClick={onClose}>Закрыть</Button>,
+          ]}
+        />
+      </Modal>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl flex flex-col max-h-[92vh]">
+    <Modal open={true} onCancel={onClose} title="Новая заявка" footer={null} width={480}>
+      <Form layout="vertical" style={{ marginTop: 8 }}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">Новая заявка</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
-            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        <Form.Item
+          label="Тип отпуска"
+          validateStatus={errors.type ? 'error' : ''}
+          help={errors.type}
+        >
+          <Select
+            value={type}
+            onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
+            placeholder="Выберите тип отпуска"
+            options={REQUEST_TYPES.map(t => ({ value: t.value, label: t.label }))}
+          />
+          {selectedType && (
+            <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+              {selectedType.desc}
+            </Typography.Text>
+          )}
+        </Form.Item>
 
-        {/* Body */}
-        <div className="overflow-y-auto px-6 py-5 space-y-5">
+        <Form.Item
+          label="Период"
+          validateStatus={errors.dates ? 'error' : ''}
+          help={
+            errors.dates
+              ? errors.dates
+              : previewDays !== null
+                ? `${pluralDays(previewDays)} отпуска (праздники не считаются)${selectedType?.deductsBalance ? ` · Баланс: ${balance.main} дн.` : ''}`
+                : undefined
+          }
+        >
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={v => { setDateRange(v); setErrors(e => ({ ...e, dates: undefined })) }}
+            format="DD.MM.YYYY"
+            style={{ width: '100%' }}
+            placeholder={['Начало', 'Окончание']}
+          />
+        </Form.Item>
 
-          {/* Type */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">Тип отпуска</label>
-            <select
-              value={type}
-              onChange={e => { setType(e.target.value); setErrors(errs => ({ ...errs, type: undefined })) }}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-            >
-              <option value="">Выберите тип отпуска</option>
-              {REQUEST_TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-            </select>
-            {selectedType && <p className="text-xs text-gray-500 mt-1.5">{selectedType.desc}</p>}
-            {errors.type && <p className="text-xs text-red-500 mt-1.5">{errors.type}</p>}
-          </div>
+        <Form.Item
+          label={
+            <>Комментарий{' '}
+              <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 14 }}>(необязательно)</Typography.Text>
+            </>
+          }
+        >
+          <Input.TextArea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            rows={3}
+            placeholder="Причина или дополнительная информация"
+          />
+        </Form.Item>
 
-          {/* Dates */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">Период</label>
-            <div className="grid grid-cols-2 gap-3">
+        <Form.Item
+          label={
+            <>Дополнительный согласующий{' '}
+              <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 14 }}>(необязательно)</Typography.Text>
+            </>
+          }
+        >
+          <Select
+            value={extraApprover}
+            onChange={setExtraApprover}
+            placeholder="Не назначать"
+            allowClear
+            options={EXTRA_APPROVER_OPTIONS}
+          />
+        </Form.Item>
+
+        <Form.Item label="Согласующий">
+          {!changeApprover ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px',
+              border: '1px solid #d9d9d9',
+              borderRadius: 6,
+              background: '#fafafa',
+            }}>
               <div>
-                <label className="text-xs text-gray-400 block mb-1">Начало</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => { setStartDate(e.target.value); setErrors(errs => ({ ...errs, startDate: undefined, dates: undefined })) }}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-                {errors.startDate && <p className="text-xs text-red-500 mt-1">{errors.startDate}</p>}
+                <Typography.Text strong style={{ display: 'block', fontSize: 14 }}>
+                  {DEFAULT_APPROVER.name}
+                </Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {DEFAULT_APPROVER.role}
+                </Typography.Text>
               </div>
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Окончание</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  onChange={e => { setEndDate(e.target.value); setErrors(errs => ({ ...errs, endDate: undefined, dates: undefined })) }}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-                {errors.endDate && <p className="text-xs text-red-500 mt-1">{errors.endDate}</p>}
-              </div>
+              <Button type="link" size="small" onClick={() => setChangeApprover(true)} style={{ padding: 0 }}>
+                Изменить
+              </Button>
             </div>
-            {previewDays !== null && !errors.dates && (
-              <p className="text-xs text-indigo-600 mt-1.5">
-                {pluralDays(previewDays)} отпуска (праздники не считаются)
-                {selectedType?.deductsBalance && (
-                  <span className="text-gray-400"> · Баланс: {balance.main} дн.</span>
-                )}
-              </p>
-            )}
-            {errors.dates && <p className="text-xs text-red-500 mt-1.5">{errors.dates}</p>}
-          </div>
-
-          {/* Comment */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">
-              Комментарий{' '}
-              <span className="text-gray-400 font-normal">(необязательно)</span>
-            </label>
-            <textarea
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              rows={3}
-              placeholder="Причина или дополнительная информация"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 placeholder-gray-300"
+          ) : (
+            <Select
+              value={approverOverride}
+              onChange={setApproverOverride}
+              placeholder={`По умолчанию — ${DEFAULT_APPROVER.name}`}
+              allowClear
+              options={APPROVER_OPTIONS}
             />
-          </div>
+          )}
+        </Form.Item>
 
-          {/* Extra approver */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">
-              Дополнительный согласующий{' '}
-              <span className="text-gray-400 font-normal">(необязательно)</span>
-            </label>
-            <select
-              value={extraApprover}
-              onChange={e => setExtraApprover(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-            >
-              <option value="">Не назначать</option>
-              {approvers.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
+        <Button type="primary" block onClick={handleSubmit}>
+          Отправить на согласование
+        </Button>
 
-          {/* Approver */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">Согласующий</label>
-            {!changeApprover ? (
-              <div className="flex items-center justify-between px-3 py-2 border border-gray-200 rounded-xl bg-gray-50">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{DEFAULT_APPROVER.name}</p>
-                  <p className="text-xs text-gray-500">{DEFAULT_APPROVER.role}</p>
-                </div>
-                <button
-                  onClick={() => setChangeApprover(true)}
-                  className="text-xs text-[#0066ff] hover:underline"
-                >
-                  Изменить
-                </button>
-              </div>
-            ) : (
-              <select
-                value={approverOverride}
-                onChange={e => setApproverOverride(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-              >
-                <option value="">По умолчанию — {DEFAULT_APPROVER.name}</option>
-                {COLLEAGUES.filter(c => !c.me).map(c => (
-                  <option key={c.id} value={String(c.id)}>{c.name}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {/* Submit */}
-          <button
-            onClick={handleSubmit}
-            className="w-full py-3 bg-[#0066ff] hover:bg-[#0052cc] text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            Отправить на согласование
-          </button>
-        </div>
-      </div>
-    </div>
+      </Form>
+    </Modal>
   )
 }

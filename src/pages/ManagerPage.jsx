@@ -1,12 +1,13 @@
 import { useState } from 'react'
+import { Card, Row, Col, Statistic, List, Avatar, Tag, Button, Input, Typography, Space } from 'antd'
 import { useApp } from '../context/AppContext'
 import { fmtDate, pluralDays } from '../utils/dateUtils'
 
-const STATUS_UI = {
-  draft:    { label: 'Черновик',         cls: 'bg-gray-100 text-gray-600' },
-  pending:  { label: 'На согласовании',  cls: 'bg-amber-100 text-amber-700' },
-  approved: { label: 'Согласован',       cls: 'bg-green-100 text-green-700' },
-  rejected: { label: 'Отклонён',         cls: 'bg-red-100 text-red-700' },
+const STATUS_TAG = {
+  draft:    { label: 'Черновик',        color: 'default'  },
+  pending:  { label: 'На согласовании', color: 'gold'     },
+  approved: { label: 'Согласован',      color: 'success'  },
+  rejected: { label: 'Отклонён',        color: 'error'    },
 }
 
 export default function ManagerPage() {
@@ -26,21 +27,13 @@ export default function ManagerPage() {
   const draftCount    = subordinates.filter(s => s.planStatus === 'draft').length
 
   function toggleExpand(id) {
-    if (expandedId === id) {
-      setExpandedId(null)
-      setComment('')
-      setCommentError('')
-    } else {
-      setExpandedId(id)
-      setComment('')
-      setCommentError('')
-    }
+    setExpandedId(prev => prev === id ? null : id)
+    setComment('')
+    setCommentError('')
   }
 
   function handleApprove(id) {
-    setSubordinates(prev =>
-      prev.map(s => s.id === id ? { ...s, planStatus: 'approved' } : s)
-    )
+    setSubordinates(prev => prev.map(s => s.id === id ? { ...s, planStatus: 'approved' } : s))
     setExpandedId(null)
     setComment('')
     setCommentError('')
@@ -51,134 +44,157 @@ export default function ManagerPage() {
       setCommentError('Комментарий обязателен при отклонении')
       return
     }
-    setSubordinates(prev =>
-      prev.map(s => s.id === id ? { ...s, planStatus: 'rejected', rejectionComment: comment } : s)
-    )
+    setSubordinates(prev => prev.map(s => s.id === id ? { ...s, planStatus: 'rejected', rejectionComment: comment } : s))
     setExpandedId(null)
     setComment('')
     setCommentError('')
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
-      <h1 className="text-lg font-semibold text-gray-900">
-        Команда — планирование отпуска на {campaign.year} год
-      </h1>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
+      <Space direction="vertical" style={{ width: '100%' }} size={20}>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
-          <p className="text-2xl font-bold text-amber-700">{pendingCount}</p>
-          <p className="text-xs text-amber-600 mt-1">На согласовании</p>
-        </div>
-        <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
-          <p className="text-2xl font-bold text-green-700">{approvedCount}</p>
-          <p className="text-xs text-green-600 mt-1">Согласованы</p>
-        </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 text-center">
-          <p className="text-2xl font-bold text-gray-600">{draftCount}</p>
-          <p className="text-xs text-gray-500 mt-1">В черновике</p>
-        </div>
-      </div>
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          Команда — планирование отпуска на {campaign.year} год
+        </Typography.Title>
 
-      {/* Subordinates list */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-900">Сотрудники</h2>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {sorted.map(sub => {
-            const { label, cls } = STATUS_UI[sub.planStatus] ?? STATUS_UI.draft
-            const isExpanded = expandedId === sub.id
-            const isPending  = sub.planStatus === 'pending'
+        <Row gutter={16}>
+          <Col span={8}>
+            <Card>
+              <Statistic title="На согласовании" value={pendingCount} valueStyle={{ color: '#d48806' }} />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic title="Согласованы" value={approvedCount} valueStyle={{ color: '#52c41a' }} />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              <Statistic title="В черновике" value={draftCount} valueStyle={{ color: '#8c8c8c' }} />
+            </Card>
+          </Col>
+        </Row>
 
-            return (
-              <div key={sub.id}>
-                <div className="flex items-center px-5 py-4 gap-4">
-                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-sm font-semibold text-indigo-600">
-                    {sub.name[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{sub.name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{sub.position}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}`}>
-                        {label}
-                      </span>
-                      {sub.planStatus === 'pending' && (
-                        <span className="text-[11px] text-gray-400">
-                          {sub.distributedDays}/{sub.totalDays} дн. распределено
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {isPending && (
-                    <button
-                      onClick={() => toggleExpand(sub.id)}
-                      className={`shrink-0 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-                        isExpanded
-                          ? 'bg-gray-100 border-gray-200 text-gray-600'
-                          : 'border-[#0066ff] text-[#0066ff] hover:bg-blue-50'
-                      }`}
-                    >
-                      {isExpanded ? 'Скрыть' : 'Рассмотреть'}
-                    </button>
-                  )}
-                </div>
+        <Card title="Сотрудники" styles={{ body: { padding: 0 } }}>
+          <List
+            dataSource={sorted}
+            renderItem={sub => {
+              const { label, color } = STATUS_TAG[sub.planStatus] ?? STATUS_TAG.draft
+              const isExpanded = expandedId === sub.id
+              const isPending  = sub.planStatus === 'pending'
 
-                {isExpanded && (
-                  <div className="mx-5 mb-4 p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                    {sub.segments?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold text-gray-600 mb-2">Отрезки отпуска:</p>
-                        <div className="space-y-1">
-                          {sub.segments.map((seg, i) => (
-                            <div key={i} className="flex items-center gap-2 text-xs text-gray-600">
-                              <span className="text-gray-300 w-4 text-right shrink-0">{i + 1}.</span>
-                              <span>{fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}</span>
-                              <span className="text-gray-400">({pluralDays(seg.days)})</span>
-                            </div>
-                          ))}
-                        </div>
+              return (
+                <List.Item
+                  key={sub.id}
+                  style={{ flexDirection: 'column', alignItems: 'stretch', padding: '12px 20px' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Avatar style={{ background: '#e0e7ff', color: '#4f46e5', flexShrink: 0 }}>
+                      {sub.name[0]}
+                    </Avatar>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Typography.Text strong style={{ display: 'block' }}>{sub.name}</Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{sub.position}</Typography.Text>
+                      <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Tag color={color} style={{ marginInlineEnd: 0 }}>{label}</Tag>
+                        {isPending && (
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            {sub.distributedDays}/{sub.totalDays} дн. распределено
+                          </Typography.Text>
+                        )}
                       </div>
+                    </div>
+                    {isPending && (
+                      <Button
+                        size="small"
+                        type="primary"
+                        ghost={!isExpanded}
+                        onClick={() => toggleExpand(sub.id)}
+                      >
+                        {isExpanded ? 'Скрыть' : 'Рассмотреть'}
+                      </Button>
                     )}
-
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                        Комментарий{' '}
-                        <span className="font-normal text-gray-400">(обязателен при отклонении)</span>
-                      </label>
-                      <textarea
-                        value={comment}
-                        onChange={e => { setComment(e.target.value); setCommentError('') }}
-                        rows={2}
-                        placeholder="Введите комментарий..."
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white placeholder-gray-300"
-                      />
-                      {commentError && <p className="text-xs text-red-500 mt-1">{commentError}</p>}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleApprove(sub.id)}
-                        className="flex-1 py-2 text-sm font-medium rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors"
-                      >
-                        Одобрить
-                      </button>
-                      <button
-                        onClick={() => handleReject(sub.id)}
-                        className="flex-1 py-2 text-sm font-medium rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        Отклонить
-                      </button>
-                    </div>
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
+
+                  {isExpanded && (
+                    <Card
+                      size="small"
+                      style={{ marginTop: 12, background: '#fafafa' }}
+                      styles={{ body: { padding: 12 } }}
+                    >
+                      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                        {sub.segments?.length > 0 && (
+                          <div>
+                            <Typography.Text
+                              type="secondary"
+                              style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}
+                            >
+                              Отрезки отпуска:
+                            </Typography.Text>
+                            <Space direction="vertical" size={2}>
+                              {sub.segments.map((seg, i) => (
+                                <Typography.Text key={i} style={{ fontSize: 13 }}>
+                                  <Typography.Text type="secondary">{i + 1}.{' '}</Typography.Text>
+                                  {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                                  <Typography.Text type="secondary"> ({pluralDays(seg.days)})</Typography.Text>
+                                </Typography.Text>
+                              ))}
+                            </Space>
+                          </div>
+                        )}
+
+                        <div>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}
+                          >
+                            Комментарий{' '}
+                            <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 12 }}>
+                              (обязателен при отклонении)
+                            </Typography.Text>
+                          </Typography.Text>
+                          <Input.TextArea
+                            value={comment}
+                            onChange={e => { setComment(e.target.value); setCommentError('') }}
+                            rows={2}
+                            placeholder="Введите комментарий..."
+                            status={commentError ? 'error' : ''}
+                          />
+                          {commentError && (
+                            <Typography.Text type="danger" style={{ fontSize: 12 }}>
+                              {commentError}
+                            </Typography.Text>
+                          )}
+                        </div>
+
+                        <Row gutter={8}>
+                          <Col span={12}>
+                            <Button
+                              block
+                              type="primary"
+                              style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                              onClick={() => handleApprove(sub.id)}
+                            >
+                              Одобрить
+                            </Button>
+                          </Col>
+                          <Col span={12}>
+                            <Button block danger onClick={() => handleReject(sub.id)}>
+                              Отклонить
+                            </Button>
+                          </Col>
+                        </Row>
+                      </Space>
+                    </Card>
+                  )}
+                </List.Item>
+              )
+            }}
+          />
+        </Card>
+
+      </Space>
     </div>
   )
 }
