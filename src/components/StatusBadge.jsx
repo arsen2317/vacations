@@ -1,10 +1,15 @@
-import { STATUS_CONFIG } from '../data/mockData'
+import { Tag } from 'antd'
+
+const STATUS_TAG = {
+  draft:     { label: 'Черновик',        color: 'default' },
+  pending:   { label: 'На согласовании', color: 'gold' },
+  reviewing: { label: 'На ознакомлении', color: 'orange' },
+  approved:  { label: 'Согласована',     color: 'success' },
+  rejected:  { label: 'Отклонена',       color: 'error' },
+  cancelled: { label: 'Отменена',        color: 'default' },
+}
 
 export default function StatusBadge({ status }) {
-  const config = STATUS_CONFIG[status] ?? { label: status, color: 'bg-gray-100 text-gray-500' }
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
-      {config.label}
-    </span>
-  )
+  const cfg = STATUS_TAG[status] ?? { label: status, color: 'default' }
+  return <Tag color={cfg.color} style={{ marginInlineEnd: 0 }}>{cfg.label}</Tag>
 }
