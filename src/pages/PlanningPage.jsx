@@ -45,7 +45,11 @@ function getHighlightedSet(segments) {
   return set
 }
 
-function MonthMini({ year, month, highlighted, hlBg = '#6366f1', hlText = '#ffffff' }) {
+function MonthMini({
+  year, month, highlighted, hlBg = '#6366f1', hlText = '#ffffff',
+  interactive = false, selectionStart = null, hoverDate = null,
+  onDateClick, onDateHover,
+}) {
   const first = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0).getDate()
   let startDow = first.getDay()
@@ -54,6 +58,13 @@ function MonthMini({ year, month, highlighted, hlBg = '#6366f1', hlText = '#ffff
   const cells = Array(startDow).fill(null)
   for (let d = 1; d <= lastDay; d++) cells.push(d)
   while (cells.length % 7 !== 0) cells.push(null)
+
+  const selMin = selectionStart && hoverDate
+    ? (selectionStart < hoverDate ? selectionStart : hoverDate)
+    : null
+  const selMax = selectionStart && hoverDate
+    ? (selectionStart < hoverDate ? hoverDate : selectionStart)
+    : null
 
   return (
     <div>
@@ -71,6 +82,21 @@ function MonthMini({ year, month, highlighted, hlBg = '#6366f1', hlText = '#ffff
           const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
           const isHl = highlighted.has(key)
           const isWeekend = (i % 7) >= 5
+          const isSelStart = interactive && key === selectionStart
+          const inPreview = interactive && selMin && selMax && key >= selMin && key <= selMax
+
+          let bg = 'transparent'
+          let textColor = isWeekend ? '#d1d5db' : '#4b5563'
+          let fw = 400
+
+          if (isHl) {
+            bg = hlBg; textColor = hlText; fw = 500
+          } else if (isSelStart) {
+            bg = '#6366f1'; textColor = '#ffffff'; fw = 600
+          } else if (inPreview) {
+            bg = '#eef2ff'; textColor = '#4f46e5'; fw = 500
+          }
+
           return (
             <span
               key={i}
@@ -79,10 +105,14 @@ function MonthMini({ year, month, highlighted, hlBg = '#6366f1', hlText = '#ffff
                 textAlign: 'center',
                 lineHeight: '20px',
                 borderRadius: 2,
-                background: isHl ? hlBg : 'transparent',
-                color: isHl ? hlText : isWeekend ? '#d1d5db' : '#4b5563',
-                fontWeight: isHl ? 500 : 400,
+                background: bg,
+                color: textColor,
+                fontWeight: fw,
+                cursor: interactive ? 'pointer' : 'default',
+                userSelect: 'none',
               }}
+              onClick={interactive ? () => onDateClick?.(key) : undefined}
+              onMouseEnter={interactive ? () => onDateHover?.(key) : undefined}
             >
               {day}
             </span>
@@ -370,6 +400,8 @@ export default function PlanningPage({ onGoToRequests }) {
   const [addError, setAddError] = useState('')
   const [showApproverStep, setShowApproverStep] = useState(false)
   const [planExtraApprover, setPlanExtraApprover] = useState(undefined)
+  const [selectionStart, setSelectionStart] = useState(null)
+  const [hoverDate, setHoverDate] = useState(null)
 
   const year = campaign.year
   const distributedDays = useMemo(
@@ -447,31 +479,50 @@ export default function PlanningPage({ onGoToRequests }) {
     )
   }
 
-  function addSegment() {
+  function tryAddSegment(startStr, endStr) {
     setAddError('')
-    if (!newRange?.[0] || !newRange?.[1]) { setAddError('Укажите обе даты'); return }
-    const start    = newRange[0].toDate()
-    const end      = newRange[1].toDate()
-    const startDate = newRange[0].format('YYYY-MM-DD')
-    const endDate   = newRange[1].format('YYYY-MM-DD')
-    if (newRange[0].year() !== year || newRange[1].year() !== year) {
-      setAddError(`Даты должны быть в ${year} году`); return
+    const start = new Date(startStr + 'T00:00:00')
+    const end   = new Date(endStr   + 'T00:00:00')
+    if (start.getFullYear() !== year || end.getFullYear() !== year) {
+      setAddError(`Даты должны быть в ${year} году`); return false
     }
     for (const s of segments) {
       const sStart = new Date(s.startDate + 'T00:00:00')
       const sEnd   = new Date(s.endDate   + 'T00:00:00')
       if (start <= sEnd && end >= sStart) {
-        setAddError('Период пересекается с существующим отрезком'); return
+        setAddError('Период пересекается с существующим отрезком'); return false
       }
     }
     const days = countVacationDays(start, end)
     if (days > remainingDays) {
-      setAddError(`Отрезок займёт ${pluralDays(days)}, осталось только ${pluralDays(remainingDays)}`); return
+      setAddError(`Отрезок займёт ${pluralDays(days)}, осталось только ${pluralDays(remainingDays)}`); return false
     }
-    const seg = { id: Date.now(), startDate, endDate, days }
+    const seg = { id: Date.now(), startDate: startStr, endDate: endStr, days }
     setSegments(prev => [...prev, seg].sort((a, b) => a.startDate.localeCompare(b.startDate)))
-    setNewRange(null)
     setDraftSaved(false)
+    return true
+  }
+
+  function addSegment() {
+    if (!newRange?.[0] || !newRange?.[1]) { setAddError('Укажите обе даты'); return }
+    if (tryAddSegment(newRange[0].format('YYYY-MM-DD'), newRange[1].format('YYYY-MM-DD'))) {
+      setNewRange(null)
+    }
+  }
+
+  function handleCalendarClick(dateStr) {
+    if (!dateStr.startsWith(String(year))) return
+    if (!selectionStart) {
+      setSelectionStart(dateStr)
+      setHoverDate(dateStr)
+      setAddError('')
+    } else {
+      const start = selectionStart < dateStr ? selectionStart : dateStr
+      const end   = selectionStart < dateStr ? dateStr : selectionStart
+      setSelectionStart(null)
+      setHoverDate(null)
+      tryAddSegment(start, end)
+    }
   }
 
   function removeSegment(id) {
@@ -669,7 +720,55 @@ export default function PlanningPage({ onGoToRequests }) {
           </Col>
 
           <Col xs={24} lg={12}>
-            <CalendarCard year={year} highlighted={highlighted} hlBg="#dbeafe" hlText="#2563eb" />
+            <Card
+              title={
+                <span>
+                  Календарь {year}
+                  {!selectionStart && (
+                    <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400, marginLeft: 8 }}>
+                      нажмите для выбора дат
+                    </Typography.Text>
+                  )}
+                </span>
+              }
+              styles={{ body: { padding: 16, maxHeight: 480, overflowY: 'auto' } }}
+            >
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px 16px' }}
+                onMouseLeave={() => setHoverDate(null)}
+              >
+                {Array.from({ length: 12 }, (_, m) => (
+                  <MonthMini
+                    key={m}
+                    year={year}
+                    month={m}
+                    highlighted={highlighted}
+                    hlBg="#dbeafe"
+                    hlText="#2563eb"
+                    interactive
+                    selectionStart={selectionStart}
+                    hoverDate={hoverDate}
+                    onDateClick={handleCalendarClick}
+                    onDateHover={setHoverDate}
+                  />
+                ))}
+              </div>
+              {selectionStart && (
+                <div style={{ marginTop: 12, borderTop: '1px solid #f0f0f0', paddingTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography.Text style={{ fontSize: 12, color: '#6366f1' }}>
+                    Начало: {fmtDate(selectionStart)} · Нажмите на дату окончания
+                  </Typography.Text>
+                  <Button
+                    type="link"
+                    size="small"
+                    style={{ padding: 0, height: 'auto' }}
+                    onClick={() => { setSelectionStart(null); setHoverDate(null) }}
+                  >
+                    Отмена
+                  </Button>
+                </div>
+              )}
+            </Card>
           </Col>
         </Row>
       </Space>
