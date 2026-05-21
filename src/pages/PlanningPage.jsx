@@ -1,27 +1,22 @@
 import { useState, useMemo } from 'react'
+import {
+  Typography, Alert, Card, Row, Col, Button, Space, Tag, Tooltip,
+  Segmented, Select, Result, List, DatePicker,
+} from 'antd'
+import { CalendarOutlined, CloseOutlined, CheckOutlined } from '@ant-design/icons'
+import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, toKey, fmtDate, pluralDays } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
 
-const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
-const EXTRA_APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me)
+dayjs.locale('ru')
 
-function DateInput({ value, onChange, min, max, className }) {
-  const [asDate, setAsDate] = useState(Boolean(value))
-  return (
-    <input
-      type={asDate || value ? 'date' : 'text'}
-      placeholder="дд.мм.гггг"
-      value={value}
-      min={min}
-      max={max}
-      onFocus={() => setAsDate(true)}
-      onBlur={() => { if (!value) setAsDate(false) }}
-      onChange={onChange}
-      className={className}
-    />
-  )
-}
+const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
+const EXTRA_APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({
+  value: String(c.id),
+  label: c.name,
+}))
 
 const TODAY = new Date('2026-05-19T00:00:00')
 
@@ -31,7 +26,11 @@ const MONTH_NAMES = [
 ]
 const DAY_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
-const PLAN_LABELS = { draft: 'Черновик', pending: 'На согласовании', approved: 'Согласован' }
+const PLAN_LABELS = [
+  { value: 'draft',    label: 'Черновик' },
+  { value: 'pending',  label: 'На согласовании' },
+  { value: 'approved', label: 'Согласован' },
+]
 
 function getHighlightedSet(segments) {
   const set = new Set()
@@ -46,7 +45,7 @@ function getHighlightedSet(segments) {
   return set
 }
 
-function MonthMini({ year, month, highlighted, hlBg = 'bg-indigo-500', hlText = 'text-white' }) {
+function MonthMini({ year, month, highlighted, hlBg = '#6366f1', hlText = '#ffffff' }) {
   const first = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0).getDate()
   let startDow = first.getDay()
@@ -58,26 +57,32 @@ function MonthMini({ year, month, highlighted, hlBg = 'bg-indigo-500', hlText = 
 
   return (
     <div>
-      <p className="text-[11px] font-semibold text-gray-600 mb-1">{MONTH_NAMES[month]}</p>
-      <div className="grid grid-cols-7">
+      <div style={{ fontSize: 11, fontWeight: 600, color: '#4b5563', marginBottom: 4 }}>
+        {MONTH_NAMES[month]}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
         {DAY_SHORT.map(d => (
-          <span key={d} className="text-[9px] text-gray-400 text-center leading-4">{d}</span>
+          <span key={d} style={{ fontSize: 9, color: '#9ca3af', textAlign: 'center', lineHeight: '16px' }}>
+            {d}
+          </span>
         ))}
         {cells.map((day, i) => {
-          if (!day) return <span key={`n${i}`} className="leading-5" />
+          if (!day) return <span key={`n${i}`} style={{ lineHeight: '20px' }} />
           const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
           const isHl = highlighted.has(key)
           const isWeekend = (i % 7) >= 5
           return (
             <span
               key={i}
-              className={`text-[10px] text-center leading-5 rounded-[2px] ${
-                isHl
-                  ? `${hlBg} ${hlText} font-medium`
-                  : isWeekend
-                  ? 'text-gray-300'
-                  : 'text-gray-600'
-              }`}
+              style={{
+                fontSize: 10,
+                textAlign: 'center',
+                lineHeight: '20px',
+                borderRadius: 2,
+                background: isHl ? hlBg : 'transparent',
+                color: isHl ? hlText : isWeekend ? '#d1d5db' : '#4b5563',
+                fontWeight: isHl ? 500 : 400,
+              }}
             >
               {day}
             </span>
@@ -91,7 +96,7 @@ function MonthMini({ year, month, highlighted, hlBg = 'bg-indigo-500', hlText = 
 function segStatus(seg) {
   const start = new Date(seg.startDate + 'T00:00:00')
   const end   = new Date(seg.endDate   + 'T00:00:00')
-  if (TODAY > end)   return 'past'
+  if (TODAY > end)    return 'past'
   if (TODAY >= start) return 'ongoing'
   return 'upcoming'
 }
@@ -101,77 +106,85 @@ function daysUntilStart(seg) {
   return Math.ceil((start - TODAY) / 86400000)
 }
 
-const SEG_STATUS_UI = {
-  past:     { label: 'Прошёл',    cls: 'bg-gray-100 text-gray-500' },
-  ongoing:  { label: 'Идёт',      cls: 'bg-blue-100 text-blue-700' },
-  upcoming: { label: 'Предстоит', cls: 'bg-indigo-50 text-indigo-600' },
+const SEG_STATUS_TAG = {
+  past:     { label: 'Прошёл',    color: 'default'    },
+  ongoing:  { label: 'Идёт',      color: 'processing' },
+  upcoming: { label: 'Предстоит', color: 'blue'       },
+}
+
+function CalendarCard({ year, highlighted, hlBg, hlText }) {
+  return (
+    <Card
+      title={`Календарь ${year}`}
+      styles={{ body: { padding: 16, maxHeight: 480, overflowY: 'auto' } }}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px 16px' }}>
+        {Array.from({ length: 12 }, (_, m) => (
+          <MonthMini key={m} year={year} month={m} highlighted={highlighted} hlBg={hlBg} hlText={hlText} />
+        ))}
+      </div>
+    </Card>
+  )
 }
 
 function PendingView({ segments, year }) {
   const highlighted = useMemo(() => getHighlightedSet(segments), [segments])
   return (
-    <>
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">Планирование отпуска на {year} год</h1>
-      </div>
+    <Space direction="vertical" style={{ width: '100%' }} size={16}>
+      <Typography.Title level={4} style={{ margin: 0 }}>
+        Планирование отпуска на {year} год
+      </Typography.Title>
 
-      <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-          <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-amber-800">Ожидает согласования</p>
-          <p className="text-xs text-amber-600">План отправлен руководителю. Ожидайте ответа.</p>
-        </div>
-      </div>
+      <Alert
+        type="warning"
+        showIcon
+        message="Ожидает согласования"
+        description="План отправлен руководителю. Ожидайте ответа."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Отправленные отрезки</h2>
-          </div>
-          <div className="divide-y divide-gray-50">
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card title="Отправленные отрезки" styles={{ body: { padding: 0 } }}>
             {segments.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-gray-400 text-center">Нет отрезков</p>
-            ) : segments.map((seg, i) => (
-              <div key={seg.id} className="flex items-center px-4 py-3 gap-3">
-                <span className="text-xs text-gray-300 w-4 shrink-0 text-right">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800">
-                    {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">{pluralDays(seg.days)}</p>
-                </div>
+              <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                <Typography.Text type="secondary">Нет отрезков</Typography.Text>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>
-          </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-5">
-              {Array.from({ length: 12 }, (_, m) => (
-                <MonthMini key={m} year={year} month={m} highlighted={highlighted}
-                  hlBg="bg-amber-200" hlText="text-amber-800" />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+            ) : (
+              <List
+                dataSource={segments}
+                renderItem={(seg, i) => (
+                  <List.Item style={{ padding: '12px 16px', alignItems: 'flex-start' }}>
+                    <Typography.Text
+                      type="secondary"
+                      style={{ width: 20, flexShrink: 0, textAlign: 'right', fontSize: 12, marginRight: 8, lineHeight: '22px' }}
+                    >
+                      {i + 1}
+                    </Typography.Text>
+                    <div>
+                      <Typography.Text style={{ fontSize: 14, fontWeight: 500, display: 'block' }}>
+                        {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {pluralDays(seg.days)}
+                      </Typography.Text>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <CalendarCard year={year} highlighted={highlighted} hlBg="#fde68a" hlText="#92400e" />
+        </Col>
+      </Row>
+    </Space>
   )
 }
 
 function ApprovedView({ segments, year, reschedules, setReschedules }) {
   const [expandedId, setExpandedId] = useState(null)
-  const [rStart, setRStart] = useState('')
-  const [rEnd, setREnd] = useState('')
+  const [rRange, setRRange] = useState(null)
   const [rError, setRError] = useState('')
   const highlighted = useMemo(() => getHighlightedSet(segments), [segments])
 
@@ -180,21 +193,16 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
       setExpandedId(null)
     } else {
       setExpandedId(id)
-      setRStart('')
-      setREnd('')
+      setRRange(null)
       setRError('')
     }
   }
 
   function submitReschedule(seg) {
     setRError('')
-    if (!rStart || !rEnd) { setRError('Укажите обе даты'); return }
-    if (rStart > rEnd) { setRError('Дата начала должна быть раньше даты окончания'); return }
-    const start = new Date(rStart + 'T00:00:00')
-    const end   = new Date(rEnd   + 'T00:00:00')
-    if (start.getFullYear() !== year || end.getFullYear() !== year) {
-      setRError(`Даты должны быть в ${year} году`); return
-    }
+    if (!rRange?.[0] || !rRange?.[1]) { setRError('Укажите обе даты'); return }
+    const start = rRange[0].toDate()
+    const end   = rRange[1].toDate()
     for (const s of segments) {
       if (s.id === seg.id) continue
       const sStart = new Date(s.startDate + 'T00:00:00')
@@ -205,41 +213,38 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
     }
     setReschedules(prev => ({
       ...prev,
-      [seg.id]: { count: prev[seg.id]?.count ?? 0, pending: { startDate: rStart, endDate: rEnd } },
+      [seg.id]: {
+        count: prev[seg.id]?.count ?? 0,
+        pending: { startDate: rRange[0].format('YYYY-MM-DD'), endDate: rRange[1].format('YYYY-MM-DD') },
+      },
     }))
     setExpandedId(null)
   }
 
   return (
-    <>
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">Согласованный план на {year} год</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+    <Space direction="vertical" style={{ width: '100%' }} size={16}>
+      <div>
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          Согласованный план на {year} год
+        </Typography.Title>
+        <Typography.Text type="secondary" style={{ fontSize: 13 }}>
           Перенос возможен за 10 и более дней до начала — не более 2 переносов на отрезок
-        </p>
+        </Typography.Text>
       </div>
 
-      <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
-        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-          <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-green-800">План согласован</p>
-          <p className="text-xs text-green-600">Руководитель одобрил ваш план отпуска на {year} год</p>
-        </div>
-      </div>
+      <Alert
+        type="success"
+        showIcon
+        message="План согласован"
+        description={`Руководитель одобрил ваш план отпуска на ${year} год`}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
-          </div>
-          <div className="divide-y divide-gray-50">
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card title="Отрезки отпуска" styles={{ body: { padding: 0 } }}>
             {segments.map((seg, i) => {
               const status = segStatus(seg)
-              const { label: statusLabel, cls: statusCls } = SEG_STATUS_UI[status]
+              const { label: statusLabel, color: statusColor } = SEG_STATUS_TAG[status]
               const rInfo    = reschedules[seg.id] ?? { count: 0, pending: null }
               const daysLeft = daysUntilStart(seg)
               const canReschedule =
@@ -247,138 +252,112 @@ function ApprovedView({ segments, year, reschedules, setReschedules }) {
 
               let cantReason = null
               if (!canReschedule) {
-                if (status === 'past')       cantReason = 'Отрезок уже прошёл'
-                else if (status === 'ongoing') cantReason = 'Отрезок уже начался'
-                else if (daysLeft < 10)      cantReason = 'Менее 10 дней до начала'
-                else if (rInfo.count >= 2)   cantReason = 'Исчерпан лимит переносов (2/2)'
-                else if (rInfo.pending)      cantReason = 'Перенос уже на согласовании'
+                if (status === 'past')         cantReason = 'Отрезок уже прошёл'
+                else if (status === 'ongoing')  cantReason = 'Отрезок уже начался'
+                else if (daysLeft < 10)         cantReason = 'Менее 10 дней до начала'
+                else if (rInfo.count >= 2)      cantReason = 'Исчерпан лимит переносов (2/2)'
+                else if (rInfo.pending)         cantReason = 'Перенос уже на согласовании'
               }
 
               const isExpanded = expandedId === seg.id
 
               return (
-                <div key={seg.id}>
-                  <div className="flex items-center px-4 py-3 gap-3">
-                    <span className="text-xs text-gray-300 w-4 shrink-0 text-right">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800">
+                <div key={seg.id} style={{ borderBottom: '1px solid #fafafa' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', gap: 8 }}>
+                    <Typography.Text type="secondary" style={{ width: 20, flexShrink: 0, textAlign: 'right', fontSize: 12 }}>
+                      {i + 1}
+                    </Typography.Text>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Typography.Text style={{ fontSize: 14, fontWeight: 500, display: 'block' }}>
                         {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                        <span className="text-xs text-gray-500">{pluralDays(seg.days)}</span>
-                        <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${statusCls}`}>
+                      </Typography.Text>
+                      <Space size={4} wrap style={{ marginTop: 2 }}>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {pluralDays(seg.days)}
+                        </Typography.Text>
+                        <Tag color={statusColor} style={{ marginInlineEnd: 0, fontSize: 11 }}>
                           {statusLabel}
-                        </span>
+                        </Tag>
                         {rInfo.count > 0 && (
-                          <span className="text-[11px] text-gray-400">Переносов: {rInfo.count}/2</span>
+                          <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                            Переносов: {rInfo.count}/2
+                          </Typography.Text>
                         )}
                         {rInfo.pending && (
-                          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                          <Tag color="gold" style={{ marginInlineEnd: 0, fontSize: 11 }}>
                             Перенос на согласовании
-                          </span>
+                          </Tag>
                         )}
-                      </div>
+                      </Space>
                       {rInfo.pending && (
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 2 }}>
                           Новые даты: {fmtDate(rInfo.pending.startDate)} — {fmtDate(rInfo.pending.endDate)}
-                        </p>
+                        </Typography.Text>
                       )}
                     </div>
-
-                    <div className="shrink-0">
+                    <div style={{ flexShrink: 0 }}>
                       {canReschedule ? (
-                        <button
+                        <Button
+                          size="small"
+                          type="primary"
+                          ghost={!isExpanded}
                           onClick={() => openReschedule(seg.id)}
-                          className={`text-xs px-2.5 py-1.5 rounded-lg font-medium border transition-colors ${
-                            isExpanded
-                              ? 'bg-gray-100 text-gray-600 border-gray-200'
-                              : 'text-indigo-600 border-indigo-200 hover:bg-indigo-50'
-                          }`}
                         >
                           {isExpanded ? 'Закрыть' : 'Перенести'}
-                        </button>
+                        </Button>
                       ) : (
-                        <div className="relative group">
-                          <button
-                            disabled
-                            className="text-xs px-2.5 py-1.5 rounded-lg font-medium border border-gray-200 text-gray-300 cursor-not-allowed"
-                          >
-                            Перенести
-                          </button>
-                          {cantReason && (
-                            <div className="absolute right-0 bottom-full mb-2 z-10 hidden group-hover:block pointer-events-none">
-                              <div className="bg-gray-800 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap">
-                                {cantReason}
-                                <div className="absolute top-full right-4 border-4 border-transparent border-t-gray-800" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <Tooltip title={cantReason}>
+                          <span>
+                            <Button size="small" disabled>Перенести</Button>
+                          </span>
+                        </Tooltip>
                       )}
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="mx-4 mb-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                      <p className="text-xs font-semibold text-indigo-700 mb-2">Новые даты для отрезка</p>
-                      <div className="flex gap-2 mb-2">
-                        <div className="flex-1">
-                          <label className="text-[11px] text-indigo-500 block mb-0.5">Начало</label>
-                          <input
-                            type="date" value={rStart}
-                            min={`${year}-01-01`} max={`${year}-12-31`}
-                            onChange={e => { setRStart(e.target.value); setRError('') }}
-                            className="w-full px-2 py-1.5 text-sm border border-indigo-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="text-[11px] text-indigo-500 block mb-0.5">Конец</label>
-                          <input
-                            type="date" value={rEnd}
-                            min={rStart || `${year}-01-01`} max={`${year}-12-31`}
-                            onChange={e => { setREnd(e.target.value); setRError('') }}
-                            className="w-full px-2 py-1.5 text-sm border border-indigo-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                          />
-                        </div>
-                      </div>
-                      {rError && <p className="text-xs text-red-500 mb-2">{rError}</p>}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => submitReschedule(seg)}
-                          className="flex-1 py-1.5 text-sm font-medium rounded-lg bg-[#0066ff] text-white hover:bg-[#0052cc] transition-colors"
-                        >
-                          Отправить на согласование
-                        </button>
-                        <button
-                          onClick={() => { setExpandedId(null); setRError('') }}
-                          className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                        >
-                          Отмена
-                        </button>
-                      </div>
-                    </div>
+                    <Card
+                      size="small"
+                      style={{ margin: '0 16px 12px', background: '#f5f3ff', borderColor: '#e0e7ff' }}
+                      styles={{ body: { padding: 12 } }}
+                    >
+                      <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                        <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#4f46e5' }}>
+                          Новые даты для отрезка
+                        </Typography.Text>
+                        <DatePicker.RangePicker
+                          value={rRange}
+                          onChange={v => { setRRange(v); setRError('') }}
+                          disabledDate={d => d.year() !== year}
+                          format="DD.MM.YYYY"
+                          style={{ width: '100%' }}
+                          placeholder={['Начало', 'Окончание']}
+                          status={rError ? 'error' : ''}
+                        />
+                        {rError && (
+                          <Typography.Text type="danger" style={{ fontSize: 12 }}>{rError}</Typography.Text>
+                        )}
+                        <Space>
+                          <Button type="primary" size="small" onClick={() => submitReschedule(seg)}>
+                            Отправить на согласование
+                          </Button>
+                          <Button size="small" onClick={() => { setExpandedId(null); setRError('') }}>
+                            Отмена
+                          </Button>
+                        </Space>
+                      </Space>
+                    </Card>
                   )}
                 </div>
               )
             })}
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>
-          </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-5">
-              {Array.from({ length: 12 }, (_, m) => (
-                <MonthMini key={m} year={year} month={m} highlighted={highlighted}
-                  hlBg="bg-green-400" hlText="text-white" />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <CalendarCard year={year} highlighted={highlighted} hlBg="#4ade80" hlText="#ffffff" />
+        </Col>
+      </Row>
+    </Space>
   )
 }
 
@@ -387,11 +366,10 @@ export default function PlanningPage({ onGoToRequests }) {
     campaign, role, segments, setSegments, draftSaved, setDraftSaved,
     planStatus, setPlanStatus, approvedSegments, reschedules, setReschedules,
   } = useApp()
-  const [newStart, setNewStart] = useState('')
-  const [newEnd, setNewEnd] = useState('')
+  const [newRange, setNewRange] = useState(null)
   const [addError, setAddError] = useState('')
   const [showApproverStep, setShowApproverStep] = useState(false)
-  const [planExtraApprover, setPlanExtraApprover] = useState('')
+  const [planExtraApprover, setPlanExtraApprover] = useState(undefined)
 
   const year = campaign.year
   const distributedDays = useMemo(
@@ -405,73 +383,50 @@ export default function PlanningPage({ onGoToRequests }) {
   const progressPct = Math.round((distributedDays / campaign.totalDays) * 100)
 
   const previewDays = useMemo(() => {
-    if (!newStart || !newEnd || newStart > newEnd) return null
+    if (!newRange?.[0] || !newRange?.[1]) return null
     try {
-      return countVacationDays(
-        new Date(newStart + 'T00:00:00'),
-        new Date(newEnd   + 'T00:00:00'),
-      )
+      return countVacationDays(newRange[0].toDate(), newRange[1].toDate())
     } catch { return null }
-  }, [newStart, newEnd])
+  }, [newRange])
 
   const demoSwitcher = (
-    <div className="flex items-center gap-1 mb-5 p-1 bg-gray-100 rounded-lg w-fit">
-      {['draft', 'pending', 'approved'].map(s => (
-        <button
-          key={s}
-          onClick={() => setPlanStatus(s)}
-          className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
-            planStatus === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          {PLAN_LABELS[s]}
-        </button>
-      ))}
-      <span className="text-[10px] text-gray-400 mx-1.5 select-none">демо</span>
+    <div style={{ marginBottom: 20 }}>
+      <Space size={8} align="center">
+        <Segmented
+          value={planStatus}
+          onChange={setPlanStatus}
+          options={PLAN_LABELS}
+          size="small"
+        />
+        <Typography.Text type="secondary" style={{ fontSize: 11 }}>демо</Typography.Text>
+      </Space>
     </div>
   )
 
   if (!campaign.active) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 mb-4">
-          <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <h2 className="text-base font-semibold text-gray-800 mb-2">
-          Кампания по планированию не активна
-        </h2>
-        {role === 'employee' ? (
-          <>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-5">
-              Распределение дней отпуска доступно только в период активной кампании.
-              Если вам нужен отпуск прямо сейчас — оформите внеплановую заявку.
-            </p>
-            <button
-              onClick={onGoToRequests}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0066ff] hover:bg-[#0052cc] text-white text-sm font-medium rounded-xl transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
+        <Result
+          icon={<CalendarOutlined style={{ fontSize: 56, color: '#d9d9d9' }} />}
+          title="Кампания по планированию не активна"
+          subTitle={
+            role === 'employee'
+              ? 'Распределение дней отпуска доступно только в период активной кампании. Если вам нужен отпуск прямо сейчас — оформите внеплановую заявку.'
+              : 'Распределение дней отпуска доступно только в период активной кампании. Следите за уведомлениями — HR-админ сообщит о её начале.'
+          }
+          extra={role === 'employee' ? (
+            <Button type="primary" onClick={onGoToRequests}>
               Подать внеплановую заявку
-            </button>
-          </>
-        ) : (
-          <p className="text-sm text-gray-500 max-w-xs mx-auto">
-            Распределение дней отпуска доступно только в период активной кампании.
-            Следите за уведомлениями — HR-админ сообщит о её начале.
-          </p>
-        )}
+            </Button>
+          ) : null}
+        />
       </div>
     )
   }
 
   if (planStatus === 'pending') {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
         {demoSwitcher}
         <PendingView segments={segments} year={year} />
       </div>
@@ -480,7 +435,7 @@ export default function PlanningPage({ onGoToRequests }) {
 
   if (planStatus === 'approved') {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
         {demoSwitcher}
         <ApprovedView
           segments={approvedSegments}
@@ -494,11 +449,12 @@ export default function PlanningPage({ onGoToRequests }) {
 
   function addSegment() {
     setAddError('')
-    if (!newStart || !newEnd) { setAddError('Укажите обе даты'); return }
-    if (newStart > newEnd) { setAddError('Дата начала должна быть раньше даты окончания'); return }
-    const start = new Date(newStart + 'T00:00:00')
-    const end   = new Date(newEnd   + 'T00:00:00')
-    if (start.getFullYear() !== year || end.getFullYear() !== year) {
+    if (!newRange?.[0] || !newRange?.[1]) { setAddError('Укажите обе даты'); return }
+    const start    = newRange[0].toDate()
+    const end      = newRange[1].toDate()
+    const startDate = newRange[0].format('YYYY-MM-DD')
+    const endDate   = newRange[1].format('YYYY-MM-DD')
+    if (newRange[0].year() !== year || newRange[1].year() !== year) {
       setAddError(`Даты должны быть в ${year} году`); return
     }
     for (const s of segments) {
@@ -512,10 +468,9 @@ export default function PlanningPage({ onGoToRequests }) {
     if (days > remainingDays) {
       setAddError(`Отрезок займёт ${pluralDays(days)}, осталось только ${pluralDays(remainingDays)}`); return
     }
-    const seg = { id: Date.now(), startDate: newStart, endDate: newEnd, days }
+    const seg = { id: Date.now(), startDate, endDate, days }
     setSegments(prev => [...prev, seg].sort((a, b) => a.startDate.localeCompare(b.startDate)))
-    setNewStart('')
-    setNewEnd('')
+    setNewRange(null)
     setDraftSaved(false)
   }
 
@@ -528,200 +483,196 @@ export default function PlanningPage({ onGoToRequests }) {
   if (remainingDays > 0) submitBlockers.push(`нераспределено ${pluralDays(remainingDays)}`)
   if (!hasLongSegment)   submitBlockers.push('нет отрезка ≥ 14 дней')
 
-  const canAdd = newStart && newEnd && newStart <= newEnd
-
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
       {demoSwitcher}
 
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">Планирование отпуска на {year} год</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Один из отрезков должен быть не менее 14 дней</p>
-      </div>
+      <Space direction="vertical" style={{ width: '100%' }} size={16}>
+        <div>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            Планирование отпуска на {year} год
+          </Typography.Title>
+          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+            Один из отрезков должен быть не менее 14 дней
+          </Typography.Text>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <Card styles={{ body: { padding: 0 } }}>
 
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
+              {/* Progress header */}
+              <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #f0f0f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Typography.Text strong>Отрезки отпуска</Typography.Text>
+                  <Typography.Text style={{ fontSize: 12, color: remainingDays === 0 ? '#52c41a' : '#d48806' }}>
+                    {remainingDays === 0 ? 'Все дни распределены ✓' : `Осталось: ${pluralDays(remainingDays)}`}
+                  </Typography.Text>
+                </div>
+                <div style={{ height: 6, background: '#f0f0f0', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    borderRadius: 3,
+                    width: `${progressPct}%`,
+                    background: remainingDays === 0 ? '#52c41a' : '#6366f1',
+                    transition: 'width 0.3s',
+                  }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    {distributedDays} из {campaign.totalDays} дней
+                  </Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>{progressPct}%</Typography.Text>
+                </div>
+              </div>
 
-          <div className="px-4 pt-4 pb-3 border-b border-gray-100">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-gray-900">Отрезки отпуска</h2>
-              <span className={`text-xs font-medium ${
-                remainingDays === 0 ? 'text-green-600' : 'text-amber-600'
-              }`}>
-                {remainingDays === 0 ? 'Все дни распределены ✓' : `Осталось: ${pluralDays(remainingDays)}`}
-              </span>
-            </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  remainingDays === 0 ? 'bg-green-500' : 'bg-indigo-500'
-                }`}
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[11px] text-gray-400">{distributedDays} из {campaign.totalDays} дней</span>
-              <span className="text-[11px] text-gray-400">{progressPct}%</span>
-            </div>
-          </div>
-
-          <div className="divide-y divide-gray-50">
-            {segments.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-gray-400 text-center">Нет добавленных отрезков</p>
-            ) : (
-              segments.map((seg, i) => (
-                <div key={seg.id} className="flex items-center px-4 py-3 gap-3">
-                  <span className="text-xs text-gray-300 w-4 shrink-0 text-right">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800">
+              {/* Segments list */}
+              {segments.length === 0 ? (
+                <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                  <Typography.Text type="secondary">Нет добавленных отрезков</Typography.Text>
+                </div>
+              ) : segments.map((seg, i) => (
+                <div
+                  key={seg.id}
+                  style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', gap: 8, borderBottom: '1px solid #fafafa' }}
+                >
+                  <Typography.Text type="secondary" style={{ width: 20, flexShrink: 0, textAlign: 'right', fontSize: 12 }}>
+                    {i + 1}
+                  </Typography.Text>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Typography.Text style={{ fontSize: 14, fontWeight: 500, display: 'block' }}>
                       {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    </Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {pluralDays(seg.days)}
                       {seg.days >= 14 && (
-                        <span className="ml-2 text-green-600 font-medium">✓ ≥ 14 дней</span>
+                        <Typography.Text style={{ fontSize: 12, color: '#52c41a', fontWeight: 500, marginLeft: 8 }}>
+                          ✓ ≥ 14 дней
+                        </Typography.Text>
                       )}
-                    </p>
+                    </Typography.Text>
                   </div>
-                  <button
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CloseOutlined />}
                     onClick={() => removeSegment(seg.id)}
-                    className="p-1 text-gray-300 hover:text-red-400 transition-colors rounded"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                    style={{ color: '#bfbfbf', flexShrink: 0 }}
+                  />
                 </div>
-              ))
-            )}
-          </div>
-
-          <div className="border-t border-gray-100 bg-gray-50 px-4 py-4 space-y-2">
-            <p className="text-xs font-medium text-gray-600">Добавить отрезок</p>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="text-[11px] text-gray-400 block mb-0.5">Начало</label>
-                <DateInput
-                  value={newStart}
-                  min={`${year}-01-01`} max={`${year}-12-31`}
-                  onChange={e => { setNewStart(e.target.value); setAddError('') }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[11px] text-gray-400 block mb-0.5">Конец</label>
-                <DateInput
-                  value={newEnd}
-                  min={newStart || `${year}-01-01`} max={`${year}-12-31`}
-                  onChange={e => { setNewEnd(e.target.value); setAddError('') }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                />
-              </div>
-              <button
-                onClick={addSegment}
-                disabled={!canAdd}
-                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            </div>
-            {previewDays !== null && !addError && (
-              <p className="text-xs text-indigo-600">
-                {pluralDays(previewDays)} отпуска (праздники не считаются)
-                {previewDays > remainingDays && (
-                  <span className="text-amber-600"> — превышает остаток</span>
-                )}
-              </p>
-            )}
-            {addError && <p className="text-xs text-red-500">{addError}</p>}
-          </div>
-
-          {showApproverStep ? (
-            <div className="border-t border-gray-200 px-4 py-4 bg-white space-y-3">
-              <p className="text-xs font-semibold text-gray-700">Согласующий</p>
-              <div className="flex items-center justify-between px-3 py-2 border border-gray-200 rounded-xl bg-gray-50">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{DEFAULT_APPROVER.name}</p>
-                  <p className="text-xs text-gray-500">{DEFAULT_APPROVER.role}</p>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">
-                  Дополнительный согласующий <span className="text-gray-400">(необязательно)</span>
-                </label>
-                <select
-                  value={planExtraApprover}
-                  onChange={e => setPlanExtraApprover(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
-                >
-                  <option value="">Не назначать</option>
-                  {EXTRA_APPROVER_OPTIONS.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setPlanStatus('pending'); setShowApproverStep(false) }}
-                  className="flex-1 py-2 text-sm font-medium rounded-lg bg-[#0066ff] text-white hover:bg-[#0052cc] transition-colors"
-                >
-                  Отправить
-                </button>
-                <button
-                  onClick={() => setShowApproverStep(false)}
-                  className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  Отмена
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="border-t border-gray-200 px-4 py-3 flex items-center gap-2 bg-white">
-              <button
-                onClick={() => setDraftSaved(true)}
-                className="flex-1 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                {draftSaved ? '✓ Черновик сохранён' : 'Сохранить черновик'}
-              </button>
-              <div className="relative group flex-1">
-                <button
-                  onClick={() => canSubmit && setShowApproverStep(true)}
-                  disabled={!canSubmit}
-                  className="w-full py-2 text-sm font-medium rounded-lg bg-[#0066ff] text-white hover:bg-[#0052cc] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  Отправить на согласование
-                </button>
-                {!canSubmit && (
-                  <div className="absolute bottom-full left-0 right-0 mb-2 z-10 hidden group-hover:block pointer-events-none">
-                    <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 text-center shadow-lg">
-                      {submitBlockers.join(' · ')}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Календарь {year}</h2>
-          </div>
-          <div className="p-4 overflow-y-auto" style={{ maxHeight: 480 }}>
-            <div className="grid grid-cols-3 gap-x-4 gap-y-5">
-              {Array.from({ length: 12 }, (_, m) => (
-                <MonthMini key={m} year={year} month={m} highlighted={highlighted}
-                  hlBg="bg-blue-100" hlText="text-blue-600" />
               ))}
-            </div>
-          </div>
-        </div>
 
-      </div>
+              {/* Add segment form */}
+              <div style={{ borderTop: '1px solid #f0f0f0', background: '#fafafa', padding: 16 }}>
+                <Typography.Text style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 8 }}>
+                  Добавить отрезок
+                </Typography.Text>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <DatePicker.RangePicker
+                    value={newRange}
+                    onChange={v => { setNewRange(v); setAddError('') }}
+                    disabledDate={d => d.year() !== year}
+                    format="DD.MM.YYYY"
+                    style={{ flex: 1 }}
+                    placeholder={['Начало', 'Окончание']}
+                    status={addError ? 'error' : ''}
+                  />
+                  <Button onClick={addSegment}>+</Button>
+                </div>
+                {previewDays !== null && !addError && (
+                  <Typography.Text style={{ fontSize: 12, color: '#6366f1', display: 'block', marginTop: 4 }}>
+                    {pluralDays(previewDays)} отпуска (праздники не считаются)
+                    {previewDays > remainingDays && (
+                      <Typography.Text style={{ fontSize: 12, color: '#d48806' }}> — превышает остаток</Typography.Text>
+                    )}
+                  </Typography.Text>
+                )}
+                {addError && (
+                  <Typography.Text type="danger" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                    {addError}
+                  </Typography.Text>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              {showApproverStep ? (
+                <div style={{ borderTop: '1px solid #f0f0f0', padding: 16 }}>
+                  <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                    <Typography.Text strong style={{ fontSize: 12 }}>Согласующий</Typography.Text>
+                    <div style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: 6,
+                      background: '#fafafa',
+                    }}>
+                      <Typography.Text strong style={{ fontSize: 14, display: 'block' }}>
+                        {DEFAULT_APPROVER.name}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {DEFAULT_APPROVER.role}
+                      </Typography.Text>
+                    </div>
+                    <div>
+                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                        Дополнительный согласующий{' '}
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>(необязательно)</Typography.Text>
+                      </Typography.Text>
+                      <Select
+                        value={planExtraApprover}
+                        onChange={setPlanExtraApprover}
+                        placeholder="Не назначать"
+                        allowClear
+                        options={EXTRA_APPROVER_OPTIONS}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                    <Row gutter={8}>
+                      <Col span={16}>
+                        <Button
+                          type="primary"
+                          block
+                          onClick={() => { setPlanStatus('pending'); setShowApproverStep(false) }}
+                        >
+                          Отправить
+                        </Button>
+                      </Col>
+                      <Col span={8}>
+                        <Button block onClick={() => setShowApproverStep(false)}>Отмена</Button>
+                      </Col>
+                    </Row>
+                  </Space>
+                </div>
+              ) : (
+                <div style={{ borderTop: '1px solid #f0f0f0', padding: '12px 16px', display: 'flex', gap: 8 }}>
+                  <Button
+                    style={{ flex: 1 }}
+                    icon={draftSaved ? <CheckOutlined /> : undefined}
+                    onClick={() => setDraftSaved(true)}
+                  >
+                    {draftSaved ? 'Черновик сохранён' : 'Сохранить черновик'}
+                  </Button>
+                  <Tooltip title={!canSubmit ? submitBlockers.join(' · ') : undefined}>
+                    <span style={{ flex: 1 }}>
+                      <Button
+                        type="primary"
+                        block
+                        disabled={!canSubmit}
+                        onClick={() => setShowApproverStep(true)}
+                      >
+                        Отправить на согласование
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </div>
+              )}
+            </Card>
+          </Col>
+
+          <Col xs={24} lg={12}>
+            <CalendarCard year={year} highlighted={highlighted} hlBg="#dbeafe" hlText="#2563eb" />
+          </Col>
+        </Row>
+      </Space>
     </div>
   )
 }
