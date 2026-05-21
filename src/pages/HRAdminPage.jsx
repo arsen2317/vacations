@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Typography, Alert, Row, Col, Card, Statistic, Button, Modal, Space, Tag, Avatar, List, Select } from 'antd'
+import { Typography, Alert, Row, Col, Card, Statistic, Button, Modal, Space, Tag, Table, Select } from 'antd'
+import { DownloadOutlined } from '@ant-design/icons'
 import { useApp } from '../context/AppContext'
 import { ALL_EMPLOYEES } from '../data/mockData'
 
@@ -45,10 +46,24 @@ export default function HRAdminPage() {
     ? baseEmployees
     : baseEmployees.filter(e => e.planStatus === statusFilter)
 
-  const byTeam = TEAMS
-    .filter(team => teamFilter === 'all' || team === teamFilter)
-    .map(team => ({ team, employees: filtered.filter(e => e.team === team) }))
-    .filter(g => g.employees.length > 0)
+  function downloadCsv(filename, headers, rows) {
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = filename; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function downloadReport() {
+    downloadCsv(
+      `hr-report-${campaign.year}.csv`,
+      ['№', 'Сотрудник', 'Подразделение', 'Статус'],
+      filtered.map((emp, i) => [i + 1, emp.name, emp.team, STATUS_TAG[emp.planStatus]?.label ?? emp.planStatus]),
+    )
+  }
 
   function handleToggle() {
     if (campaign.active) {
@@ -71,12 +86,17 @@ export default function HRAdminPage() {
           <Typography.Title level={4} style={{ margin: 0 }}>
             HR-панель — кампания {campaign.year}
           </Typography.Title>
-          <Select
-            value={teamFilter}
-            onChange={setTeamFilter}
-            options={TEAM_OPTIONS}
-            style={{ minWidth: 220 }}
-          />
+          <Space>
+            <Select
+              value={teamFilter}
+              onChange={setTeamFilter}
+              options={TEAM_OPTIONS}
+              style={{ minWidth: 220 }}
+            />
+            <Button icon={<DownloadOutlined />} onClick={downloadReport}>
+              Скачать отчёт
+            </Button>
+          </Space>
         </div>
 
         <Alert
@@ -143,7 +163,7 @@ export default function HRAdminPage() {
         </Card>
 
         <Card
-          title="По командам"
+          title="Планы сотрудников"
           extra={
             <Space size={4}>
               {STATUS_FILTER_OPTIONS.map(opt => (
@@ -160,43 +180,42 @@ export default function HRAdminPage() {
           }
           styles={{ body: { padding: 0 } }}
         >
-          {byTeam.length === 0 ? (
-            <div style={{ padding: '40px 0', textAlign: 'center' }}>
-              <Typography.Text type="secondary">Нет сотрудников с этим статусом</Typography.Text>
-            </div>
-          ) : (
-            byTeam.map(({ team, employees }) => (
-              <div key={team}>
-                <div style={{ padding: '8px 20px', background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}
-                  >
-                    {team}
-                  </Typography.Text>
-                </div>
-                <List
-                  dataSource={employees}
-                  renderItem={emp => {
-                    const sc = STATUS_TAG[emp.planStatus] ?? STATUS_TAG.draft
-                    return (
-                      <List.Item key={emp.id} style={{ padding: '8px 20px' }}>
-                        <List.Item.Meta
-                          avatar={
-                            <Avatar style={{ background: '#e0e7ff', color: '#4f46e5', fontSize: 13 }}>
-                              {emp.name[0]}
-                            </Avatar>
-                          }
-                          title={<Typography.Text style={{ fontSize: 14 }}>{emp.name}</Typography.Text>}
-                        />
-                        <Tag color={sc.color} style={{ marginInlineEnd: 0 }}>{sc.label}</Tag>
-                      </List.Item>
-                    )
-                  }}
-                />
-              </div>
-            ))
-          )}
+          <Table
+            dataSource={filtered}
+            rowKey="id"
+            pagination={false}
+            size="middle"
+            locale={{ emptyText: 'Нет сотрудников с этим статусом' }}
+            columns={[
+              {
+                title: '№',
+                key: 'index',
+                width: 52,
+                render: (_, __, i) => (
+                  <Typography.Text type="secondary">{i + 1}</Typography.Text>
+                ),
+              },
+              {
+                title: 'Сотрудник',
+                dataIndex: 'name',
+                key: 'name',
+              },
+              {
+                title: 'Подразделение',
+                dataIndex: 'team',
+                key: 'team',
+                responsive: ['sm'],
+              },
+              {
+                title: 'Статус',
+                key: 'status',
+                render: (_, emp) => {
+                  const sc = STATUS_TAG[emp.planStatus] ?? STATUS_TAG.draft
+                  return <Tag color={sc.color} style={{ marginInlineEnd: 0 }}>{sc.label}</Tag>
+                },
+              },
+            ]}
+          />
         </Card>
 
       </Space>

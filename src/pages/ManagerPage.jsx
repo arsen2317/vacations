@@ -3,7 +3,7 @@ import {
   Card, Row, Col, Statistic, Button, Typography, Space, Tag,
   Table, Dropdown, Modal, Input, Select,
 } from 'antd'
-import { CheckOutlined, CloseOutlined, MoreOutlined } from '@ant-design/icons'
+import { CheckOutlined, CloseOutlined, MoreOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useApp } from '../context/AppContext'
 import { fmtDate, pluralDays } from '../utils/dateUtils'
 
@@ -39,6 +39,25 @@ export default function ManagerPage() {
   const pendingCount  = subordinates.filter(s => s.planStatus === 'pending').length
   const approvedCount = subordinates.filter(s => s.planStatus === 'approved').length
   const draftCount    = subordinates.filter(s => s.planStatus === 'draft').length
+
+  function downloadReport() {
+    const headers = ['Сотрудник', 'Подразделение', 'Должность', 'Статус', 'Распределено дней']
+    const rows = displayed.map(sub => [
+      sub.name,
+      sub.team ?? '',
+      sub.position,
+      STATUS_TAG[sub.planStatus]?.label ?? sub.planStatus,
+      `${sub.distributedDays}/${sub.totalDays}`,
+    ])
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `team-report-${campaign.year}.csv`; a.click()
+    URL.revokeObjectURL(url)
+  }
 
   function handleApprove(id) {
     setSubordinates(prev => prev.map(s => s.id === id ? { ...s, planStatus: 'approved' } : s))
@@ -139,12 +158,17 @@ export default function ManagerPage() {
           <Typography.Title level={4} style={{ margin: 0 }}>
             Команда — планирование отпуска на {campaign.year} год
           </Typography.Title>
-          <Select
-            value={selectedTeam}
-            onChange={setSelectedTeam}
-            options={teamOptions}
-            style={{ minWidth: 220 }}
-          />
+          <Space>
+            <Select
+              value={selectedTeam}
+              onChange={setSelectedTeam}
+              options={teamOptions}
+              style={{ minWidth: 220 }}
+            />
+            <Button icon={<DownloadOutlined />} onClick={downloadReport}>
+              Скачать отчёт
+            </Button>
+          </Space>
         </div>
 
         <Row gutter={16}>
