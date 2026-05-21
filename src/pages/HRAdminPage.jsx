@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Typography, Alert, Row, Col, Card, Statistic, Button, Modal, Space, Tag, Avatar, List } from 'antd'
+import { Typography, Alert, Row, Col, Card, Statistic, Button, Modal, Space, Tag, Avatar, List, Select } from 'antd'
 import { useApp } from '../context/AppContext'
 import { ALL_EMPLOYEES } from '../data/mockData'
 
@@ -18,24 +18,35 @@ const STATUS_TAG = {
 
 const TEAMS = [...new Set(ALL_EMPLOYEES.map(e => e.team))]
 
+const TEAM_OPTIONS = [
+  { value: 'all', label: 'Все подразделения' },
+  ...TEAMS.map(t => ({ value: t, label: t })),
+]
+
 export default function HRAdminPage() {
   const { campaign, setCampaign } = useApp()
   const [showConfirm, setShowConfirm] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [teamFilter, setTeamFilter] = useState('all')
 
-  const total         = ALL_EMPLOYEES.length
-  const approvedCount = ALL_EMPLOYEES.filter(e => e.planStatus === 'approved').length
-  const pendingCount  = ALL_EMPLOYEES.filter(e => e.planStatus === 'pending').length
-  const draftCount    = ALL_EMPLOYEES.filter(e => e.planStatus === 'draft').length
+  const baseEmployees = teamFilter === 'all'
+    ? ALL_EMPLOYEES
+    : ALL_EMPLOYEES.filter(e => e.team === teamFilter)
 
-  const progressPct = Math.round((approvedCount / total) * 100)
-  const pendingPct  = Math.round((pendingCount  / total) * 100)
+  const total         = baseEmployees.length
+  const approvedCount = baseEmployees.filter(e => e.planStatus === 'approved').length
+  const pendingCount  = baseEmployees.filter(e => e.planStatus === 'pending').length
+  const draftCount    = baseEmployees.filter(e => e.planStatus === 'draft').length
+
+  const progressPct = total ? Math.round((approvedCount / total) * 100) : 0
+  const pendingPct  = total ? Math.round((pendingCount  / total) * 100) : 0
 
   const filtered = statusFilter === 'all'
-    ? ALL_EMPLOYEES
-    : ALL_EMPLOYEES.filter(e => e.planStatus === statusFilter)
+    ? baseEmployees
+    : baseEmployees.filter(e => e.planStatus === statusFilter)
 
   const byTeam = TEAMS
+    .filter(team => teamFilter === 'all' || team === teamFilter)
     .map(team => ({ team, employees: filtered.filter(e => e.team === team) }))
     .filter(g => g.employees.length > 0)
 
@@ -56,9 +67,17 @@ export default function HRAdminPage() {
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
       <Space direction="vertical" style={{ width: '100%' }} size={20}>
 
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          HR-панель — кампания {campaign.year}
-        </Typography.Title>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            HR-панель — кампания {campaign.year}
+          </Typography.Title>
+          <Select
+            value={teamFilter}
+            onChange={setTeamFilter}
+            options={TEAM_OPTIONS}
+            style={{ minWidth: 220 }}
+          />
+        </div>
 
         <Alert
           type={campaign.active ? 'success' : 'info'}

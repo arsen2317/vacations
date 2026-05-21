@@ -231,7 +231,7 @@ export default function ColleaguesPage() {
                       />
                     </div>
 
-                    <div style={{ flex: 1, position: 'relative', height: '100%', padding: '0 4px' }}>
+                    <div style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
                       {person.segments.map((seg, bi) => {
                         const barStyle = getBarStyle(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
                         if (!barStyle) return null
@@ -245,13 +245,10 @@ export default function ColleaguesPage() {
                           >
                             <div style={{
                               position: 'absolute',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              height: 20,
-                              borderRadius: 10,
+                              top: 0,
+                              bottom: 0,
                               backgroundColor: color.bar,
                               border: isDraft ? `1.5px dashed ${color.border}` : 'none',
-                              opacity: 0.9,
                               cursor: 'default',
                               ...barStyle,
                             }} />

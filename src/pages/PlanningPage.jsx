@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
   Typography, Alert, Card, Row, Col, Button, Space, Tag, Tooltip,
-  Segmented, Select, Result, List, DatePicker,
+  Segmented, Select, Result, List, DatePicker, Modal,
 } from 'antd'
 import { CalendarOutlined, CloseOutlined, CheckOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -398,10 +398,12 @@ export default function PlanningPage({ onGoToRequests }) {
   } = useApp()
   const [newRange, setNewRange] = useState(null)
   const [addError, setAddError] = useState('')
-  const [showApproverStep, setShowApproverStep] = useState(false)
+  const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [planExtraApprover, setPlanExtraApprover] = useState(undefined)
-  const [selectionStart, setSelectionStart] = useState(null)
   const [hoverDate, setHoverDate] = useState(null)
+
+  // Derived: calendar is in "pick end date" mode when only start is set
+  const calSelectionStart = (newRange?.[0] && !newRange?.[1]) ? newRange[0].format('YYYY-MM-DD') : null
 
   const year = campaign.year
   const distributedDays = useMemo(
@@ -512,16 +514,17 @@ export default function PlanningPage({ onGoToRequests }) {
 
   function handleCalendarClick(dateStr) {
     if (!dateStr.startsWith(String(year))) return
-    if (!selectionStart) {
-      setSelectionStart(dateStr)
+    const clicked = dayjs(dateStr)
+    if (!newRange?.[0] || newRange?.[1]) {
+      // No start yet, or range already complete → pick new start
+      setNewRange([clicked, null])
       setHoverDate(dateStr)
       setAddError('')
     } else {
-      const start = selectionStart < dateStr ? selectionStart : dateStr
-      const end   = selectionStart < dateStr ? dateStr : selectionStart
-      setSelectionStart(null)
+      // Start is set, this click sets the end → populate both inputs, user still clicks "+"
+      const [a, b] = clicked.isBefore(newRange[0]) ? [clicked, newRange[0]] : [newRange[0], clicked]
+      setNewRange([a, b])
       setHoverDate(null)
-      tryAddSegment(start, end)
     }
   }
 
@@ -646,76 +649,27 @@ export default function PlanningPage({ onGoToRequests }) {
               </div>
 
               {/* Action buttons */}
-              {showApproverStep ? (
-                <div style={{ borderTop: '1px solid #f0f0f0', padding: 16 }}>
-                  <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                    <Typography.Text strong style={{ fontSize: 12 }}>Согласующий</Typography.Text>
-                    <div style={{
-                      padding: '8px 12px',
-                      border: '1px solid #d9d9d9',
-                      borderRadius: 6,
-                      background: '#fafafa',
-                    }}>
-                      <Typography.Text strong style={{ fontSize: 14, display: 'block' }}>
-                        {DEFAULT_APPROVER.name}
-                      </Typography.Text>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {DEFAULT_APPROVER.role}
-                      </Typography.Text>
-                    </div>
-                    <div>
-                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-                        Дополнительный согласующий{' '}
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>(необязательно)</Typography.Text>
-                      </Typography.Text>
-                      <Select
-                        value={planExtraApprover}
-                        onChange={setPlanExtraApprover}
-                        placeholder="Не назначать"
-                        allowClear
-                        options={EXTRA_APPROVER_OPTIONS}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                    <Row gutter={8}>
-                      <Col span={16}>
-                        <Button
-                          type="primary"
-                          block
-                          onClick={() => { setPlanStatus('pending'); setShowApproverStep(false) }}
-                        >
-                          Отправить
-                        </Button>
-                      </Col>
-                      <Col span={8}>
-                        <Button block onClick={() => setShowApproverStep(false)}>Отмена</Button>
-                      </Col>
-                    </Row>
-                  </Space>
-                </div>
-              ) : (
-                <div style={{ borderTop: '1px solid #f0f0f0', padding: '12px 16px', display: 'flex', gap: 8 }}>
-                  <Button
-                    style={{ flex: 1 }}
-                    icon={draftSaved ? <CheckOutlined /> : undefined}
-                    onClick={() => setDraftSaved(true)}
-                  >
-                    {draftSaved ? 'Черновик сохранён' : 'Сохранить черновик'}
-                  </Button>
-                  <Tooltip title={!canSubmit ? submitBlockers.join(' · ') : undefined}>
-                    <span style={{ flex: 1 }}>
-                      <Button
-                        type="primary"
-                        block
-                        disabled={!canSubmit}
-                        onClick={() => setShowApproverStep(true)}
-                      >
-                        Отправить на согласование
-                      </Button>
-                    </span>
-                  </Tooltip>
-                </div>
-              )}
+              <div style={{ borderTop: '1px solid #f0f0f0', padding: '12px 16px', display: 'flex', gap: 8 }}>
+                <Button
+                  style={{ flex: 1 }}
+                  icon={draftSaved ? <CheckOutlined /> : undefined}
+                  onClick={() => setDraftSaved(true)}
+                >
+                  {draftSaved ? 'Черновик сохранён' : 'Сохранить черновик'}
+                </Button>
+                <Tooltip title={!canSubmit ? submitBlockers.join(' · ') : undefined}>
+                  <span style={{ flex: 1 }}>
+                    <Button
+                      type="primary"
+                      block
+                      disabled={!canSubmit}
+                      onClick={() => setShowSubmitModal(true)}
+                    >
+                      Отправить на согласование
+                    </Button>
+                  </span>
+                </Tooltip>
+              </div>
             </Card>
           </Col>
 
@@ -724,7 +678,7 @@ export default function PlanningPage({ onGoToRequests }) {
               title={
                 <span>
                   Календарь {year}
-                  {!selectionStart && (
+                  {!calSelectionStart && (
                     <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400, marginLeft: 8 }}>
                       нажмите для выбора дат
                     </Typography.Text>
@@ -746,23 +700,23 @@ export default function PlanningPage({ onGoToRequests }) {
                     hlBg="#dbeafe"
                     hlText="#2563eb"
                     interactive
-                    selectionStart={selectionStart}
+                    selectionStart={calSelectionStart}
                     hoverDate={hoverDate}
                     onDateClick={handleCalendarClick}
                     onDateHover={setHoverDate}
                   />
                 ))}
               </div>
-              {selectionStart && (
+              {calSelectionStart && (
                 <div style={{ marginTop: 12, borderTop: '1px solid #f0f0f0', paddingTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography.Text style={{ fontSize: 12, color: '#6366f1' }}>
-                    Начало: {fmtDate(selectionStart)} · Нажмите на дату окончания
+                    Начало: {fmtDate(calSelectionStart)} · Нажмите на дату окончания
                   </Typography.Text>
                   <Button
                     type="link"
                     size="small"
                     style={{ padding: 0, height: 'auto' }}
-                    onClick={() => { setSelectionStart(null); setHoverDate(null) }}
+                    onClick={() => { setNewRange(null); setHoverDate(null) }}
                   >
                     Отмена
                   </Button>
@@ -772,6 +726,61 @@ export default function PlanningPage({ onGoToRequests }) {
           </Col>
         </Row>
       </Space>
+
+      <Modal
+        open={showSubmitModal}
+        onCancel={() => setShowSubmitModal(false)}
+        title="Отправить план на согласование"
+        width={440}
+        footer={[
+          <Button key="cancel" onClick={() => setShowSubmitModal(false)}>Отмена</Button>,
+          <Button key="submit" type="primary" onClick={() => { setPlanStatus('pending'); setShowSubmitModal(false) }}>
+            Отправить
+          </Button>,
+        ]}
+      >
+        <Space direction="vertical" style={{ width: '100%', marginTop: 8 }} size={16}>
+          <div>
+            <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              Отрезки отпуска ({segments.length}):
+            </Typography.Text>
+            <Space direction="vertical" size={4}>
+              {segments.map((seg, i) => (
+                <Typography.Text key={seg.id} style={{ fontSize: 13 }}>
+                  <Typography.Text type="secondary">{i + 1}.{' '}</Typography.Text>
+                  {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                  <Typography.Text type="secondary"> ({pluralDays(seg.days)})</Typography.Text>
+                </Typography.Text>
+              ))}
+            </Space>
+          </div>
+          <div>
+            <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              Согласующий:
+            </Typography.Text>
+            <div style={{ padding: '8px 12px', border: '1px solid #d9d9d9', borderRadius: 6, background: '#fafafa' }}>
+              <Typography.Text strong style={{ fontSize: 14, display: 'block' }}>
+                {DEFAULT_APPROVER.name}
+              </Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>{DEFAULT_APPROVER.role}</Typography.Text>
+            </div>
+          </div>
+          <div>
+            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+              Дополнительный согласующий{' '}
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>(необязательно)</Typography.Text>
+            </Typography.Text>
+            <Select
+              value={planExtraApprover}
+              onChange={setPlanExtraApprover}
+              placeholder="Не назначать"
+              allowClear
+              options={EXTRA_APPROVER_OPTIONS}
+              style={{ width: '100%' }}
+            />
+          </div>
+        </Space>
+      </Modal>
     </div>
   )
 }
