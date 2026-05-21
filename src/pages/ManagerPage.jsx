@@ -1,5 +1,9 @@
-import { useState } from 'react'
-import { Card, Row, Col, Statistic, List, Avatar, Tag, Button, Input, Typography, Space } from 'antd'
+import { useState, useMemo } from 'react'
+import {
+  Card, Row, Col, Statistic, Button, Typography, Space, Tag,
+  Table, Dropdown, Modal, Input, Select,
+} from 'antd'
+import { CheckOutlined, CloseOutlined, MoreOutlined } from '@ant-design/icons'
 import { useApp } from '../context/AppContext'
 import { fmtDate, pluralDays } from '../utils/dateUtils'
 
@@ -12,51 +16,136 @@ const STATUS_TAG = {
 
 export default function ManagerPage() {
   const { subordinates, setSubordinates, campaign } = useApp()
-  const [expandedId, setExpandedId] = useState(null)
-  const [comment, setComment] = useState('')
-  const [commentError, setCommentError] = useState('')
+  const [selectedTeam, setSelectedTeam] = useState('all')
+  const [rejectTarget, setRejectTarget] = useState(null)
+  const [rejectComment, setRejectComment] = useState('')
+  const [rejectError, setRejectError] = useState('')
 
-  const sorted = [...subordinates].sort((a, b) => {
-    if (a.planStatus === 'pending' && b.planStatus !== 'pending') return -1
-    if (a.planStatus !== 'pending' && b.planStatus === 'pending') return 1
-    return 0
-  })
+  const teams = useMemo(() => [...new Set(subordinates.map(s => s.team).filter(Boolean))], [subordinates])
+  const teamOptions = [
+    { value: 'all', label: 'Все подразделения' },
+    ...teams.map(t => ({ value: t, label: t })),
+  ]
+
+  const displayed = useMemo(() => {
+    const base = selectedTeam === 'all' ? subordinates : subordinates.filter(s => s.team === selectedTeam)
+    return [...base].sort((a, b) => {
+      if (a.planStatus === 'pending' && b.planStatus !== 'pending') return -1
+      if (a.planStatus !== 'pending' && b.planStatus === 'pending') return 1
+      return 0
+    })
+  }, [subordinates, selectedTeam])
 
   const pendingCount  = subordinates.filter(s => s.planStatus === 'pending').length
   const approvedCount = subordinates.filter(s => s.planStatus === 'approved').length
   const draftCount    = subordinates.filter(s => s.planStatus === 'draft').length
 
-  function toggleExpand(id) {
-    setExpandedId(prev => prev === id ? null : id)
-    setComment('')
-    setCommentError('')
-  }
-
   function handleApprove(id) {
     setSubordinates(prev => prev.map(s => s.id === id ? { ...s, planStatus: 'approved' } : s))
-    setExpandedId(null)
-    setComment('')
-    setCommentError('')
   }
 
-  function handleReject(id) {
-    if (!comment.trim()) {
-      setCommentError('Комментарий обязателен при отклонении')
+  function openRejectModal(sub) {
+    setRejectTarget(sub)
+    setRejectComment('')
+    setRejectError('')
+  }
+
+  function closeRejectModal() {
+    setRejectTarget(null)
+    setRejectComment('')
+    setRejectError('')
+  }
+
+  function confirmReject() {
+    if (!rejectComment.trim()) {
+      setRejectError('Комментарий обязателен при отклонении')
       return
     }
-    setSubordinates(prev => prev.map(s => s.id === id ? { ...s, planStatus: 'rejected', rejectionComment: comment } : s))
-    setExpandedId(null)
-    setComment('')
-    setCommentError('')
+    setSubordinates(prev =>
+      prev.map(s => s.id === rejectTarget.id
+        ? { ...s, planStatus: 'rejected', rejectionComment: rejectComment }
+        : s
+      )
+    )
+    closeRejectModal()
   }
+
+  const columns = [
+    {
+      title: 'Сотрудник',
+      key: 'employee',
+      render: (_, sub) => (
+        <div>
+          <Typography.Text strong style={{ display: 'block' }}>{sub.name}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>{sub.position}</Typography.Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Подразделение',
+      dataIndex: 'team',
+      key: 'team',
+      responsive: ['md'],
+    },
+    {
+      title: 'Статус',
+      key: 'status',
+      render: (_, sub) => {
+        const sc = STATUS_TAG[sub.planStatus] ?? STATUS_TAG.draft
+        return <Tag color={sc.color} style={{ marginInlineEnd: 0 }}>{sc.label}</Tag>
+      },
+    },
+    {
+      title: 'Распределено',
+      key: 'days',
+      responsive: ['sm'],
+      render: (_, sub) => (
+        <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+          {sub.distributedDays}/{sub.totalDays} дн.
+        </Typography.Text>
+      ),
+    },
+    {
+      key: 'actions',
+      width: 48,
+      render: (_, sub) => {
+        if (sub.planStatus !== 'pending') return null
+        return (
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'approve', label: 'Одобрить', icon: <CheckOutlined /> },
+                { key: 'reject',  label: 'Отклонить', icon: <CloseOutlined />, danger: true },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'approve') handleApprove(sub.id)
+                if (key === 'reject')  openRejectModal(sub)
+              },
+            }}
+            trigger={['click']}
+          >
+            <Button type="text" size="small" icon={<MoreOutlined />} />
+          </Dropdown>
+        )
+      },
+    },
+  ]
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
       <Space direction="vertical" style={{ width: '100%' }} size={20}>
 
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          Команда — планирование отпуска на {campaign.year} год
-        </Typography.Title>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            Команда — планирование отпуска на {campaign.year} год
+          </Typography.Title>
+          <Select
+            value={selectedTeam}
+            onChange={setSelectedTeam}
+            options={teamOptions}
+            style={{ minWidth: 220 }}
+          />
+        </div>
 
         <Row gutter={16}>
           <Col span={8}>
@@ -77,124 +166,81 @@ export default function ManagerPage() {
         </Row>
 
         <Card title="Сотрудники" styles={{ body: { padding: 0 } }}>
-          <List
-            dataSource={sorted}
-            renderItem={sub => {
-              const { label, color } = STATUS_TAG[sub.planStatus] ?? STATUS_TAG.draft
-              const isExpanded = expandedId === sub.id
-              const isPending  = sub.planStatus === 'pending'
-
-              return (
-                <List.Item
-                  key={sub.id}
-                  style={{ flexDirection: 'column', alignItems: 'stretch', padding: '12px 20px' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Avatar style={{ background: '#e0e7ff', color: '#4f46e5', flexShrink: 0 }}>
-                      {sub.name[0]}
-                    </Avatar>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <Typography.Text strong style={{ display: 'block' }}>{sub.name}</Typography.Text>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{sub.position}</Typography.Text>
-                      <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Tag color={color} style={{ marginInlineEnd: 0 }}>{label}</Tag>
-                        {isPending && (
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            {sub.distributedDays}/{sub.totalDays} дн. распределено
-                          </Typography.Text>
-                        )}
-                      </div>
-                    </div>
-                    {isPending && (
-                      <Button
-                        size="small"
-                        type="primary"
-                        ghost={!isExpanded}
-                        onClick={() => toggleExpand(sub.id)}
-                      >
-                        {isExpanded ? 'Скрыть' : 'Рассмотреть'}
-                      </Button>
-                    )}
-                  </div>
-
-                  {isExpanded && (
-                    <Card
-                      size="small"
-                      style={{ marginTop: 12, background: '#fafafa' }}
-                      styles={{ body: { padding: 12 } }}
-                    >
-                      <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                        {sub.segments?.length > 0 && (
-                          <div>
-                            <Typography.Text
-                              type="secondary"
-                              style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}
-                            >
-                              Отрезки отпуска:
-                            </Typography.Text>
-                            <Space direction="vertical" size={2}>
-                              {sub.segments.map((seg, i) => (
-                                <Typography.Text key={i} style={{ fontSize: 13 }}>
-                                  <Typography.Text type="secondary">{i + 1}.{' '}</Typography.Text>
-                                  {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
-                                  <Typography.Text type="secondary"> ({pluralDays(seg.days)})</Typography.Text>
-                                </Typography.Text>
-                              ))}
-                            </Space>
-                          </div>
-                        )}
-
-                        <div>
-                          <Typography.Text
-                            type="secondary"
-                            style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}
-                          >
-                            Комментарий{' '}
-                            <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 12 }}>
-                              (обязателен при отклонении)
-                            </Typography.Text>
-                          </Typography.Text>
-                          <Input.TextArea
-                            value={comment}
-                            onChange={e => { setComment(e.target.value); setCommentError('') }}
-                            rows={2}
-                            placeholder="Введите комментарий..."
-                            status={commentError ? 'error' : ''}
-                          />
-                          {commentError && (
-                            <Typography.Text type="danger" style={{ fontSize: 12 }}>
-                              {commentError}
-                            </Typography.Text>
-                          )}
-                        </div>
-
-                        <Row gutter={8}>
-                          <Col span={12}>
-                            <Button
-                              block
-                              type="primary"
-                              style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                              onClick={() => handleApprove(sub.id)}
-                            >
-                              Одобрить
-                            </Button>
-                          </Col>
-                          <Col span={12}>
-                            <Button block danger onClick={() => handleReject(sub.id)}>
-                              Отклонить
-                            </Button>
-                          </Col>
-                        </Row>
-                      </Space>
-                    </Card>
-                  )}
-                </List.Item>
-              )
+          <Table
+            dataSource={displayed}
+            columns={columns}
+            rowKey="id"
+            pagination={false}
+            size="middle"
+            expandable={{
+              expandedRowRender: sub => (
+                sub.segments?.length > 0 ? (
+                  <Space direction="vertical" size={4} style={{ paddingLeft: 8 }}>
+                    <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
+                      Отрезки отпуска:
+                    </Typography.Text>
+                    {sub.segments.map((seg, i) => (
+                      <Typography.Text key={i} style={{ fontSize: 13 }}>
+                        <Typography.Text type="secondary">{i + 1}.{' '}</Typography.Text>
+                        {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                        <Typography.Text type="secondary"> ({pluralDays(seg.days)})</Typography.Text>
+                      </Typography.Text>
+                    ))}
+                  </Space>
+                ) : (
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>Нет отрезков</Typography.Text>
+                )
+              ),
+              rowExpandable: sub => (sub.segments?.length > 0),
             }}
           />
         </Card>
 
       </Space>
+
+      <Modal
+        open={!!rejectTarget}
+        onCancel={closeRejectModal}
+        title={`Отклонить план — ${rejectTarget?.name ?? ''}`}
+        footer={[
+          <Button key="cancel" onClick={closeRejectModal}>Отмена</Button>,
+          <Button key="confirm" type="primary" danger onClick={confirmReject}>Отклонить</Button>,
+        ]}
+      >
+        <Space direction="vertical" style={{ width: '100%', marginTop: 8 }} size={16}>
+          {rejectTarget?.segments?.length > 0 && (
+            <div>
+              <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>
+                Отрезки отпуска:
+              </Typography.Text>
+              <Space direction="vertical" size={2}>
+                {rejectTarget.segments.map((seg, i) => (
+                  <Typography.Text key={i} style={{ fontSize: 13 }}>
+                    <Typography.Text type="secondary">{i + 1}.{' '}</Typography.Text>
+                    {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                    <Typography.Text type="secondary"> ({pluralDays(seg.days)})</Typography.Text>
+                  </Typography.Text>
+                ))}
+              </Space>
+            </div>
+          )}
+          <div>
+            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+              Комментарий <Typography.Text type="danger" style={{ fontSize: 12 }}>*</Typography.Text>
+            </Typography.Text>
+            <Input.TextArea
+              value={rejectComment}
+              onChange={e => { setRejectComment(e.target.value); setRejectError('') }}
+              rows={3}
+              placeholder="Причина отклонения"
+              status={rejectError ? 'error' : ''}
+            />
+            {rejectError && (
+              <Typography.Text type="danger" style={{ fontSize: 12 }}>{rejectError}</Typography.Text>
+            )}
+          </div>
+        </Space>
+      </Modal>
     </div>
   )
 }
