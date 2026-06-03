@@ -240,7 +240,7 @@ export function Header({ role, onRoleChange }) {
               <div style={{ paddingLeft: 4, paddingRight: 8, display: 'flex', alignItems: 'center' }}>
                 <BellIcon />
               </div>
-              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: 'Open Sans, sans-serif', fontWeight: 520, lineHeight: '20px', whiteSpace: 'nowrap' }}>уведомления раздела</span>
+              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>уведомления раздела</span>
             </div>
           </div>
         </div>
