@@ -3,6 +3,7 @@ export { COLORS, BTN_STYLE } from "./tokens";
 export { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon, SearchIcon, ChevronUp, ChevronDown, BreadChevron } from "./icons";
 export { Banner } from "./Banner";
 export { StatusBadge, Tag, Chip, PersonAvatar } from "./Chip";
+export { SelectField } from "./Select";
 export { Tabs } from "./Tabs";
 export { Header } from "./Header";
 export { useIsDocked } from "./useIsDocked";

@@ -1,18 +1,14 @@
 import { useState, useMemo } from 'react'
-import { Modal, Form, Select, DatePicker, Input, Button, Result, Typography } from 'antd'
-import dayjs from 'dayjs'
-import 'dayjs/locale/ru'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, pluralDays } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
-
-dayjs.locale('ru')
+import { COLORS, BTN_STYLE, PersonAvatar, SelectField } from '../ds/index'
 
 const REQUEST_TYPES = [
-  { value: 'annual',       label: 'Ежегодный оплачиваемый',                 desc: 'Списывается из баланса основного отпуска', deductsBalance: true  },
-  { value: 'unpaid',       label: 'Без сохранения зарплаты',                 desc: 'Не списывается из баланса',                deductsBalance: false },
-  { value: 'study_paid',   label: 'Учебный оплачиваемый',                    desc: 'Не списывается из баланса',                deductsBalance: false },
-  { value: 'study_unpaid', label: 'Учебный без сохранения зарплаты',         desc: 'Не списывается из баланса',                deductsBalance: false },
+  { id: 'annual',       name: 'Ежегодный оплачиваемый',              desc: 'Списывается из баланса основного отпуска', deductsBalance: true  },
+  { id: 'unpaid',       name: 'Без сохранения зарплаты',             desc: 'Не списывается из баланса',                deductsBalance: false },
+  { id: 'study_paid',   name: 'Учебный оплачиваемый',                desc: 'Не списывается из баланса',                deductsBalance: false },
+  { id: 'study_unpaid', name: 'Учебный без сохранения зарплаты',     desc: 'Не списывается из баланса',                deductsBalance: false },
 ]
 
 const TYPE_LABEL_MAP = {
@@ -23,44 +19,166 @@ const TYPE_LABEL_MAP = {
 }
 
 const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
+const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.id), name: c.name }))
 
-const EXTRA_APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({
-  value: String(c.id),
-  label: c.name,
-}))
+function DateField({ label, value, onChange, error }) {
+  const [focused, setFocused] = useState(false)
+  const hasValue = !!value
+  const isFloated = hasValue || focused
 
-const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({
-  value: String(c.id),
-  label: c.name,
-}))
+  return (
+    <div style={{ flex: 1, position: 'relative' }}>
+      <div style={{
+        position: 'relative',
+        height: 64,
+        background: '#F2F3F7',
+        border: `1px solid ${error ? '#E30611' : focused ? '#0066FF' : 'rgba(188,195,208,0.25)'}`,
+        borderRadius: 16,
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 16px',
+        boxSizing: 'border-box',
+        transition: 'border-color 0.15s',
+      }}>
+        <span style={{
+          position: 'absolute',
+          left: 16,
+          top: isFloated ? 8 : '50%',
+          transform: isFloated ? 'none' : 'translateY(-50%)',
+          fontSize: isFloated ? 13 : 17,
+          lineHeight: isFloated ? '18px' : '24px',
+          color: '#8C9BAB',
+          transition: 'all 0.15s ease',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}>
+          {label}
+        </span>
+        <input
+          type="date"
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            fontSize: 17,
+            lineHeight: '24px',
+            color: hasValue ? '#1D2023' : 'transparent',
+            width: '100%',
+            paddingTop: isFloated ? 20 : 0,
+            fontFamily: "'MTSCompact', sans-serif",
+            cursor: 'pointer',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function TextAreaField({ label, value, onChange, optional }) {
+  const [focused, setFocused] = useState(false)
+  const hasValue = !!value
+  const isFloated = hasValue || focused
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <span style={{
+        position: 'absolute',
+        left: 16,
+        top: isFloated ? 10 : 20,
+        fontSize: isFloated ? 13 : 17,
+        lineHeight: isFloated ? '18px' : '24px',
+        color: '#8C9BAB',
+        transition: 'all 0.15s ease',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }}>
+        {label}
+        {optional && <span style={{ fontSize: 12, marginLeft: 6, color: '#8C9BAB' }}>(необязательно)</span>}
+      </span>
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        rows={3}
+        style={{
+          width: '100%',
+          boxSizing: 'border-box',
+          background: '#F2F3F7',
+          border: `1px solid ${focused ? '#0066FF' : 'rgba(188,195,208,0.25)'}`,
+          borderRadius: 16,
+          padding: isFloated ? '32px 16px 14px' : '20px 16px',
+          fontSize: 17,
+          lineHeight: '24px',
+          color: '#1D2023',
+          fontFamily: "'MTSCompact', sans-serif",
+          outline: 'none',
+          resize: 'none',
+          transition: 'border-color 0.15s, padding 0.15s',
+          display: 'block',
+        }}
+      />
+    </div>
+  )
+}
+
+function Checkbox({ checked, onChange, label }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+      <div
+        onClick={() => onChange(!checked)}
+        style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, border: `2px solid ${checked ? '#0066FF' : '#BCC3D0'}`, background: checked ? '#0066FF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+      >
+        {checked && (
+          <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+            <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+      <span style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{label}</span>
+    </label>
+  )
+}
 
 export default function NewRequestModal({ onClose }) {
   const { requests, setRequests, balance, setBalance } = useApp()
-  const [type, setType] = useState(undefined)
-  const [dateRange, setDateRange] = useState(null)
+  const [type, setType] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [comment, setComment] = useState('')
-  const [extraApprover, setExtraApprover] = useState(undefined)
   const [changeApprover, setChangeApprover] = useState(false)
-  const [approverOverride, setApproverOverride] = useState(undefined)
+  const [approverOverride, setApproverOverride] = useState('')
+  const [addExtraApprover, setAddExtraApprover] = useState(false)
+  const [extraApprover, setExtraApprover] = useState('')
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
 
-  const selectedType = REQUEST_TYPES.find(t => t.value === type)
+  const selectedType = REQUEST_TYPES.find(t => t.id === type)
 
   const previewDays = useMemo(() => {
-    if (!dateRange?.[0] || !dateRange?.[1]) return null
+    if (!startDate || !endDate) return null
     try {
-      return countVacationDays(dateRange[0].toDate(), dateRange[1].toDate())
+      const s = new Date(startDate)
+      const e = new Date(endDate)
+      if (e < s) return null
+      return countVacationDays(s, e)
     } catch {
       return null
     }
-  }, [dateRange])
+  }, [startDate, endDate])
 
   function validate() {
     const errs = {}
     if (!type) errs.type = 'Выберите тип отпуска'
-    if (!dateRange?.[0] || !dateRange?.[1]) errs.dates = 'Укажите период'
-    if (selectedType?.deductsBalance && previewDays !== null && previewDays > balance.main) {
+    if (!startDate || !endDate) {
+      errs.dates = 'Укажите период'
+    } else if (new Date(endDate) < new Date(startDate)) {
+      errs.dates = 'Дата окончания должна быть позже начала'
+    } else if (selectedType?.deductsBalance && previewDays !== null && previewDays > balance.main) {
       errs.dates = `Недостаточно дней: нужно ${pluralDays(previewDays)}, доступно ${pluralDays(balance.main)}`
     }
     return errs
@@ -79,13 +197,13 @@ export default function NewRequestModal({ onClose }) {
       id: Date.now(),
       type: 'unplanned',
       typeLabel: TYPE_LABEL_MAP[type],
-      startDate: dateRange[0].toDate(),
-      endDate: dateRange[1].toDate(),
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
       days: previewDays,
       status: 'pending',
       approver: { name: approverName, role: 'Руководитель' },
       comment: comment || undefined,
-      extraApprover: extraApprover || undefined,
+      extraApprover: (addExtraApprover && extraApprover) ? extraApprover : undefined,
     }
     setRequests(prev => [newReq, ...prev])
     if (selectedType.deductsBalance) {
@@ -94,133 +212,167 @@ export default function NewRequestModal({ onClose }) {
     setSubmitted(true)
   }
 
+  const approverName = approverOverride
+    ? (COLLEAGUES.find(c => String(c.id) === approverOverride)?.name ?? DEFAULT_APPROVER.name)
+    : DEFAULT_APPROVER.name
+
+  const Overlay = ({ children }) => (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <div onClick={e => e.stopPropagation()}>{children}</div>
+    </div>
+  )
+
   if (submitted) {
     return (
-      <Modal open={true} onCancel={onClose} footer={null} width={480}>
-        <Result
-          status="success"
-          title="Заявка отправлена"
-          subTitle={`Заявка передана на согласование руководителю${extraApprover ? ' и дополнительному согласующему' : ''}.`}
-          extra={[
-            <Button key="close" type="primary" onClick={onClose}>Закрыть</Button>,
-          ]}
-        />
-      </Modal>
+      <Overlay>
+        <div style={{ width: 480, background: '#fff', borderRadius: 32, padding: '32px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8, alignSelf: 'stretch' }}>
+            <div style={{ textAlign: 'center', color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px' }}>Заявка отправлена</div>
+            <div style={{ textAlign: 'center', color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>
+              Заявка передана на согласование руководителю{addExtraApprover && extraApprover ? ' и дополнительному согласующему' : ''}.
+            </div>
+          </div>
+          <div style={{ alignSelf: 'stretch', paddingTop: 24 }}>
+            <button onClick={onClose} style={{ width: '100%', height: 52, background: '#0066FF', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}>ЗАКРЫТЬ</button>
+          </div>
+        </div>
+      </Overlay>
     )
   }
 
   return (
-    <Modal open={true} onCancel={onClose} title="Новая заявка" footer={null} width={480}>
-      <Form layout="vertical" style={{ marginTop: 8 }}>
+    <Overlay>
+      <div
+        className="modal-scroll"
+        style={{ width: 560, maxHeight: '90vh', background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'MTSCompact', sans-serif" }}
+      >
+        {/* Header */}
+        <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>
+            Новая заявка
+          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 32, height: 32, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8C9BAB', fontSize: 18, borderRadius: 8, padding: 0, lineHeight: 1 }}
+          >
+            ✕
+          </button>
+        </div>
 
-        <Form.Item
-          label="Тип отпуска"
-          validateStatus={errors.type ? 'error' : ''}
-          help={errors.type}
-        >
-          <Select
-            value={type}
-            onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
-            placeholder="Выберите тип отпуска"
-            options={REQUEST_TYPES.map(t => ({ value: t.value, label: t.label }))}
-          />
-          {selectedType && (
-            <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-              {selectedType.desc}
-            </Typography.Text>
-          )}
-        </Form.Item>
+        {/* Body */}
+        <div className="modal-scroll" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
 
-        <Form.Item
-          label="Период"
-          validateStatus={errors.dates ? 'error' : ''}
-          help={
-            errors.dates
-              ? errors.dates
-              : previewDays !== null
-                ? `${pluralDays(previewDays)} отпуска (праздники не считаются)${selectedType?.deductsBalance ? ` · Баланс: ${balance.main} дн.` : ''}`
-                : undefined
-          }
-        >
-          <DatePicker.RangePicker
-            value={dateRange}
-            onChange={v => { setDateRange(v); setErrors(e => ({ ...e, dates: undefined })) }}
-            format="DD.MM.YYYY"
-            style={{ width: '100%' }}
-            placeholder={['Начало', 'Окончание']}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label={
-            <>Комментарий{' '}
-              <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 14 }}>(необязательно)</Typography.Text>
-            </>
-          }
-        >
-          <Input.TextArea
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            rows={3}
-            placeholder="Причина или дополнительная информация"
-          />
-        </Form.Item>
-
-        <Form.Item
-          label={
-            <>Дополнительный согласующий{' '}
-              <Typography.Text type="secondary" style={{ fontWeight: 400, fontSize: 14 }}>(необязательно)</Typography.Text>
-            </>
-          }
-        >
-          <Select
-            value={extraApprover}
-            onChange={setExtraApprover}
-            placeholder="Не назначать"
-            allowClear
-            options={EXTRA_APPROVER_OPTIONS}
-          />
-        </Form.Item>
-
-        <Form.Item label="Согласующий">
-          {!changeApprover ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '8px 12px',
-              border: '1px solid #d9d9d9',
-              borderRadius: 6,
-              background: '#fafafa',
-            }}>
-              <div>
-                <Typography.Text strong style={{ display: 'block', fontSize: 14 }}>
-                  {DEFAULT_APPROVER.name}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {DEFAULT_APPROVER.role}
-                </Typography.Text>
-              </div>
-              <Button type="link" size="small" onClick={() => setChangeApprover(true)} style={{ padding: 0 }}>
-                Изменить
-              </Button>
-            </div>
-          ) : (
-            <Select
-              value={approverOverride}
-              onChange={setApproverOverride}
-              placeholder={`По умолчанию — ${DEFAULT_APPROVER.name}`}
-              allowClear
-              options={APPROVER_OPTIONS}
+          {/* Тип отпуска */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <SelectField
+              label="Тип отпуска"
+              value={type}
+              options={REQUEST_TYPES}
+              onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
             />
-          )}
-        </Form.Item>
+            {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
+            {selectedType && (
+              <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
+                {selectedType.desc}
+                {selectedType.deductsBalance && ` · Баланс: ${balance.main} дн.`}
+              </span>
+            )}
+          </div>
 
-        <Button type="primary" block onClick={handleSubmit}>
-          Отправить на согласование
-        </Button>
+          {/* Период */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <DateField
+                label="Начало"
+                value={startDate}
+                onChange={v => { setStartDate(v); setErrors(e => ({ ...e, dates: undefined })) }}
+                error={errors.dates}
+              />
+              <DateField
+                label="Окончание"
+                value={endDate}
+                onChange={v => { setEndDate(v); setErrors(e => ({ ...e, dates: undefined })) }}
+                error={errors.dates}
+              />
+            </div>
+            {errors.dates && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.dates}</span>}
+            {!errors.dates && previewDays !== null && (
+              <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
+                {pluralDays(previewDays)} отпуска (праздники не считаются)
+              </span>
+            )}
+          </div>
 
-      </Form>
-    </Modal>
+          {/* Комментарий */}
+          <TextAreaField
+            label="Комментарий"
+            value={comment}
+            onChange={setComment}
+            optional
+          />
+
+          {/* Согласующий */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 14, lineHeight: '20px', color: '#8C9BAB' }}>Согласующий</span>
+            {!changeApprover ? (
+              <div style={{ background: '#F2F3F7', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <PersonAvatar />
+                  <div>
+                    <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{approverName}</div>
+                    <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77' }}>{DEFAULT_APPROVER.role}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setChangeApprover(true)}
+                  style={{ border: 'none', background: 'none', color: '#0066FF', fontSize: 14, lineHeight: '20px', cursor: 'pointer', padding: '4px 0', fontFamily: "'MTSCompact', sans-serif" }}
+                >
+                  Изменить
+                </button>
+              </div>
+            ) : (
+              <SelectField
+                label="Согласующий"
+                value={approverOverride}
+                options={APPROVER_OPTIONS}
+                onChange={setApproverOverride}
+                searchable
+              />
+            )}
+          </div>
+
+          {/* Дополнительный согласующий */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Checkbox
+              checked={addExtraApprover}
+              onChange={setAddExtraApprover}
+              label="Добавить дополнительного согласующего"
+            />
+            {addExtraApprover && (
+              <SelectField
+                label="Дополнительный согласующий"
+                value={extraApprover}
+                options={APPROVER_OPTIONS}
+                onChange={setExtraApprover}
+                searchable
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '8px 28px 28px', flexShrink: 0 }}>
+          <button
+            onClick={handleSubmit}
+            style={{ width: '100%', height: 52, background: '#0066FF', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}
+          >
+            ОТПРАВИТЬ НА СОГЛАСОВАНИЕ
+          </button>
+        </div>
+      </div>
+    </Overlay>
   )
 }
