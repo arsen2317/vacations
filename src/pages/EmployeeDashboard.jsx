@@ -38,7 +38,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [showNewRequest, setShowNewRequest] = useState(false)
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ maxWidth: 1440, margin: '0 auto', padding: '24px 88px 88px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       {role === 'manager' && (
         <ManagerSummaryCard subordinates={subordinates} onGoToTeam={onGoToTeam} />
       )}

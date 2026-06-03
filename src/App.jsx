@@ -16,19 +16,20 @@ function AppInner() {
     <div style={{ minHeight: '100vh', background: COLORS.bg, fontFamily: "'MTSCompact', sans-serif" }}>
       <TopBar />
       <div style={{ background: '#fff', borderBottom: `1px solid ${COLORS.stroke}` }}>
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
+        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 88px' }}>
           <h1 style={{
-            margin: 0,
-            padding: '20px 0 8px',
-            fontSize: 28,
-            fontWeight: 700,
+            margin: '36px 0 0',
+            fontSize: 32,
+            fontWeight: 500,
             color: COLORS.text,
             lineHeight: '36px',
-            fontFamily: "'MTSCompact', sans-serif",
+            fontFamily: "'MTSWide', sans-serif",
           }}>
             Отпуск
           </h1>
-          <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+          <div style={{ paddingTop: 12 }}>
+            <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+          </div>
         </div>
       </div>
       {activeTab === 'home' && (

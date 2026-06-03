@@ -165,8 +165,9 @@ export default function RequestsTable({ onSelectRequest, onNewRequest }) {
               color: '#fff',
               border: 'none',
               cursor: 'pointer',
-              padding: '12px 24px',
-              borderRadius: 8,
+              height: 44,
+              padding: '0 24px',
+              borderRadius: 16,
               flexShrink: 0,
               whiteSpace: 'nowrap',
             }}

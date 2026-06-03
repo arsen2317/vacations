@@ -37,7 +37,6 @@ export default function TopBar() {
   return (
     <header style={{
       background: '#fff',
-      borderBottom: `1px solid ${COLORS.stroke}`,
       position: 'sticky',
       top: 0,
       zIndex: 40,
