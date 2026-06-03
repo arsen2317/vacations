@@ -13,5 +13,5 @@ body {
 }
 
 .mts-textarea::placeholder {
-  color: #626C77;
+  color: #626C77 !important;
 }

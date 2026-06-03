@@ -87,11 +87,13 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
   return (
     <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 4, position: "relative" }}>
       {/* External label */}
-      <div style={{ color: disabled ? "#BCC3D0" : "#626C77", fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: "20px", display: "flex", alignItems: "center", gap: 4 }}>
-        {disabled && lockedHint ? lockedHint : label}
-        {disabled && <LockIcon />}
-        {showInfo && !disabled && <InfoIcon />}
-      </div>
+      {label && (
+        <div style={{ color: disabled ? "#BCC3D0" : "#626C77", fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: "20px", display: "flex", alignItems: "center", gap: 4 }}>
+          {disabled && lockedHint ? lockedHint : label}
+          {disabled && <LockIcon />}
+          {showInfo && !disabled && <InfoIcon />}
+        </div>
+      )}
 
       {/* Trigger */}
       <div
@@ -149,9 +151,9 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
         </div>
       </div>
 
-      {/* Dropdown: top = label(20) + gap(4) + trigger(44) + offset(4) = 72 */}
+      {/* Dropdown: with label = 72, without label = 52 */}
       {open && !disabled && (
-        <div style={{ position: "absolute", top: 72, left: 0, right: 0, zIndex: 200, background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", border: "1px solid #E8EDF2", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: label ? 72 : 52, left: 0, right: 0, zIndex: 200, background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", border: "1px solid #E8EDF2", overflow: "hidden" }}>
           {filteredOptions.length === 0 && (
             <div style={{ padding: "14px 16px", fontSize: 17, color: "#8C9BAB" }}>{query ? "Ничего не найдено" : "Нет вариантов"}</div>
           )}
