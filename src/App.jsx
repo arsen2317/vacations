@@ -1,22 +1,37 @@
 import { AppProvider, useApp } from './context/AppContext'
 import PasswordGate from './components/PasswordGate'
-import TopBar from './components/TopBar'
 import TabNav from './components/TabNav'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import PlanningPage from './pages/PlanningPage'
 import ColleaguesPage from './pages/ColleaguesPage'
 import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
-import { COLORS } from './ds/index'
+import { COLORS, Header, useIsDocked } from './ds/index'
 
 function AppInner() {
-  const { role, activeTab, setActiveTab } = useApp()
+  const { role, setRole, activeTab, setActiveTab } = useApp()
+  const isDocked = useIsDocked()
+
+  function handleRoleChange(value) {
+    setRole(value)
+    setActiveTab('home')
+  }
+
+  const contentStyle = isDocked
+    ? { marginLeft: 280, padding: '0 88px 88px' }
+    : { maxWidth: 1440, margin: '0 auto', padding: '0 88px 88px' }
 
   return (
     <div style={{ minHeight: '100vh', background: COLORS.bg, fontFamily: "'MTSCompact', sans-serif" }}>
-      <TopBar />
+      <style>{`* { box-sizing: border-box; margin: 0; padding: 0; } .modal-scroll::-webkit-scrollbar { width: 4px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; } .modal-scroll::-webkit-scrollbar-thumb { background: #BCC3D0; border-radius: 2px; } .modal-scroll { scrollbar-width: thin; scrollbar-color: #BCC3D0 transparent; }`}</style>
+
+      <Header role={role} onRoleChange={handleRoleChange} />
+
       <div style={{ background: '#fff', borderBottom: `1px solid ${COLORS.stroke}` }}>
-        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 88px' }}>
+        <div style={isDocked
+          ? { marginLeft: 280, padding: '0 88px' }
+          : { maxWidth: 1440, margin: '0 auto', padding: '0 88px' }
+        }>
           <h1 style={{
             margin: '36px 0 0',
             fontSize: 32,
@@ -32,19 +47,22 @@ function AppInner() {
           </div>
         </div>
       </div>
-      {activeTab === 'home' && (
-        <EmployeeDashboard
-          onGoToPlanning={() => setActiveTab('planning')}
-          onGoToTeam={() => setActiveTab('team')}
-          onGoToHR={() => setActiveTab('hr')}
-        />
-      )}
-      {activeTab === 'planning' && (
-        <PlanningPage onGoToRequests={() => setActiveTab('home')} />
-      )}
-      {activeTab === 'colleagues' && <ColleaguesPage />}
-      {activeTab === 'team' && (role === 'manager' || role === 'hr_admin') && <ManagerPage />}
-      {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
+
+      <div style={contentStyle}>
+        {activeTab === 'home' && (
+          <EmployeeDashboard
+            onGoToPlanning={() => setActiveTab('planning')}
+            onGoToTeam={() => setActiveTab('team')}
+            onGoToHR={() => setActiveTab('hr')}
+          />
+        )}
+        {activeTab === 'planning' && (
+          <PlanningPage onGoToRequests={() => setActiveTab('home')} />
+        )}
+        {activeTab === 'colleagues' && <ColleaguesPage />}
+        {activeTab === 'team' && (role === 'manager' || role === 'hr_admin') && <ManagerPage />}
+        {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
+      </div>
     </div>
   )
 }
