@@ -4,6 +4,7 @@ export { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon, SearchIcon, Chevron
 export { Banner } from "./Banner";
 export { StatusBadge, Tag, Chip, PersonAvatar } from "./Chip";
 export { SelectField } from "./Select";
+export { CalendarRange } from "./CalendarRange";
 export { Tabs } from "./Tabs";
 export { Header } from "./Header";
 export { useIsDocked } from "./useIsDocked";
