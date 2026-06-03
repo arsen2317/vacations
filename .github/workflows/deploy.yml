@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [claude/vacation-redesign-prototype-WzEiS]
+    branches: [claude/stoic-newton-GZMIF]
 
 permissions:
   contents: read
