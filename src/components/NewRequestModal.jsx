@@ -81,7 +81,7 @@ function TextAreaField({ label, value, onChange, optional, description }) {
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="Placeholder"
+        placeholder="Введите комментарий"
         style={{
           width: '100%',
           height: 96,
@@ -225,7 +225,7 @@ export default function NewRequestModal({ onClose }) {
         >
           {/* Header */}
           <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>Новая заявка</div>
+            <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>Заявка на внеплановый отпуск</div>
             <button onClick={onClose} style={{ width: 32, height: 32, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8C9BAB', fontSize: 18, borderRadius: 8, padding: 0, lineHeight: 1 }}>✕</button>
           </div>
 
@@ -238,6 +238,7 @@ export default function NewRequestModal({ onClose }) {
                 label="Тип отпуска"
                 value={type}
                 options={REQUEST_TYPES}
+                placeholder="Выберите тип отпуска"
                 onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
               />
               {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
@@ -268,7 +269,7 @@ export default function NewRequestModal({ onClose }) {
             </div>
 
             {/* Комментарий */}
-            <TextAreaField label="Комментарий" value={comment} onChange={setComment} optional />
+            <TextAreaField label="Комментарий" value={comment} onChange={setComment} description="До 255 символов" />
 
             {/* Согласующий */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

@@ -15,7 +15,7 @@ function shortName(name) {
   return parts[0] + " " + parts[1][0] + ".";
 }
 
-export function SelectField({ label, value, options, onChange, disabled, showInfo, multi, lockedHint, searchable }) {
+export function SelectField({ label, value, options, onChange, disabled, showInfo, multi, lockedHint, searchable, placeholder }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -136,7 +136,7 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
             />
           ) : (
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: hasValue ? "#1D2023" : "#8C9BAB" }}>
-              {hasValue ? selectedOptions?.name : ""}
+              {hasValue ? selectedOptions?.name : (placeholder || "")}
             </span>
           )}
         </div>
