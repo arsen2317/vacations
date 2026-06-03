@@ -18,8 +18,8 @@ const TYPE_LABEL_MAP = {
   study_unpaid: 'Внеплановый — учебный без сохранения зарплаты',
 }
 
-const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
-const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.id), name: c.name }))
+const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель', avatar: '/avatars/egor.webp' }
+const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.id), name: c.name, avatar: c.avatar }))
 
 function fmt(d) {
   if (!d) return ''
@@ -179,9 +179,6 @@ export default function NewRequestModal({ onClose }) {
   function handleSubmit() {
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
-    const approverName = approverOverride
-      ? (COLLEAGUES.find(c => String(c.id) === approverOverride)?.name ?? DEFAULT_APPROVER.name)
-      : DEFAULT_APPROVER.name
     const newReq = {
       id: Date.now(),
       type: 'unplanned',
@@ -201,9 +198,9 @@ export default function NewRequestModal({ onClose }) {
     setSubmitted(true)
   }
 
-  const approverName = approverOverride
-    ? (COLLEAGUES.find(c => String(c.id) === approverOverride)?.name ?? DEFAULT_APPROVER.name)
-    : DEFAULT_APPROVER.name
+  const approverColleague = approverOverride ? COLLEAGUES.find(c => String(c.id) === approverOverride) : null
+  const approverName = approverColleague?.name ?? DEFAULT_APPROVER.name
+  const approverAvatar = approverColleague?.avatar ?? DEFAULT_APPROVER.avatar
 
   const Overlay = ({ children, onClick }) => (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClick}>
@@ -285,7 +282,7 @@ export default function NewRequestModal({ onClose }) {
               {!changeApprover ? (
                 <div style={{ background: '#F2F3F7', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <PersonAvatar />
+                    <PersonAvatar src={approverAvatar} />
                     <div>
                       <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{approverName}</div>
                       <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77' }}>{DEFAULT_APPROVER.role}</div>

@@ -1,6 +1,7 @@
 export const CURRENT_USER = {
   id: 1,
   name: 'Алексей Морозов',
+  avatar: '/avatars/mikhail.webp',
   role: 'employee',
   team: 'Продуктовая разработка',
   managerId: 2,
@@ -151,6 +152,7 @@ export const COLLEAGUES = [
   {
     id: 1,
     name: 'Алексей Морозов',
+    avatar: '/avatars/mikhail.webp',
     me: true,
     team: 'Продуктовая разработка',
     segments: [
@@ -161,6 +163,7 @@ export const COLLEAGUES = [
   {
     id: 2,
     name: 'Дмитрий Соколов',
+    avatar: '/avatars/egor.webp',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-06-01', endDate: '2026-06-14', status: 'approved' },
@@ -170,6 +173,7 @@ export const COLLEAGUES = [
   {
     id: 3,
     name: 'Мария Иванова',
+    avatar: '/avatars/maria.webp',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-08-04', endDate: '2026-08-17', status: 'reviewing' },
@@ -179,6 +183,7 @@ export const COLLEAGUES = [
   {
     id: 4,
     name: 'Анна Петрова',
+    avatar: '/avatars/sofia.webp',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-03-02', endDate: '2026-03-15', status: 'approved' },
@@ -188,6 +193,7 @@ export const COLLEAGUES = [
   {
     id: 5,
     name: 'Игорь Смирнов',
+    avatar: '/avatars/manokhin.webp',
     team: 'Дизайн',
     segments: [
       { startDate: '2026-05-25', endDate: '2026-06-07', status: 'approved' },
@@ -197,6 +203,7 @@ export const COLLEAGUES = [
   {
     id: 6,
     name: 'Сергей Николаев',
+    avatar: '/avatars/konstantin.webp',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-06-15', endDate: '2026-06-28', status: 'approved' },
@@ -205,6 +212,7 @@ export const COLLEAGUES = [
   {
     id: 7,
     name: 'Елена Козлова',
+    avatar: '/avatars/marina.webp',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-07-01', endDate: '2026-07-14', status: 'approved' },
@@ -217,6 +225,7 @@ export const SUBORDINATES = [
   {
     id: 3,
     name: 'Мария Иванова',
+    avatar: '/avatars/maria.webp',
     position: 'Frontend-разработчик',
     team: 'Продуктовая разработка',
     planStatus: 'pending',
@@ -230,6 +239,7 @@ export const SUBORDINATES = [
   {
     id: 4,
     name: 'Анна Петрова',
+    avatar: '/avatars/sofia.webp',
     position: 'Backend-разработчик',
     team: 'Продуктовая разработка',
     planStatus: 'pending',
@@ -243,6 +253,7 @@ export const SUBORDINATES = [
   {
     id: 6,
     name: 'Сергей Николаев',
+    avatar: '/avatars/konstantin.webp',
     position: 'QA-инженер',
     team: 'Продуктовая разработка',
     planStatus: 'draft',
@@ -268,6 +279,7 @@ export const SUBORDINATES = [
   {
     id: 5,
     name: 'Игорь Смирнов',
+    avatar: '/avatars/manokhin.webp',
     position: 'UI/UX-дизайнер',
     team: 'Дизайн',
     planStatus: 'approved',
@@ -281,6 +293,7 @@ export const SUBORDINATES = [
   {
     id: 8,
     name: 'Ольга Васильева',
+    avatar: '/avatars/olga.webp',
     position: 'Графический дизайнер',
     team: 'Дизайн',
     planStatus: 'pending',
@@ -294,14 +307,14 @@ export const SUBORDINATES = [
 ]
 
 export const ALL_EMPLOYEES = [
-  { id: 1,  name: 'Алексей Морозов',  team: 'Продуктовая разработка', planStatus: 'approved' },
-  { id: 2,  name: 'Дмитрий Соколов',  team: 'Продуктовая разработка', planStatus: 'approved' },
-  { id: 3,  name: 'Мария Иванова',    team: 'Продуктовая разработка', planStatus: 'pending'  },
-  { id: 4,  name: 'Анна Петрова',     team: 'Продуктовая разработка', planStatus: 'pending'  },
-  { id: 6,  name: 'Сергей Николаев',  team: 'Продуктовая работка', planStatus: 'draft'    },
-  { id: 7,  name: 'Елена Козлова',    team: 'Продуктовая разработка', planStatus: 'approved' },
-  { id: 5,  name: 'Игорь Смирнов',   team: 'Дизайн',                  planStatus: 'approved' },
-  { id: 8,  name: 'Ольга Васильева',  team: 'Дизайн',                  planStatus: 'draft'    },
-  { id: 9,  name: 'Павел Морозов',    team: 'HR',                      planStatus: 'approved' },
-  { id: 10, name: 'Ирина Лебедева',   team: 'HR',                      planStatus: 'pending'  },
+  { id: 1,  name: 'Алексей Морозов',  avatar: '/avatars/mikhail.webp',    team: 'Продуктовая разработка', planStatus: 'approved' },
+  { id: 2,  name: 'Дмитрий Соколов',  avatar: '/avatars/egor.webp',       team: 'Продуктовая разработка', planStatus: 'approved' },
+  { id: 3,  name: 'Мария Иванова',    avatar: '/avatars/maria.webp',      team: 'Продуктовая разработка', planStatus: 'pending'  },
+  { id: 4,  name: 'Анна Петрова',     avatar: '/avatars/sofia.webp',      team: 'Продуктовая разработка', planStatus: 'pending'  },
+  { id: 6,  name: 'Сергей Николаев',  avatar: '/avatars/konstantin.webp', team: 'Продуктовая разработка', planStatus: 'draft'    },
+  { id: 7,  name: 'Елена Козлова',    avatar: '/avatars/marina.webp',     team: 'Продуктовая разработка', planStatus: 'approved' },
+  { id: 5,  name: 'Игорь Смирнов',   avatar: '/avatars/manokhin.webp',   team: 'Дизайн',                  planStatus: 'approved' },
+  { id: 8,  name: 'Ольга Васильева',  avatar: '/avatars/olga.webp',       team: 'Дизайн',                  planStatus: 'draft'    },
+  { id: 9,  name: 'Павел Морозов',    avatar: '/avatars/gavrilov.webp',   team: 'HR',                      planStatus: 'approved' },
+  { id: 10, name: 'Ирина Лебедева',   avatar: '/avatars/irina.webp',      team: 'HR',                      planStatus: 'pending'  },
 ]
