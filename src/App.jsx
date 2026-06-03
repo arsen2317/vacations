@@ -27,7 +27,7 @@ function AppInner() {
 
       <Header role={role} onRoleChange={handleRoleChange} />
 
-      <div style={{ background: '#fff', borderBottom: `1px solid ${COLORS.stroke}` }}>
+      <div style={{ background: '#fff' }}>
         <div style={isDocked
           ? { marginLeft: 280, padding: '0 88px' }
           : { maxWidth: 1440, margin: '0 auto', padding: '0 88px' }
