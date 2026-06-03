@@ -50,7 +50,6 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
     : options;
 
   const hasValue = multi ? (value || []).length > 0 : !!value;
-  const isLabelFloated = hasValue || open;
 
   const toggle = (id) => {
     if (multi) {
@@ -86,39 +85,31 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
   };
 
   return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 6, position: "relative" }}>
+    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 4, position: "relative" }}>
+      {/* External label */}
+      <div style={{ color: disabled ? "#BCC3D0" : "#626C77", fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: "20px", display: "flex", alignItems: "center", gap: 4 }}>
+        {disabled && lockedHint ? lockedHint : label}
+        {disabled && <LockIcon />}
+        {showInfo && !disabled && <InfoIcon />}
+      </div>
+
+      {/* Trigger */}
       <div
         onClick={handleToggle}
         style={{
-          position: "relative", height: 64,
+          height: 44,
           background: disabled ? "#F8F8FB" : "#F2F3F7",
-          border: `1px solid ${open ? "#0066FF" : "rgba(188,195,208,0.25)"}`,
-          borderRadius: 16, cursor: disabled ? "not-allowed" : "pointer",
-          display: "flex", alignItems: "center", padding: "0 4px 0 16px",
-          boxSizing: "border-box", transition: "border-color 0.15s",
+          outline: `1px ${open ? "#0066FF" : "rgba(188,195,208,0.50)"} solid`,
+          outlineOffset: "-1px",
+          borderRadius: 16,
+          cursor: disabled ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 8px 0 12px",
+          boxSizing: "border-box",
         }}
       >
-        <span style={{
-          position: "absolute", left: 16,
-          top: isLabelFloated ? 6 : "50%",
-          transform: isLabelFloated ? "none" : "translateY(-50%)",
-          fontSize: isLabelFloated ? 14 : 17,
-          lineHeight: isLabelFloated ? "20px" : "24px",
-          color: disabled ? "#BCC3D0" : "#8C9BAB",
-          transition: "all 0.15s ease", pointerEvents: "none",
-          display: "flex", alignItems: "center",
-        }}>
-          {disabled && lockedHint && !hasValue ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 17, lineHeight: "24px", color: "#BCC3D0" }}>{lockedHint}</span>
-              <LockIcon />
-            </span>
-          ) : (
-            <>{label}{disabled && <LockIcon />}</>
-          )}
-        </span>
-
-        <div style={{ marginTop: isLabelFloated ? 20 : 0, flex: 1, fontSize: 17, lineHeight: "24px", color: disabled ? "#BCC3D0" : "#1D2023", overflow: "hidden", display: "flex", alignItems: "center", minWidth: 0, gap: 6 }}>
+        <div style={{ flex: 1, fontSize: 17, lineHeight: "24px", color: disabled ? "#BCC3D0" : hasValue ? "#1D2023" : "#8C9BAB", overflow: "hidden", display: "flex", alignItems: "center", minWidth: 0, gap: 6 }}>
           {multi ? (
             <>
               {hasValue && renderTags()}
@@ -144,12 +135,13 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
               style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 0, padding: 0, fontFamily: "inherit" }}
             />
           ) : (
-            hasValue && <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedOptions?.name}</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: hasValue ? "#1D2023" : "#8C9BAB" }}>
+              {hasValue ? selectedOptions?.name : ""}
+            </span>
           )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", marginLeft: "auto", flexShrink: 0 }}>
-          {showInfo && !disabled && <InfoIcon />}
           {multi && hasValue && !disabled && (
             <CloseCircleIcon onClick={(e) => { e.stopPropagation(); onChange([]); }} />
           )}
@@ -157,8 +149,9 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
         </div>
       </div>
 
+      {/* Dropdown: top = label(20) + gap(4) + trigger(44) + offset(4) = 72 */}
       {open && !disabled && (
-        <div style={{ position: "absolute", top: 68, left: 0, right: 0, zIndex: 200, background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", border: "1px solid #E8EDF2", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: 72, left: 0, right: 0, zIndex: 200, background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", border: "1px solid #E8EDF2", overflow: "hidden" }}>
           {filteredOptions.length === 0 && (
             <div style={{ padding: "14px 16px", fontSize: 17, color: "#8C9BAB" }}>{query ? "Ничего не найдено" : "Нет вариантов"}</div>
           )}

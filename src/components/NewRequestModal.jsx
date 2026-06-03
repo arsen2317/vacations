@@ -327,7 +327,7 @@ export default function NewRequestModal({ onClose }) {
             style={{
               position: 'fixed',
               top: calendarRect.bottom + 4,
-              right: window.innerWidth - calendarRect.right,
+              left: calendarRect.left,
             }}
           >
             <CalendarRange
