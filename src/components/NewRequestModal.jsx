@@ -29,46 +29,41 @@ function fmt(d) {
 function PeriodField({ start, end, error, onClick }) {
   const hasValue = !!start
   return (
-    <div
-      onClick={onClick}
-      style={{
-        position: 'relative',
-        height: 64,
-        background: '#F2F3F7',
-        border: `1px solid ${error ? '#E30611' : 'rgba(188,195,208,0.25)'}`,
-        borderRadius: 16,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        boxSizing: 'border-box',
-        cursor: 'pointer',
-      }}
-    >
-      <span style={{
-        position: 'absolute',
-        left: 16,
-        top: hasValue ? 8 : '50%',
-        transform: hasValue ? 'none' : 'translateY(-50%)',
-        fontSize: hasValue ? 13 : 17,
-        lineHeight: hasValue ? '18px' : '24px',
-        color: '#8C9BAB',
-        transition: 'all 0.15s ease',
-        pointerEvents: 'none',
-      }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
         Период
-      </span>
-      {hasValue && (
-        <span style={{ paddingTop: 20, fontSize: 17, color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>
-          {fmt(start)}{end && end.getTime() !== start.getTime() ? ` – ${fmt(end)}` : ''}
-        </span>
-      )}
-      {/* Calendar icon */}
-      <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <rect x="1.5" y="3" width="15" height="13.5" rx="2" stroke="#8C9BAB" strokeWidth="1.2"/>
-          <path d="M5.25 1.5v3M12.75 1.5v3M1.5 7.5h15" stroke="#8C9BAB" strokeWidth="1.2" strokeLinecap="round"/>
-        </svg>
       </div>
+      <div
+        onClick={onClick}
+        style={{
+          height: 44,
+          paddingLeft: 12,
+          paddingRight: 8,
+          background: '#F2F3F7',
+          borderRadius: 16,
+          outline: `1px ${error ? '#E30611' : 'rgba(188, 195, 208, 0.50)'} solid`,
+          outlineOffset: '-1px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          cursor: 'pointer',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div style={{ flex: '1 1 0', paddingRight: 4, overflow: 'hidden' }}>
+          <div style={{ color: hasValue ? '#1D2023' : '#8C9BAB', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+            {hasValue
+              ? `${fmt(start)}${end && end.getTime() !== start.getTime() ? ` – ${fmt(end)}` : ''}`
+              : 'ДД.ММ.ГГГГ – ДД.ММ.ГГГГ'}
+          </div>
+        </div>
+        <div style={{ padding: 4, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+            <path fillRule="evenodd" clipRule="evenodd" d="M16.314 3.68597C15.609 2.98098 14.9055 2.62649 14 2.41921V1C14 0.447715 13.5523 0 13 0C12.4477 0 12 0.447715 12 1V2.15211C11.7111 2.12824 11.4044 2.10541 11.0772 2.08105C10.399 2.03058 9.69952 2 9 2C8.30048 2 7.60086 2.03059 6.92273 2.08106C6.59555 2.10541 6.28883 2.12824 6 2.15211V1C6 0.447715 5.55228 0 5 0C4.44772 0 4 0.447715 4 1V2.41921C3.09454 2.62649 2.39096 2.98098 1.68597 3.68597C0.373095 4.99884 0.275748 6.30684 0.0810531 8.92282C0.0305833 9.60095 0 10.3005 0 11C0 11.6995 0.0305834 12.399 0.0810532 13.0772C0.275748 15.6932 0.373095 17.0012 1.68597 18.314C2.99884 19.6269 4.30684 19.7243 6.92282 19.9189C7.60095 19.9694 8.30048 20 9 20C9.69952 20 10.399 19.9694 11.0772 19.9189C13.6932 19.7243 15.0012 19.6269 16.314 18.314C17.6269 17.0012 17.7243 15.6932 17.9189 13.0772C17.9694 12.399 18 11.6995 18 11C18 10.3005 17.9694 9.60095 17.9189 8.92282C17.7243 6.30684 17.6269 4.99884 16.314 3.68597ZM2.99706 8C2.44477 8 1.99706 8.44771 1.99706 9C1.99706 9.55228 2.44477 10 2.99706 10H14.9971C15.5493 10 15.9971 9.55228 15.9971 9C15.9971 8.44771 15.5493 8 14.9971 8H2.99706ZM11.9971 15.4C12.7703 15.4 13.3971 14.7732 13.3971 14C13.3971 13.2268 12.7703 12.6 11.9971 12.6C11.2239 12.6 10.5971 13.2268 10.5971 14C10.5971 14.7732 11.2239 15.4 11.9971 15.4Z" fill="#8D969F"/>
+          </svg>
+        </div>
+      </div>
+      {error && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{error}</span>}
     </div>
   )
 }
@@ -265,7 +260,6 @@ export default function NewRequestModal({ onClose }) {
                 error={errors.dates}
                 onClick={() => setShowCalendar(true)}
               />
-              {errors.dates && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.dates}</span>}
               {!errors.dates && previewDays !== null && (
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
                   {pluralDays(previewDays)} отпуска (праздники не считаются)
