@@ -54,7 +54,7 @@ function PeriodField({ start, end, error, onClick }) {
           <div style={{ color: hasValue ? '#1D2023' : '#8C9BAB', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
             {hasValue
               ? `${fmt(start)}${end && end.getTime() !== start.getTime() ? ` – ${fmt(end)}` : ''}`
-              : 'ДД.ММ.ГГГГ – ДД.ММ.ГГГГ'}
+              : 'дд.мм.гггг – дд.мм.гггг'}
           </div>
         </div>
         <div style={{ padding: 4, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
