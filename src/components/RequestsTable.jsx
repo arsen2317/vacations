@@ -29,6 +29,7 @@ const TH = {
   color: COLORS.secondary,
   textAlign: 'left',
   fontFamily: "'MTSCompact', sans-serif",
+  background: COLORS.bg,
   borderBottom: `1px solid ${COLORS.stroke}`,
   whiteSpace: 'nowrap',
 }

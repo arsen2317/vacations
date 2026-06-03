@@ -22,8 +22,8 @@ function AppInner() {
     : { maxWidth: 1440, margin: '0 auto', padding: '0 88px 88px' }
 
   return (
-    <div style={{ minHeight: '100vh', background: COLORS.bg, fontFamily: "'MTSCompact', sans-serif" }}>
-      <style>{`* { box-sizing: border-box; margin: 0; padding: 0; } .modal-scroll::-webkit-scrollbar { width: 4px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; } .modal-scroll::-webkit-scrollbar-thumb { background: #BCC3D0; border-radius: 2px; } .modal-scroll { scrollbar-width: thin; scrollbar-color: #BCC3D0 transparent; }`}</style>
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'MTSCompact', sans-serif" }}>
+      <style>{`.modal-scroll::-webkit-scrollbar { width: 4px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; } .modal-scroll::-webkit-scrollbar-thumb { background: #BCC3D0; border-radius: 2px; } .modal-scroll { scrollbar-width: thin; scrollbar-color: #BCC3D0 transparent; }`}</style>
 
       <Header role={role} onRoleChange={handleRoleChange} />
 
@@ -48,7 +48,8 @@ function AppInner() {
         </div>
       </div>
 
-      <div style={contentStyle}>
+      <div style={{ background: COLORS.bg }}>
+        <div style={contentStyle}>
         {activeTab === 'home' && (
           <EmployeeDashboard
             onGoToPlanning={() => setActiveTab('planning')}
@@ -62,6 +63,7 @@ function AppInner() {
         {activeTab === 'colleagues' && <ColleaguesPage />}
         {activeTab === 'team' && (role === 'manager' || role === 'hr_admin') && <ManagerPage />}
         {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
+        </div>
       </div>
     </div>
   )

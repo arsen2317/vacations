@@ -51,10 +51,10 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       <h2 style={{
         margin: '8px 0 0',
         fontSize: 20,
-        fontWeight: 700,
+        fontWeight: 500,
         color: COLORS.text,
         lineHeight: '28px',
-        fontFamily: "'MTSCompact', sans-serif",
+        fontFamily: "'MTSWide', sans-serif",
       }}>
         Мои заявки
       </h2>
