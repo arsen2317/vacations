@@ -11,3 +11,7 @@ body {
   background-color: #f5f5f7;
   color: #1a1a2e;
 }
+
+.mts-textarea::placeholder {
+  color: #626C77;
+}

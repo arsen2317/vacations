@@ -68,50 +68,43 @@ function PeriodField({ start, end, error, onClick }) {
   )
 }
 
-function TextAreaField({ label, value, onChange, optional }) {
+function TextAreaField({ label, value, onChange, optional, description }) {
   const [focused, setFocused] = useState(false)
-  const hasValue = !!value
-  const isFloated = hasValue || focused
-
   return (
-    <div style={{ position: 'relative' }}>
-      <span style={{
-        position: 'absolute',
-        left: 16,
-        top: isFloated ? 10 : 20,
-        fontSize: isFloated ? 13 : 17,
-        lineHeight: isFloated ? '18px' : '24px',
-        color: '#8C9BAB',
-        transition: 'all 0.15s ease',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
         {label}
-        {optional && <span style={{ fontSize: 12, marginLeft: 6 }}>(необязательно)</span>}
-      </span>
+      </div>
       <textarea
+        className="mts-textarea"
         value={value}
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        rows={3}
+        placeholder="Placeholder"
         style={{
           width: '100%',
+          height: 96,
           boxSizing: 'border-box',
           background: '#F2F3F7',
-          border: `1px solid ${focused ? '#0066FF' : 'rgba(188,195,208,0.25)'}`,
+          outline: `1px ${focused ? '#0066FF' : 'rgba(188,195,208,0.50)'} solid`,
+          outlineOffset: '-1px',
+          border: 'none',
           borderRadius: 16,
-          padding: isFloated ? '32px 16px 14px' : '20px 16px',
+          padding: '10px 12px',
           fontSize: 17,
           lineHeight: '24px',
           color: '#1D2023',
           fontFamily: "'MTSCompact', sans-serif",
-          outline: 'none',
           resize: 'none',
-          transition: 'border-color 0.15s, padding 0.15s',
           display: 'block',
         }}
       />
+      {(description || optional) && (
+        <div style={{ color: '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '16px' }}>
+          {description || 'Необязательно'}
+        </div>
+      )}
     </div>
   )
 }
