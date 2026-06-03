@@ -41,6 +41,7 @@ const TD = {
   fontFamily: "'MTSCompact', sans-serif",
   borderBottom: `1px solid ${COLORS.stroke}`,
   verticalAlign: 'middle',
+  background: '#fff',
 }
 
 function PaginationDots() {
@@ -140,15 +141,15 @@ export default function RequestsTable({ onSelectRequest, onNewRequest }) {
   }
 
   return (
-    <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden' }}>
+    <div>
       <div style={{
-        padding: '16px',
+        padding: 0,
+        marginBottom: 16,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 12,
         flexWrap: 'wrap',
-        borderBottom: `1px solid ${COLORS.stroke}`,
       }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {FILTERS.map(f => (
