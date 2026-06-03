@@ -41,7 +41,6 @@ const TD = {
   fontFamily: "'MTSCompact', sans-serif",
   borderBottom: `1px solid ${COLORS.stroke}`,
   verticalAlign: 'middle',
-  background: '#fff',
 }
 
 function PaginationDots() {

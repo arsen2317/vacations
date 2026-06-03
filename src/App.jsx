@@ -48,7 +48,7 @@ function AppInner() {
         </div>
       </div>
 
-      <div style={{ background: COLORS.bg }}>
+      <div style={{ background: '#fff' }}>
         <div style={contentStyle}>
         {activeTab === 'home' && (
           <EmployeeDashboard
