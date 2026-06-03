@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, pluralDays } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
@@ -140,6 +140,8 @@ export default function NewRequestModal({ onClose }) {
   const [startDate, setStartDate] = useState(null)
   const [endDate, setEndDate] = useState(null)
   const [showCalendar, setShowCalendar] = useState(false)
+  const [calendarRect, setCalendarRect] = useState(null)
+  const periodRef = useRef(null)
   const [comment, setComment] = useState('')
   const [changeApprover, setChangeApprover] = useState(false)
   const [approverOverride, setApproverOverride] = useState('')
@@ -255,11 +257,16 @@ export default function NewRequestModal({ onClose }) {
 
             {/* Период */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <PeriodField
-                start={startDate} end={endDate}
-                error={errors.dates}
-                onClick={() => setShowCalendar(true)}
-              />
+              <div ref={periodRef}>
+                <PeriodField
+                  start={startDate} end={endDate}
+                  error={errors.dates}
+                  onClick={() => {
+                    setCalendarRect(periodRef.current?.getBoundingClientRect())
+                    setShowCalendar(true)
+                  }}
+                />
+              </div>
               {!errors.dates && previewDays !== null && (
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
                   {pluralDays(previewDays)} отпуска (праздники не считаются)
@@ -309,13 +316,20 @@ export default function NewRequestModal({ onClose }) {
         </div>
       </Overlay>
 
-      {/* Calendar overlay */}
-      {showCalendar && (
+      {/* Calendar dropdown */}
+      {showCalendar && calendarRect && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 600 }}
           onClick={() => setShowCalendar(false)}
         >
-          <div onClick={e => e.stopPropagation()}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: calendarRect.bottom + 4,
+              right: window.innerWidth - calendarRect.right,
+            }}
+          >
             <CalendarRange
               initialStart={startDate}
               initialEnd={endDate}
