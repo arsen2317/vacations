@@ -209,22 +209,12 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
         </div>
 
         {/* Year select */}
-        <div style={{
-          height: 44, padding: '0 12px', background: COLORS.bg, borderRadius: 16,
-          outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
-          display: 'flex', alignItems: 'center',
-        }}>
-          <select
+        <div style={{ width: 110 }}>
+          <SelectField
             value={colYear}
-            onChange={e => setColYear(Number(e.target.value))}
-            style={{
-              border: 'none', outline: 'none', background: 'transparent',
-              fontSize: 14, color: COLORS.text, cursor: 'pointer',
-              fontFamily: "'MTSCompact',sans-serif",
-            }}
-          >
-            {YEAR_OPTIONS.map(y => <option key={y.id} value={y.id}>{y.name}</option>)}
-          </select>
+            onChange={v => setColYear(v)}
+            options={YEAR_OPTIONS}
+          />
         </div>
 
         {/* Nav arrows */}
@@ -265,7 +255,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
       </label>
 
       {/* Gantt table */}
-      <div style={{ border: `1px solid ${COLORS.stroke}`, borderRadius: 16, overflow: 'hidden' }}>
+      <div style={{ overflow: 'hidden' }}>
         {/* Month headers */}
         <div style={{ display: 'flex', borderBottom: `1px solid ${COLORS.stroke}` }}>
           <div style={{ width: 200, flexShrink: 0, padding: '8px 12px', borderRight: `1px solid ${COLORS.stroke}` }}>
@@ -294,7 +284,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
             </div>
           : people.map(person => (
             <div key={person.id} style={{
-              display: 'flex', alignItems: 'center', height: 52,
+              display: 'flex', alignItems: 'center', height: 60,
               borderBottom: `1px solid rgba(188,195,208,0.15)`,
             }}>
               <div style={{
@@ -302,10 +292,10 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                 borderRight: `1px solid ${COLORS.stroke}`,
                 height: '100%', display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                <div style={{ width: 28, height: 28, borderRadius: 10, background: COLORS.bg, overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 12, background: COLORS.bg, overflow: 'hidden', flexShrink: 0 }}>
                   {person.avatar
                     ? <img src={person.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: COLORS.secondary }}>
+                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: COLORS.secondary }}>
                         {person.name.split(' ').slice(0, 2).map(w => w[0]).join('')}
                       </div>
                   }
@@ -483,7 +473,7 @@ export default function PlanningPage({ onGoToRequests }) {
   })
 
   return (
-    <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 88px 88px', fontFamily: "'MTSCompact',sans-serif" }}>
+    <div style={{ fontFamily: "'MTSCompact',sans-serif" }}>
 
       {/* ── Balance cards ── */}
       <div style={{ display: 'flex', gap: 16, marginTop: 40, marginBottom: 32 }}>
@@ -499,7 +489,7 @@ export default function PlanningPage({ onGoToRequests }) {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: COLORS.text, fontFamily: "'MTSWide',sans-serif", lineHeight: '32px' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: COLORS.text, fontFamily: "'MTSWide',sans-serif", lineHeight: '24px' }}>
               {card.value}
             </div>
           </div>
@@ -609,14 +599,11 @@ export default function PlanningPage({ onGoToRequests }) {
                         </button>
                       )}
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 16, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif", marginBottom: 2 }}>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif", marginBottom: 2 }}>
                           {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
                         </div>
                         <div style={{ fontSize: 13, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif", display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           {pluralDays(seg.days)}
-                          {seg.days >= 14 && planStatus === 'draft' && (
-                            <span style={{ color: '#26CD58', fontSize: 12 }}>✓ ≥ 14 дней</span>
-                          )}
                           {rInfo.pending && (
                             <span style={{ color: '#FFBB00', fontSize: 12 }}>перенос на согласовании</span>
                           )}
