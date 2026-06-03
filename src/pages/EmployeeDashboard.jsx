@@ -48,21 +48,21 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
 
       <CampaignBanner onGoToPlanning={onGoToPlanning} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <span style={{
-          fontSize: 20,
-          fontWeight: 700,
-          color: COLORS.text,
-          lineHeight: '28px',
-          fontFamily: "'MTSCompact', sans-serif",
-        }}>
-          Мои заявки
-        </span>
-        <RequestsTable
-          onSelectRequest={setSelectedRequest}
-          onNewRequest={() => setShowNewRequest(true)}
-        />
-      </div>
+      <h2 style={{
+        margin: '8px 0 0',
+        fontSize: 20,
+        fontWeight: 700,
+        color: COLORS.text,
+        lineHeight: '28px',
+        fontFamily: "'MTSCompact', sans-serif",
+      }}>
+        Мои заявки
+      </h2>
+
+      <RequestsTable
+        onSelectRequest={setSelectedRequest}
+        onNewRequest={() => setShowNewRequest(true)}
+      />
 
       <RequestModal
         request={selectedRequest}
