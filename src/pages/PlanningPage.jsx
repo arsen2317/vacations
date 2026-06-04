@@ -557,7 +557,7 @@ export default function PlanningPage({ onGoToRequests }) {
     {
       label: 'Распределено',
       value: `${distributedDays} из ${campaign.totalDays} дней`,
-      info: 'Дни, распределённые по периодам отпуска',
+      info: 'Минимум 28 дней обязательно к распределению. Максимум — 40 дней.',
     },
   ]
 
@@ -587,7 +587,7 @@ export default function PlanningPage({ onGoToRequests }) {
         {balanceCards.map((card, i) => (
           <div key={i} style={{ ...CARD_STYLE, gridColumn: 'span 4', padding: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-              <span style={{ fontSize: 13, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif", lineHeight: '18px' }}>
+              <span style={{ fontSize: 17, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif", lineHeight: '24px' }}>
                 {card.label}
               </span>
               {card.info && (
