@@ -26,6 +26,12 @@ export function fmtDate(isoStr) {
   })
 }
 
+export function fmtDateFull(isoStr) {
+  if (!isoStr) return ''
+  const d = new Date(isoStr + 'T00:00:00')
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`
+}
+
 export function pluralDays(n) {
   const mod10 = n % 10
   const mod100 = n % 100

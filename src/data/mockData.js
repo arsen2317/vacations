@@ -127,8 +127,8 @@ export const HOLIDAYS_2026 = new Set([
 export const INITIAL_SEGMENTS = [
   {
     id: 1,
-    startDate: '2026-07-14',
-    endDate: '2026-07-27',
+    startDate: '2027-07-14',
+    endDate: '2027-07-27',
     days: 14,
   },
 ]
@@ -136,14 +136,14 @@ export const INITIAL_SEGMENTS = [
 export const APPROVED_SEGMENTS = [
   {
     id: 101,
-    startDate: '2026-07-14',
-    endDate: '2026-07-27',
+    startDate: '2027-07-14',
+    endDate: '2027-07-27',
     days: 14,
   },
   {
     id: 102,
-    startDate: '2026-09-01',
-    endDate: '2026-09-14',
+    startDate: '2027-09-01',
+    endDate: '2027-09-14',
     days: 14,
   },
 ]
@@ -157,7 +157,7 @@ export const COLLEAGUES = [
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-07-14', endDate: '2026-07-27', status: 'approved' },
-      { startDate: '2026-09-01', endDate: '2026-09-14', status: 'pending' },
+      { startDate: '2026-09-01', endDate: '2026-09-14', status: 'approved' },
     ],
   },
   {
@@ -168,6 +168,8 @@ export const COLLEAGUES = [
     segments: [
       { startDate: '2026-06-01', endDate: '2026-06-14', status: 'approved' },
       { startDate: '2026-10-05', endDate: '2026-10-18', status: 'approved' },
+      { startDate: '2027-03-08', endDate: '2027-03-21', status: 'approved' },
+      { startDate: '2027-08-02', endDate: '2027-08-15', status: 'pending' },
     ],
   },
   {
@@ -176,8 +178,10 @@ export const COLLEAGUES = [
     avatar: '/avatars/maria.webp',
     team: 'Продуктовая разработка',
     segments: [
-      { startDate: '2026-08-04', endDate: '2026-08-17', status: 'reviewing' },
-      { startDate: '2026-11-10', endDate: '2026-11-23', status: 'draft' },
+      { startDate: '2026-08-04', endDate: '2026-08-17', status: 'approved' },
+      { startDate: '2026-11-10', endDate: '2026-11-23', status: 'approved' },
+      { startDate: '2027-02-01', endDate: '2027-02-14', status: 'draft' },
+      { startDate: '2027-06-07', endDate: '2027-06-20', status: 'approved' },
     ],
   },
   {
@@ -188,6 +192,8 @@ export const COLLEAGUES = [
     segments: [
       { startDate: '2026-03-02', endDate: '2026-03-15', status: 'approved' },
       { startDate: '2026-07-20', endDate: '2026-08-02', status: 'approved' },
+      { startDate: '2027-04-05', endDate: '2027-04-18', status: 'pending' },
+      { startDate: '2027-10-04', endDate: '2027-10-17', status: 'approved' },
     ],
   },
   {
@@ -197,7 +203,9 @@ export const COLLEAGUES = [
     team: 'Дизайн',
     segments: [
       { startDate: '2026-05-25', endDate: '2026-06-07', status: 'approved' },
-      { startDate: '2026-08-24', endDate: '2026-09-06', status: 'pending' },
+      { startDate: '2026-08-24', endDate: '2026-09-06', status: 'approved' },
+      { startDate: '2027-03-22', endDate: '2027-04-04', status: 'approved' },
+      { startDate: '2027-09-13', endDate: '2027-09-26', status: 'draft' },
     ],
   },
   {
@@ -207,6 +215,8 @@ export const COLLEAGUES = [
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-06-15', endDate: '2026-06-28', status: 'approved' },
+      { startDate: '2027-01-18', endDate: '2027-01-31', status: 'draft' },
+      { startDate: '2027-07-05', endDate: '2027-07-18', status: 'pending' },
     ],
   },
   {
@@ -217,6 +227,8 @@ export const COLLEAGUES = [
     segments: [
       { startDate: '2026-07-01', endDate: '2026-07-14', status: 'approved' },
       { startDate: '2026-10-12', endDate: '2026-10-25', status: 'approved' },
+      { startDate: '2027-05-17', endDate: '2027-05-30', status: 'approved' },
+      { startDate: '2027-11-08', endDate: '2027-11-21', status: 'pending' },
     ],
   },
 ]

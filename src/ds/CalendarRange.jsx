@@ -3,6 +3,38 @@ import { useState } from 'react'
 const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 
+// RF production calendar 2027 holidays
+const RF_HOLIDAYS_2027 = new Set([
+  '2027-01-01','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08',
+  '2027-02-22','2027-02-23',
+  '2027-03-08',
+  '2027-05-03','2027-05-10',
+  '2027-06-14',
+  '2027-11-04','2027-11-05',
+  '2027-12-31',
+])
+
+function toISODate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+function isHoliday(d) {
+  return RF_HOLIDAYS_2027.has(toISODate(d))
+}
+
+function countWorkDays(start, end) {
+  let count = 0
+  const cur = new Date(start)
+  cur.setHours(0, 0, 0, 0)
+  const e = new Date(end)
+  e.setHours(0, 0, 0, 0)
+  while (cur <= e) {
+    if (!isHoliday(cur)) count++
+    cur.setDate(cur.getDate() + 1)
+  }
+  return count
+}
+
 function dayOnly(d) {
   const c = new Date(d)
   c.setHours(0, 0, 0, 0)
@@ -34,6 +66,7 @@ function formatDate(d) {
 }
 
 function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayEnter, onDayLeave }) {
+  // holiday check is local to rendering
   const grid = getMonthGrid(year, month)
   const weeks = []
   for (let i = 0; i < grid.length; i += 7) weeks.push(grid.slice(i, i + 7))
@@ -62,6 +95,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
               const inRange = start && effectiveEnd && d > start && d < effectiveEnd
               const isSelected = isStart || isEnd
               const isToday = sameDay(d, today)
+              const isHol = isHoliday(d)
 
               const rangeHalfStart = isStart && effectiveEnd && start.getTime() !== effectiveEnd.getTime()
               const rangeHalfEnd = isEnd && start && start.getTime() !== effectiveEnd.getTime()
@@ -117,7 +151,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
                     position: 'absolute', inset: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 20, lineHeight: '28px', fontWeight: 400,
-                    color: isSelected ? '#FAFAFA' : isToday ? '#0066FF' : '#1D2023',
+                    color: isSelected ? '#FAFAFA' : isToday ? '#0066FF' : isHol ? '#F95721' : '#1D2023',
                     fontFamily: "'MTSCompact', sans-serif",
                     zIndex: 2,
                   }}>
@@ -239,13 +273,11 @@ export function CalendarRange({ initialStart, initialEnd, onApply, onClose }) {
 
       {/* Footer */}
       <div style={{ padding: '16px 20px 24px', borderTop: '1px solid rgba(188,195,208,0.50)', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ flex: 1, display: 'flex', gap: 12 }}>
-          {[['начало', start], ['конец', end]].map(([label, d]) => (
-            <div key={label} style={{ display: 'flex', gap: 4 }}>
-              <span style={{ fontSize: 12, fontWeight: 500, color: '#626C77', textTransform: 'uppercase', lineHeight: '16px' }}>{label}</span>
-              <span style={{ fontSize: 12, fontWeight: 500, color: '#1D2023', textTransform: 'uppercase', lineHeight: '16px' }}>{formatDate(d)}</span>
-            </div>
-          ))}
+        <div style={{ flex: 1, display: 'flex', gap: 4, alignItems: 'baseline' }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#626C77', textTransform: 'uppercase', lineHeight: '16px' }}>Дней отпуска:</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#1D2023', textTransform: 'uppercase', lineHeight: '16px' }}>
+            {start && (end || start) ? countWorkDays(start, end || start) : '—'}
+          </span>
         </div>
         <button onClick={handleReset} style={{ height: 44, padding: '0 16px', background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#1D2023', textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: "'MTSWide', sans-serif" }}>
           Сбросить
