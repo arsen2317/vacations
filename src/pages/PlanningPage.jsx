@@ -104,9 +104,9 @@ function Overlay({ onClose, children }) {
 
 // ─────────── Colleagues Gantt Panel ───────────
 const YEAR_OPTIONS = [
-  { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
-  { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
-  { id: String(CAMPAIGN.year + 1), name: String(CAMPAIGN.year + 1) },
+  { id: CAMPAIGN.year - 1, name: String(CAMPAIGN.year - 1) },
+  { id: CAMPAIGN.year,     name: String(CAMPAIGN.year) },
+  { id: CAMPAIGN.year + 1, name: String(CAMPAIGN.year + 1) },
 ]
 
 function ColleaguesPlanPanel({ planStatus, userSegments }) {
@@ -144,7 +144,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
     const name = col?.name ?? emp?.name ?? `Сотрудник ${id}`
     const me   = col?.me ?? false
     const avatar = col?.avatar ?? emp?.avatar
-    const allSegs = (col?.segments ?? []).filter(s => new Date(s.startDate + 'T00:00:00').getFullYear() === colYear)
+    const allSegs = (col?.segments ?? []).filter(s => new Date(s.startDate + 'T00:00:00').getFullYear() === Number(colYear))
     const segs = showDrafts ? allSegs : allSegs.filter(s => s.status !== 'draft')
     const meSegs = colYear === CAMPAIGN.year ? userSegments.map(s => ({ ...s, status: planStatus })) : []
     return {
@@ -220,11 +220,11 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
         </div>
 
         {/* Year selector */}
-        <div style={{ flexShrink: 0, width: 120 }}>
+        <div style={{ flexShrink: 0, width: 110 }}>
           <SelectField
-            value={String(colYear)}
+            value={colYear}
             options={YEAR_OPTIONS}
-            onChange={id => { setColYear(Number(id)); setViewStart(0) }}
+            onChange={v => { setColYear(v); setViewStart(0) }}
           />
         </div>
 
