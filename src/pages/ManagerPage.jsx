@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { COLORS, BTN_STYLE } from '../ds/index'
+import { COLORS, BTN_STYLE, Chip, SearchIcon } from '../ds/index'
 
 const MONTH_NAMES = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -398,18 +398,8 @@ export default function ManagerPage() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
         {/* View toggle */}
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          {[{ key: 'table', label: 'Таблица' }, { key: 'chart', label: 'График' }].map(opt => (
-            <button key={opt.key} onClick={() => setView(opt.key)} style={{
-              padding: 12, border: 'none', cursor: 'pointer',
-              borderRadius: 16,
-              fontSize: 15, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500,
-              lineHeight: '22px',
-              background: view === opt.key ? '#1D2023' : '#F2F3F7',
-              color: view === opt.key ? '#FAFAFA' : '#1D2023',
-            }}>
-              {opt.label}
-            </button>
-          ))}
+          <Chip active={view === 'table'} onClick={() => setView('table')}>Таблица</Chip>
+          <Chip active={view === 'chart'} onClick={() => setView('chart')}>График</Chip>
         </div>
         {/* Search */}
         <div style={{
@@ -417,10 +407,7 @@ export default function ManagerPage() {
           outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
           display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8,
         }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="7" cy="7" r="5" stroke="#626C77" strokeWidth="1.5"/>
-            <path d="M11 11L14 14" stroke="#626C77" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
+          <SearchIcon />
           <input
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
@@ -507,16 +494,11 @@ export default function ManagerPage() {
         }}>
           {/* Gantt controls */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', background: COLORS.bg, borderRadius: 16, padding: 4, gap: 2, flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
               {YEAR_OPTIONS.map(opt => (
-                <button key={opt.id} onClick={() => { setGanttYear(opt.id); setViewStart(0) }} style={{
-                  padding: '6px 16px', border: 'none', cursor: 'pointer', borderRadius: 12,
-                  fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500,
-                  background: ganttYear === opt.id ? '#1D2023' : 'transparent',
-                  color: ganttYear === opt.id ? '#FAFAFA' : COLORS.text,
-                }}>
+                <Chip key={opt.id} active={ganttYear === opt.id} onClick={() => { setGanttYear(opt.id); setViewStart(0) }}>
                   {opt.name}
-                </button>
+                </Chip>
               ))}
             </div>
             {[{ dir: -1, path: 'M7 1L1 7L7 13' }, { dir: 1, path: 'M1 1L7 7L1 13' }].map(({ dir, path }) => {

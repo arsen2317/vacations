@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN, HOLIDAYS_2026 } from '../data/mockData'
+import { Chip } from '../ds/index'
 
 const HOLIDAYS_2027 = new Set([
   '2027-01-01', '2027-01-02', '2027-01-03', '2027-01-04', '2027-01-05',
@@ -190,24 +191,7 @@ export default function CalendarPage() {
 
         <div style={{ display: 'flex', gap: 8 }}>
           {yearOptions.map(y => (
-            <button
-              key={y}
-              onClick={() => setYear(y)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 16,
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: 500,
-                fontFamily: "'MTSCompact', sans-serif",
-                background: year === y ? '#1D2023' : '#F2F3F7',
-                color: year === y ? '#FAFAFA' : '#1D2023',
-                transition: 'background 0.15s, color 0.15s',
-              }}
-            >
-              {y}
-            </button>
+            <Chip key={y} active={year === y} onClick={() => setYear(y)}>{y}</Chip>
           ))}
         </div>
       </div>
