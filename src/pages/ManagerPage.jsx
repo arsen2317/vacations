@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { COLORS, BTN_STYLE, SearchIcon } from '../ds/index'
-import { fmtDateFull, pluralDays } from '../utils/dateUtils'
+import { COLORS, BTN_STYLE } from '../ds/index'
 
 const MONTH_NAMES = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -27,12 +26,34 @@ const STATUS_STYLE = {
   pending:   { bg: '#C7E1FF', color: '#005CBD', label: 'На согласовании' },
   approved:  { bg: '#BEF4BD', color: '#007502', label: 'Согласовано' },
   rejected:  { bg: '#FCD4C9', color: '#AD3400', label: 'Отклонено' },
-  reviewing: { bg: '#E3CCFF', color: '#7936C9', label: 'На ознакомлении' },
+  reviewing: { bg: '#E3CCFF', color: '#7936C9', label: 'Ознакомление' },
   draft:     { bg: '#F2F3F7', color: '#626C77', label: 'Черновик' },
 }
 
 const PAGE_SIZE = 10
 const PERSON_COL_W = 256
+
+const FIGMA_REQUESTS = [
+  { id: 'r1',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-03-13', endDate: '2027-03-20', days: 8,  status: 'approved'  },
+  { id: 'r2',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-05-01', endDate: '2027-05-10', days: 10, status: 'pending'   },
+  { id: 'r3',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-08-15', endDate: '2027-08-20', days: 6,  status: 'pending'   },
+  { id: 'r4',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-12-01', endDate: '2027-12-05', days: 5,  status: 'pending'   },
+  { id: 'r5',  reqNum: '234567', name: 'Анастасия Смирнова',             position: 'Младший дизайнер',         team: 'Отдел графического дизайна',           startDate: '2027-12-10', endDate: '2027-12-15', days: 6,  status: 'rejected'  },
+  { id: 'r6',  reqNum: '345678', name: 'Игорь Петров',                   position: 'Технический писатель',     team: 'Группа документации',                  startDate: '2027-12-20', endDate: '2027-12-25', days: 6,  status: 'approved'  },
+  { id: 'r7',  reqNum: '456789', name: 'Елена Григорьева',               position: 'Аналитик данных',          team: 'Отдел аналитики',                      startDate: '2028-01-02', endDate: '2028-01-07', days: 6,  status: 'approved'  },
+  { id: 'r8',  reqNum: '567890', name: 'Сергей Ковалев',                 position: 'Front-end разработчик',    team: 'Команда веб-разработки',               startDate: '2028-01-15', endDate: '2028-01-20', days: 6,  status: 'pending'   },
+  { id: 'r9',  reqNum: '678901', name: 'Мария Федорова',                 position: 'UX/UI дизайнер',           team: 'Отдел пользовательского опыта',        startDate: '2028-01-28', endDate: '2028-02-02', days: 6,  status: 'reviewing' },
+  { id: 'r10', reqNum: '789012', name: 'Дмитрий Соловьев',               position: 'Системный администратор',  team: 'IT поддержка',                         startDate: '2028-02-07', endDate: '2028-02-12', days: 6,  status: 'reviewing' },
+]
+
+function fmtDateShort(dateStr) {
+  const [y, m, d] = dateStr.split('-')
+  return `${d}.${m}.${y}`
+}
+
+function fmtPeriod(startDate, endDate) {
+  return `${fmtDateShort(startDate)} – ${fmtDateShort(endDate)}`
+}
 
 function daysInMonth(year, month) { return new Date(year, month + 1, 0).getDate() }
 
@@ -52,16 +73,18 @@ function getBarProps(segStart, segEnd, rangeStart, rangeEnd, rangeDays) {
 
 function shortName(fullName) {
   const p = fullName.trim().split(' ')
-  if (p.length === 1) return fullName
-  const last = p[0][0] === p[0][0].toUpperCase() && p[1][0] === p[1][0].toUpperCase()
-    ? (p[1].length > p[0].length ? p[1] : p[0])
-    : p[1]
-  // "Имя Фамилия" → "Фамилия И."
+  if (p.length < 2) return fullName
   return `${p[1]} ${p[0][0]}.`
 }
 
-function fmtPeriod(start, end) {
-  return `${fmtDateFull(start)} – ${fmtDateFull(end)}`
+function pluralDays(n) {
+  const abs = Math.abs(n)
+  const mod10 = abs % 10
+  const mod100 = abs % 100
+  if (mod100 >= 11 && mod100 <= 14) return `${n} дней`
+  if (mod10 === 1) return `${n} день`
+  if (mod10 >= 2 && mod10 <= 4) return `${n} дня`
+  return `${n} дней`
 }
 
 function StatusBadge({ status }) {
@@ -107,8 +130,9 @@ function ActionsMenu({ rowId, status, open, onToggle, onApprove, onReject }) {
         onClick={e => { e.stopPropagation(); onToggle(open ? null : rowId) }}
         style={{
           border: 'none', background: '#F2F3F7', cursor: 'pointer',
-          width: 44, height: 44, borderRadius: 16,
+          padding: 4, borderRadius: 12,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 44, height: 44,
         }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="4" viewBox="0 0 18 4" fill="none">
@@ -155,16 +179,6 @@ function Pagination({ page, total, onPage }) {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   if (totalPages <= 1) return null
 
-  const btnBase = (active, disabled) => ({
-    width: 36, height: 36, borderRadius: '50%', border: 'none',
-    background: active ? COLORS.text : 'transparent',
-    color: active ? '#fff' : disabled ? COLORS.hint : COLORS.text,
-    fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
-    cursor: disabled ? 'default' : 'pointer',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    fontWeight: active ? 500 : 400,
-  })
-
   const pages = []
   for (let i = 1; i <= totalPages; i++) pages.push(i)
   const visible = pages.filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
@@ -176,15 +190,27 @@ function Pagination({ page, total, onPage }) {
     prev = p
   }
 
+  const btnBase = (active, disabled) => ({
+    height: 44, minWidth: 44, borderRadius: 16, border: 'none',
+    background: active ? '#F2F3F7' : 'transparent',
+    color: disabled ? COLORS.hint : COLORS.text,
+    fontSize: active ? 20 : 17,
+    fontFamily: "'MTSCompact', sans-serif",
+    fontWeight: active ? 500 : 400,
+    cursor: disabled ? 'default' : 'pointer',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    padding: '0 8px',
+  })
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 2 }}>
-      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btnBase(false, page === 1), fontSize: 18 }}>‹</button>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 4 }}>
+      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btnBase(false, page === 1), fontSize: 20 }}>‹</button>
       {items.map(item =>
         typeof item === 'string'
-          ? <span key={item} style={{ color: COLORS.secondary, padding: '0 4px' }}>...</span>
+          ? <span key={item} style={{ color: COLORS.secondary, padding: '0 4px', fontSize: 17 }}>...</span>
           : <button key={item} onClick={() => onPage(item)} style={btnBase(item === page, false)}>{item}</button>
       )}
-      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btnBase(false, page === totalPages), fontSize: 18 }}>›</button>
+      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btnBase(false, page === totalPages), fontSize: 20 }}>›</button>
     </div>
   )
 }
@@ -195,13 +221,14 @@ export default function ManagerPage() {
   const [search, setSearch]       = useState('')
   const [page, setPage]           = useState(1)
   const [actionsOpen, setActionsOpen] = useState(null)
+  const [statusOverrides, setStatusOverrides] = useState({})
   const [rejectTarget, setRejectTarget] = useState(null)
   const [rejectComment, setRejectComment] = useState('')
   const [rejectError, setRejectError]   = useState('')
 
   // Gantt state
-  const [ganttYear, setGanttYear]     = useState(CAMPAIGN.year - 1) // default to year with data
-  const [viewStart, setViewStart]     = useState(0)
+  const [ganttYear, setGanttYear]   = useState(CAMPAIGN.year - 1)
+  const [viewStart, setViewStart]   = useState(0)
 
   const visibleMonths = useMemo(() => Array.from({ length: 6 }, (_, i) => viewStart + i), [viewStart])
   const rangeStart    = useMemo(() => new Date(ganttYear, viewStart, 1), [ganttYear, viewStart])
@@ -209,29 +236,9 @@ export default function ManagerPage() {
   const rangeDays     = useMemo(() => Math.round((rangeEnd - rangeStart) / 86400000) + 1, [rangeStart, rangeEnd])
   const totalMoDays   = useMemo(() => visibleMonths.reduce((s, m) => s + daysInMonth(ganttYear, m), 0), [ganttYear, visibleMonths])
 
-  // Build flat request rows from subordinates
-  const allRequests = useMemo(() => {
-    let counter = 100000
-    const arr = []
-    for (const sub of subordinates) {
-      for (const seg of (sub.segments ?? [])) {
-        arr.push({
-          rowId: `${sub.id}_${seg.startDate}`,
-          reqNum: counter++,
-          subId: sub.id,
-          name: sub.name,
-          position: sub.position ?? '—',
-          team: sub.team ?? '—',
-          avatar: sub.avatar,
-          startDate: seg.startDate,
-          endDate: seg.endDate,
-          days: seg.days,
-          status: sub.planStatus,
-        })
-      }
-    }
-    return arr
-  }, [subordinates])
+  const allRequests = useMemo(() =>
+    FIGMA_REQUESTS.map(r => ({ ...r, status: statusOverrides[r.id] ?? r.status }))
+  , [statusOverrides])
 
   const filteredRequests = useMemo(() => {
     if (!search.trim()) return allRequests
@@ -243,7 +250,6 @@ export default function ManagerPage() {
 
   const pagedRequests = filteredRequests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  // Stats
   const totalCount    = allRequests.length
   const pendingCount  = allRequests.filter(r => r.status === 'pending').length
   const approvedCount = allRequests.filter(r => r.status === 'approved').length
@@ -274,22 +280,18 @@ export default function ManagerPage() {
     return overlapping
   }, [subordinates])
 
-  // Gantt people (filtered by search)
   const ganttPeople = useMemo(() => {
     const q = search.toLowerCase()
     return subordinates
       .filter(sub => !q || sub.name.toLowerCase().includes(q) || (sub.team ?? '').toLowerCase().includes(q))
       .map(sub => {
-        const segs = (sub.segments ?? []).filter(seg => {
-          const y = parseInt(seg.startDate.split('-')[0])
-          return y === ganttYear
-        })
+        const segs = (sub.segments ?? []).filter(seg => parseInt(seg.startDate.split('-')[0]) === ganttYear)
         return { ...sub, segs }
       })
   }, [subordinates, search, ganttYear])
 
-  function handleApprove(subId) {
-    setSubordinates(prev => prev.map(s => s.id === subId ? { ...s, planStatus: 'approved' } : s))
+  function handleApprove(rowId) {
+    setStatusOverrides(prev => ({ ...prev, [rowId]: 'approved' }))
     setActionsOpen(null)
   }
 
@@ -302,9 +304,7 @@ export default function ManagerPage() {
 
   function confirmReject() {
     if (!rejectComment.trim()) { setRejectError('Укажите причину отклонения'); return }
-    setSubordinates(prev => prev.map(s =>
-      s.id === rejectTarget.subId ? { ...s, planStatus: 'rejected', rejectionComment: rejectComment } : s
-    ))
+    setStatusOverrides(prev => ({ ...prev, [rejectTarget.id]: 'rejected' }))
     setRejectTarget(null)
   }
 
@@ -320,68 +320,92 @@ export default function ManagerPage() {
     URL.revokeObjectURL(url)
   }
 
-  const TH = (last) => ({
-    padding: '12px 16px', fontSize: 13, fontWeight: 400, color: COLORS.secondary,
-    textAlign: 'left', fontFamily: "'MTSCompact', sans-serif",
-    background: COLORS.bg, borderBottom: `1px solid ${COLORS.stroke}`,
-    borderRight: last ? 'none' : `1px solid ${COLORS.stroke}`,
+  const TH_BASE = {
+    padding: '12px 16px',
+    fontSize: 13,
+    fontWeight: 400,
+    color: COLORS.secondary,
+    textAlign: 'left',
+    fontFamily: "'MTS Sans', sans-serif",
+    background: COLORS.bg,
+    borderBottom: `1px solid ${COLORS.stroke}`,
     whiteSpace: 'nowrap',
-  })
+  }
+
+  const TD_BASE = {
+    padding: '16px',
+    fontSize: 14,
+    color: COLORS.text,
+    fontFamily: "'MTSCompact', sans-serif",
+    verticalAlign: 'middle',
+  }
 
   return (
     <div style={{ paddingTop: 32, paddingBottom: 48, fontFamily: "'MTSCompact', sans-serif" }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif" }}>
+        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '32px' }}>
           Статистика по кампании {campaign.year}
         </h2>
         <button
           onClick={downloadReport}
           style={{
-            ...BTN_STYLE, height: 44, padding: '0 20px',
-            border: `1px solid ${COLORS.stroke}`, background: '#fff',
-            color: COLORS.text, borderRadius: 16, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: 10, borderRadius: 16, border: 'none',
+            background: '#F2F3F7', cursor: 'pointer', flexShrink: 0,
           }}
         >
-          СКАЧАТЬ ОТЧЁТ
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 13H14" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: 12, fontFamily: "'MTSWide', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.60, color: '#1D2023', lineHeight: '16px' }}>
+            Скачать отчёт
+          </span>
         </button>
       </div>
 
       {/* Stats cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 40 }}>
         {[
-          { label: 'Подано заявок',  value: totalCount },
-          { label: 'На согласовании', value: pendingCount },
-          { label: 'Согласованы',    value: approvedCount },
-          { label: 'На ознакомлении', value: reviewingCount },
+          { label: 'Подано заявок',    value: totalCount },
+          { label: 'На согласовании',  value: pendingCount },
+          { label: 'Согласованы',      value: approvedCount },
+          { label: 'На ознакомлении',  value: reviewingCount },
         ].map(({ label, value }) => (
           <div key={label} style={{
-            background: '#fff', borderRadius: 20, padding: '20px 24px',
+            background: '#fff', borderRadius: 32,
+            padding: '24px 32px',
             outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
           }}>
-            <div style={{ fontSize: 17, color: COLORS.secondary, lineHeight: '24px', marginBottom: 4 }}>{label}</div>
-            <div style={{ fontSize: 32, fontWeight: 500, color: COLORS.text, lineHeight: '40px', fontFamily: "'MTSWide', sans-serif" }}>{value}</div>
+            <div style={{ fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, color: COLORS.secondary, lineHeight: '24px', marginBottom: 4 }}>
+              {label}
+            </div>
+            <div style={{ fontSize: 24, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, color: COLORS.text, lineHeight: '32px' }}>
+              {value}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Section heading */}
-      <h2 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif" }}>
+      <h2 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
         Входящие заявки
       </h2>
 
       {/* Controls row */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
         {/* View toggle */}
-        <div style={{ display: 'flex', background: COLORS.bg, borderRadius: 20, padding: 4, gap: 2, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           {[{ key: 'table', label: 'Таблица' }, { key: 'chart', label: 'График' }].map(opt => (
             <button key={opt.key} onClick={() => setView(opt.key)} style={{
-              padding: '8px 20px', border: 'none', cursor: 'pointer',
-              borderRadius: 16, fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500,
-              background: view === opt.key ? '#1D2023' : 'transparent',
-              color: view === opt.key ? '#FAFAFA' : COLORS.text,
-              transition: 'background 0.15s',
+              padding: 12, border: 'none', cursor: 'pointer',
+              borderRadius: 16,
+              fontSize: 15, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500,
+              lineHeight: '22px',
+              background: view === opt.key ? '#1D2023' : '#F2F3F7',
+              color: view === opt.key ? '#FAFAFA' : '#1D2023',
             }}>
               {opt.label}
             </button>
@@ -393,7 +417,10 @@ export default function ManagerPage() {
           outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
           display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8,
         }}>
-          <SearchIcon />
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="5" stroke="#626C77" strokeWidth="1.5"/>
+            <path d="M11 11L14 14" stroke="#626C77" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
           <input
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
@@ -409,64 +436,56 @@ export default function ManagerPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
-                <col style={{ width: '10%' }} />
-                <col style={{ width: '22%' }} />
-                <col style={{ width: '24%' }} />
-                <col style={{ width: '21%' }} />
-                <col style={{ width: '15%' }} />
-                <col style={{ width: '8%' }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 320 }} />
+                <col />
+                <col style={{ width: 200 }} />
+                <col style={{ width: 157 }} />
+                <col style={{ width: 94 }} />
               </colgroup>
               <thead>
                 <tr>
-                  <th style={TH(false)}>№ заявки</th>
-                  <th style={TH(false)}>Сотрудник</th>
-                  <th style={TH(false)}>Подразделение</th>
-                  <th style={TH(false)}>Период отпуска</th>
-                  <th style={TH(false)}>Статус</th>
-                  <th style={{ ...TH(true), textAlign: 'center' }}>Действия</th>
+                  <th style={TH_BASE}>№ заявки</th>
+                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Сотрудник</th>
+                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Подразделение</th>
+                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Период отпуска</th>
+                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Статус</th>
+                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset', textAlign: 'center' }}>Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {pagedRequests.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: COLORS.secondary, fontSize: 14 }}>Нет заявок</td></tr>
+                  <tr><td colSpan={6} style={{ ...TD_BASE, textAlign: 'center', color: COLORS.secondary, padding: 32 }}>Нет заявок</td></tr>
                 ) : pagedRequests.map((req, i) => {
                   const isLast = i === pagedRequests.length - 1
-                  const TD = { padding: '16px', fontSize: 14, color: COLORS.text, fontFamily: "'MTSCompact', sans-serif", borderBottom: isLast ? 'none' : `1px solid ${COLORS.stroke}`, verticalAlign: 'middle' }
+                  const rowBorder = isLast ? 'none' : `1px solid ${COLORS.stroke}`
                   return (
-                    <tr key={req.rowId}
+                    <tr key={req.id}
                       onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
                       onMouseLeave={e => e.currentTarget.style.background = ''}
                     >
-                      <td style={TD}><span style={{ color: COLORS.secondary }}>{req.reqNum}</span></td>
-                      <td style={TD}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 12, background: COLORS.bg, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-                            {req.avatar
-                              ? <img src={req.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: COLORS.secondary }}>
-                                  {req.name.split(' ').slice(0, 2).map(w => w[0]).join('')}
-                                </div>
-                            }
-                          </div>
-                          <div>
-                            <div style={{ lineHeight: '20px' }}>{req.name}</div>
-                            <div style={{ fontSize: 12, color: COLORS.secondary, marginTop: 1 }}>{req.position}</div>
-                          </div>
-                        </div>
+                      <td style={{ ...TD_BASE, borderBottom: rowBorder, color: COLORS.secondary }}>
+                        {req.reqNum}
                       </td>
-                      <td style={TD}>{req.team}</td>
-                      <td style={TD}>
-                        <div style={{ lineHeight: '20px' }}>{fmtPeriod(req.startDate, req.endDate)}</div>
-                        <div style={{ fontSize: 12, color: COLORS.secondary, marginTop: 1 }}>{pluralDays(req.days)}</div>
+                      <td style={{ ...TD_BASE, borderBottom: rowBorder }}>
+                        <div style={{ fontSize: 14, color: COLORS.text, lineHeight: '20px' }}>{req.name}</div>
+                        <div style={{ fontSize: 12, color: COLORS.secondary, lineHeight: '16px', marginTop: 2 }}>{req.position}</div>
                       </td>
-                      <td style={TD}><StatusBadge status={req.status} /></td>
-                      <td style={{ ...TD, textAlign: 'center' }}>
+                      <td style={{ ...TD_BASE, borderBottom: rowBorder, color: COLORS.text }}>{req.team}</td>
+                      <td style={{ ...TD_BASE, borderBottom: rowBorder }}>
+                        <div style={{ fontSize: 14, color: COLORS.text, lineHeight: '20px' }}>{fmtPeriod(req.startDate, req.endDate)}</div>
+                        <div style={{ fontSize: 12, color: COLORS.secondary, lineHeight: '16px', marginTop: 2 }}>{pluralDays(req.days)}</div>
+                      </td>
+                      <td style={{ ...TD_BASE, borderBottom: rowBorder }}>
+                        <StatusBadge status={req.status} />
+                      </td>
+                      <td style={{ ...TD_BASE, borderBottom: rowBorder, textAlign: 'center' }}>
                         <ActionsMenu
-                          rowId={req.rowId}
+                          rowId={req.id}
                           status={req.status}
-                          open={actionsOpen === req.rowId}
+                          open={actionsOpen === req.id}
                           onToggle={setActionsOpen}
-                          onApprove={() => handleApprove(req.subId)}
+                          onApprove={() => handleApprove(req.id)}
                           onReject={() => openReject(req)}
                         />
                       </td>
@@ -488,7 +507,6 @@ export default function ManagerPage() {
         }}>
           {/* Gantt controls */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-            {/* Year selector */}
             <div style={{ display: 'flex', background: COLORS.bg, borderRadius: 16, padding: 4, gap: 2, flexShrink: 0 }}>
               {YEAR_OPTIONS.map(opt => (
                 <button key={opt.id} onClick={() => { setGanttYear(opt.id); setViewStart(0) }} style={{
@@ -501,7 +519,6 @@ export default function ManagerPage() {
                 </button>
               ))}
             </div>
-            {/* Nav arrows */}
             {[{ dir: -1, path: 'M7 1L1 7L7 13' }, { dir: 1, path: 'M1 1L7 7L1 13' }].map(({ dir, path }) => {
               const next = viewStart + dir
               const disabled = next < 0 || next > 6
@@ -523,8 +540,8 @@ export default function ManagerPage() {
           {/* Legend */}
           <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
             {[
-              { color: SEG_BAR.pending_clean,   label: 'на согласовании, нет пересечений с другими сотрудниками' },
-              { color: SEG_BAR.pending_overlap,  label: 'на согласовании, есть пересечения с другими сотрудниками' },
+              { color: SEG_BAR.pending_clean,   label: 'на согласовании, нет пересечений' },
+              { color: SEG_BAR.pending_overlap,  label: 'на согласовании, есть пересечения' },
               { color: SEG_BAR.approved,         label: 'согласован' },
             ].map(({ color, label }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -563,7 +580,6 @@ export default function ManagerPage() {
           ) : ganttPeople.map((sub, idx) => (
             <div key={sub.id}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                {/* Person cell */}
                 <div style={{
                   width: PERSON_COL_W, flexShrink: 0,
                   paddingLeft: 16, paddingRight: 16, paddingTop: 12, paddingBottom: 12,
@@ -583,8 +599,6 @@ export default function ManagerPage() {
                     {shortName(sub.name)}
                   </span>
                 </div>
-
-                {/* Bars area */}
                 <div style={{ flex: 1, position: 'relative', height: 68 }}>
                   {sub.segs.map((seg, bi) => {
                     const bp = getBarProps(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
@@ -599,8 +613,7 @@ export default function ManagerPage() {
                     return (
                       <div key={bi} style={{
                         position: 'absolute', top: 0, bottom: 0,
-                        background: barColor, borderRadius: 0,
-                        ...bp,
+                        background: barColor, borderRadius: 0, ...bp,
                       }} />
                     )
                   })}
@@ -644,7 +657,6 @@ export default function ManagerPage() {
                 Причина отклонения <span style={{ color: '#E30611' }}>*</span>
               </label>
               <textarea
-                className="mts-textarea"
                 value={rejectComment}
                 onChange={e => { setRejectComment(e.target.value); setRejectError('') }}
                 placeholder="Введите комментарий"
