@@ -814,7 +814,10 @@ export default function PlanningPage({ onGoToRequests }) {
       {showAddDialog && (
         <Overlay onClose={() => { setShowAddDialog(false); setAddError('') }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-            <CalendarRange onApply={handleAddApply} />
+            <CalendarRange
+              initialViewMonth={new Date(campaign.year, 0, 1)}
+              onApply={handleAddApply}
+            />
             {addError && (
               <div style={{
                 padding: '10px 20px', background: '#FFF3F0', borderRadius: 12,

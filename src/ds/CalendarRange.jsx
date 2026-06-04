@@ -167,10 +167,11 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
   )
 }
 
-export function CalendarRange({ initialStart, initialEnd, onApply, onClose }) {
+export function CalendarRange({ initialStart, initialEnd, initialViewMonth, onApply, onClose }) {
   const today = dayOnly(new Date())
 
   const [viewMonth, setViewMonth] = useState(() => {
+    if (initialViewMonth) return new Date(initialViewMonth.getFullYear(), initialViewMonth.getMonth(), 1)
     const base = initialStart ? dayOnly(initialStart) : today
     return new Date(base.getFullYear(), base.getMonth(), 1)
   })
