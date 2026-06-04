@@ -21,6 +21,7 @@ const SEG_COLORS = {
   pending:   '#C7E1FF',
   reviewing: '#F8E4C5',
   draft:     '#EAF1FF',
+  overlap:   '#FAE89E',
 }
 
 const SEG_STATUS_LABEL = {
@@ -100,17 +101,17 @@ function Overlay({ onClose, children }) {
 const YEAR_OPTIONS = [
   { id: CAMPAIGN.year - 1, name: String(CAMPAIGN.year - 1) },
   { id: CAMPAIGN.year,     name: String(CAMPAIGN.year) },
-  { id: CAMPAIGN.year + 1, name: String(CAMPAIGN.year + 1) },
 ]
 
 function ColleaguesPlanPanel({ planStatus, userSegments }) {
   const [colYear, setColYear]         = useState(CAMPAIGN.year)
   const [viewStart, setViewStart]     = useState(0)
   const [showDrafts, setShowDrafts]   = useState(true)
+  const [showOverlaps, setShowOverlaps] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [colIds, setColIds]           = useState(INITIAL_COL_IDS)
-  const [tooltip, setTooltip]         = useState(null) // { startDate, endDate, status, x, y }
+  const [tooltip, setTooltip]         = useState(null) // { startDate, endDate, status, overlapNames, x, y }
 
   const visibleMonths = useMemo(
     () => Array.from({ length: 6 }, (_, i) => viewStart + i),
@@ -146,6 +147,32 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
       segments: me ? meSegs : segs,
     }
   }), [colIds, showDrafts, userSegments, planStatus])
+
+  // Map of "startDate_endDate" → overlapping colleague names (for user's draft segs)
+  const overlapInfo = useMemo(() => {
+    if (!showOverlaps) return {}
+    const meRow = people.find(p => p.me)
+    if (!meRow) return {}
+    const result = {}
+    for (const userSeg of meRow.segments) {
+      if (userSeg.status !== 'draft') continue
+      const uStart = new Date(userSeg.startDate + 'T00:00:00')
+      const uEnd   = new Date(userSeg.endDate   + 'T00:00:00')
+      const names = []
+      for (const person of people) {
+        if (person.me) continue
+        for (const colSeg of person.segments) {
+          const cStart = new Date(colSeg.startDate + 'T00:00:00')
+          const cEnd   = new Date(colSeg.endDate   + 'T00:00:00')
+          if (uStart <= cEnd && uEnd >= cStart && !names.includes(person.name)) {
+            names.push(person.name)
+          }
+        }
+      }
+      if (names.length > 0) result[`${userSeg.startDate}_${userSeg.endDate}`] = names
+    }
+    return result
+  }, [showOverlaps, people])
 
   const PERSON_COL_W = 277
 
@@ -248,28 +275,35 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
         })}
       </div>
 
-      {/* Show drafts */}
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-        <div
-          onClick={() => setShowDrafts(v => !v)}
-          style={{
-            width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-            border: `2px solid ${showDrafts ? COLORS.blue : '#BCC3D0'}`,
-            background: showDrafts ? COLORS.blue : '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.15s',
-          }}
-        >
-          {showDrafts && (
-            <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
-              <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
-        </div>
-        <span style={{ fontSize: 14, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif" }}>
-          Показывать черновики
-        </span>
-      </label>
+      {/* Checkboxes row */}
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+        {[
+          { checked: showDrafts,   set: setShowDrafts,   label: 'Показывать черновики' },
+          { checked: showOverlaps, set: setShowOverlaps, label: 'Показывать пересечения' },
+        ].map(({ checked, set, label }) => (
+          <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+            <div
+              onClick={() => set(v => !v)}
+              style={{
+                width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                border: `2px solid ${checked ? COLORS.blue : '#BCC3D0'}`,
+                background: checked ? COLORS.blue : '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s',
+              }}
+            >
+              {checked && (
+                <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                  <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+            <span style={{ fontSize: 14, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif" }}>
+              {label}
+            </span>
+          </label>
+        ))}
+      </div>
 
       {/* Gantt table */}
       <div style={{ overflow: 'auto' }}>
@@ -363,12 +397,19 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                     const bp = getBarProps(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
                     if (!bp) return null
                     const segStatus = seg.status ?? 'approved'
+                    const overlapKey = `${seg.startDate}_${seg.endDate}`
+                    const overlapNames = (person.me && segStatus === 'draft')
+                      ? (overlapInfo[overlapKey] ?? null)
+                      : null
+                    const barColor = overlapNames
+                      ? SEG_COLORS.overlap
+                      : (SEG_COLORS[segStatus] ?? SEG_COLORS.approved)
                     return (
                       <div
                         key={bi}
                         style={{
                           position: 'absolute', top: 0, bottom: 0,
-                          background: SEG_COLORS[segStatus] ?? SEG_COLORS.approved,
+                          background: barColor,
                           cursor: 'default',
                           ...bp,
                         }}
@@ -376,6 +417,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                           startDate: fmtDateFull(seg.startDate),
                           endDate: fmtDateFull(seg.endDate),
                           status: segStatus,
+                          overlapNames,
                           x: e.clientX, y: e.clientY,
                         })}
                         onMouseMove={e => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
@@ -400,6 +442,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
           { key: 'draft',    label: 'черновик' },
           { key: 'pending',  label: 'на согласовании' },
           { key: 'approved', label: 'согласован' },
+          { key: 'overlap',  label: 'пересекается с коллегой' },
         ].map(({ key, label }) => (
           <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: SEG_COLORS[key], flexShrink: 0 }} />
@@ -449,9 +492,11 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
               {/* Label */}
               <div style={{
                 color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact',sans-serif",
-                fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap',
+                fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap', maxWidth: 280,
+                wordBreak: 'break-word', whiteSpace: 'normal',
               }}>
                 {SEG_STATUS_LABEL[tooltip.status] ?? 'Согласован'}
+                {tooltip.overlapNames?.length > 0 && `, есть пересечения с ${tooltip.overlapNames.join(', ')}`}
               </div>
             </div>
           </div>
