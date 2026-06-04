@@ -1,17 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
-import { CAMPAIGN, HOLIDAYS_2026 } from '../data/mockData'
+import { CAMPAIGN, HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
 import { Chip } from '../ds/index'
-
-const HOLIDAYS_2027 = new Set([
-  '2027-01-01', '2027-01-02', '2027-01-03', '2027-01-04', '2027-01-05',
-  '2027-01-06', '2027-01-07', '2027-01-08',
-  '2027-02-22', '2027-02-23',
-  '2027-03-08',
-  '2027-05-01', '2027-05-10',
-  '2027-06-14',
-  '2027-11-04', '2027-11-05',
-])
 
 const MONTH_NAMES = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',

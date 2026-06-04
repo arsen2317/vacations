@@ -1,4 +1,9 @@
-import { HOLIDAYS_2026 } from '../data/mockData'
+import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
+
+function isHolidayDate(d) {
+  const key = toKey(d)
+  return HOLIDAYS_2026.has(key) || HOLIDAYS_2027.has(key)
+}
 
 export function countVacationDays(startDate, endDate) {
   let count = 0
@@ -7,7 +12,7 @@ export function countVacationDays(startDate, endDate) {
   const end = new Date(endDate)
   end.setHours(0, 0, 0, 0)
   while (cur <= end) {
-    if (!HOLIDAYS_2026.has(toKey(cur))) count++
+    if (!isHolidayDate(cur)) count++
     cur.setDate(cur.getDate() + 1)
   }
   return count

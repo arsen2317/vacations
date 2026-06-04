@@ -128,7 +128,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
               return (
                 <div
                   key={di}
-                  style={{ position: 'relative', height: 36, cursor: 'pointer' }}
+                  style={{ position: 'relative', height: 36, cursor: isHol ? 'not-allowed' : 'pointer' }}
                   onClick={() => onDayClick(d)}
                   onMouseEnter={() => onDayEnter(d)}
                   onMouseLeave={onDayLeave}
@@ -197,6 +197,7 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
     || (start && hover && hover.getTime() !== start.getTime() ? (hover > start ? hover : null) : null)
 
   function handleDayClick(date) {
+    if (isHoliday(date)) return
     if (!start || end) {
       setStart(date)
       setEnd(null)
@@ -213,7 +214,7 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
   }
 
   function handleDayEnter(date) {
-    if (start && !end) setHover(date)
+    if (start && !end && !isHoliday(date)) setHover(date)
   }
 
   function handleReset() {
@@ -223,7 +224,7 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
   }
 
   function handleApply() {
-    if (start) {
+    if (start && !isHoliday(start) && (!end || !isHoliday(end))) {
       onApply(start, end || start)
       onClose?.()
     }
