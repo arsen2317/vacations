@@ -351,18 +351,22 @@ export default function ManagerPage() {
         <button
           onClick={downloadReport}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: 10, borderRadius: 16, border: 'none',
-            background: '#F2F3F7', cursor: 'pointer', flexShrink: 0,
+            padding: 10, background: '#F2F3F7', borderRadius: 16,
+            border: 'none', cursor: 'pointer', flexShrink: 0,
+            display: 'inline-flex', justifyContent: 'center', alignItems: 'center',
+            overflow: 'hidden',
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M2 13H14" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          <span style={{ fontSize: 12, fontFamily: "'MTSWide', sans-serif", fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.60, color: '#1D2023', lineHeight: '16px' }}>
-            Скачать отчёт
-          </span>
+          <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
+            <div style={{
+              textAlign: 'center', color: '#1D2023',
+              fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700,
+              textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60,
+              wordWrap: 'break-word',
+            }}>
+              Скачать отчёт
+            </div>
+          </div>
         </button>
       </div>
 
