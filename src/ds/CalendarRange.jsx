@@ -3,7 +3,18 @@ import { useState } from 'react'
 const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 
-// RF production calendar 2027 holidays
+// RF production calendar holidays
+const RF_HOLIDAYS_2026 = new Set([
+  '2026-01-01','2026-01-02','2026-01-03','2026-01-04','2026-01-05',
+  '2026-01-06','2026-01-07','2026-01-08',
+  '2026-02-23',
+  '2026-03-09',
+  '2026-05-01',
+  '2026-05-11',
+  '2026-06-12',
+  '2026-11-04',
+])
+
 const RF_HOLIDAYS_2027 = new Set([
   '2027-01-01','2027-01-04','2027-01-05','2027-01-06','2027-01-07','2027-01-08',
   '2027-02-22','2027-02-23',
@@ -19,7 +30,8 @@ function toISODate(d) {
 }
 
 function isHoliday(d) {
-  return RF_HOLIDAYS_2027.has(toISODate(d))
+  const iso = toISODate(d)
+  return RF_HOLIDAYS_2026.has(iso) || RF_HOLIDAYS_2027.has(iso)
 }
 
 function countWorkDays(start, end) {

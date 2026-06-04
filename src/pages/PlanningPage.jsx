@@ -245,7 +245,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
           <SelectField
             value={colYear}
             options={YEAR_OPTIONS}
-            onChange={v => { setColYear(v); setViewStart(0) }}
+            onChange={v => { setColYear(v); setViewStart(v === CAMPAIGN.year ? 0 : 5) }}
           />
         </div>
 
@@ -440,9 +440,9 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {[
           { key: 'draft',    label: 'черновик' },
+          { key: 'overlap',  label: 'Черновик, есть пересечения с коллегами' },
           { key: 'pending',  label: 'на согласовании' },
           { key: 'approved', label: 'согласован' },
-          { key: 'overlap',  label: 'пересекается с коллегой' },
         ].map(({ key, label }) => (
           <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: SEG_COLORS[key], flexShrink: 0 }} />
@@ -669,7 +669,9 @@ export default function PlanningPage({ onGoToRequests }) {
 
           {/* Status badge */}
           {(planStatus === 'pending' || planStatus === 'approved') && (
-            <StatusBadge status={planStatus} />
+            <div style={{ alignSelf: 'flex-start' }}>
+              <StatusBadge status={planStatus} />
+            </div>
           )}
 
           {/* Rules link (draft only) */}
@@ -758,10 +760,12 @@ export default function PlanningPage({ onGoToRequests }) {
                           <div style={{ color: COLORS.text, fontSize: 17, fontFamily: "'MTSCompact',sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
                             {fmtDate(seg.startDate)} – {fmtDate(seg.endDate)}
                           </div>
-                          <div style={{ color: COLORS.secondary, fontSize: 14, fontFamily: "'MTSCompact',sans-serif", fontWeight: 400, lineHeight: '20px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                            {pluralDays(seg.days)}
+                          <div style={{ color: COLORS.secondary, fontSize: 14, fontFamily: "'MTSCompact',sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+                            {planStatus === 'approved'
+                              ? `${pluralDays(seg.days)}, доступно ${2 - rInfo.count} ${(2 - rInfo.count) === 1 ? 'перенос' : (2 - rInfo.count) >= 2 && (2 - rInfo.count) <= 4 ? 'переноса' : 'переносов'}`
+                              : pluralDays(seg.days)}
                             {rInfo.pending && (
-                              <span style={{ color: '#FFBB00' }}>перенос на согласовании</span>
+                              <span style={{ color: '#FFBB00' }}> · перенос на согласовании</span>
                             )}
                           </div>
                           {rInfo.pending && (
@@ -776,17 +780,25 @@ export default function PlanningPage({ onGoToRequests }) {
                             disabled={!canReschedule}
                             title={rescheduleTitle}
                             style={{
-                              ...BTN_STYLE,
-                              height: 32, padding: '0 12px',
-                              background: '#fff',
-                              color: canReschedule ? COLORS.blue : COLORS.hint,
-                              border: `1px solid ${canReschedule ? COLORS.blue : COLORS.stroke}`,
-                              borderRadius: 12,
+                              padding: 4,
+                              background: canReschedule ? '#F2F3F7' : COLORS.bg,
+                              borderRadius: 8,
+                              border: 'none',
                               cursor: canReschedule ? 'pointer' : 'not-allowed',
-                              fontSize: 11, flexShrink: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              flexShrink: 0,
+                              opacity: canReschedule ? 1 : 0.4,
                             }}
                           >
-                            Перенести
+                            <div style={{ paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2 }}>
+                              <div style={{
+                                color: '#1D2023', fontSize: 10, fontFamily: "'MTSWide', sans-serif",
+                                fontWeight: 700, textTransform: 'uppercase', lineHeight: '12px',
+                                letterSpacing: 0.5, whiteSpace: 'nowrap',
+                              }}>
+                                Перенести
+                              </div>
+                            </div>
                           </button>
                         )}
                       </div>
@@ -806,7 +818,7 @@ export default function PlanningPage({ onGoToRequests }) {
           {/* Draft actions */}
           {planStatus === 'draft' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4 }}>
-              <button onClick={() => setShowAddDialog(true)} style={BTN({ background: COLORS.bg, color: COLORS.text })}>
+              <button onClick={() => setShowAddDialog(true)} style={BTN({ background: COLORS.bg, color: COLORS.text, height: 32, borderRadius: 12 })}>
                 Добавить период
               </button>
               <button
