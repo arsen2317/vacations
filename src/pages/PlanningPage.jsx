@@ -7,6 +7,7 @@ import {
   Banner, CalendarRange, SelectField, Chip,
   SearchIcon, InfoIcon,
 } from '../ds/index.js'
+import StatusBadge from '../components/StatusBadge'
 
 const TODAY = new Date('2026-05-19T00:00:00')
 
@@ -616,12 +617,9 @@ export default function PlanningPage({ onGoToRequests }) {
             Периоды отпуска
           </div>
 
-          {/* Status banners */}
-          {planStatus === 'pending' && (
-            <Banner title="Ожидает согласования" subtitle="План отправлен руководителю. Ожидайте ответа." />
-          )}
-          {planStatus === 'approved' && (
-            <Banner title="План согласован" subtitle={`Руководитель одобрил ваш план отпуска на ${year} год`} />
+          {/* Status badge */}
+          {(planStatus === 'pending' || planStatus === 'approved') && (
+            <StatusBadge status={planStatus} />
           )}
 
           {/* Rules link (draft only) */}
@@ -730,9 +728,10 @@ export default function PlanningPage({ onGoToRequests }) {
                             style={{
                               ...BTN_STYLE,
                               height: 32, padding: '0 12px',
-                              background: canReschedule ? COLORS.blue : COLORS.bg,
-                              color: canReschedule ? '#fff' : COLORS.hint,
-                              border: 'none', borderRadius: 12,
+                              background: '#fff',
+                              color: canReschedule ? COLORS.blue : COLORS.hint,
+                              border: `1px solid ${canReschedule ? COLORS.blue : COLORS.stroke}`,
+                              borderRadius: 12,
                               cursor: canReschedule ? 'pointer' : 'not-allowed',
                               fontSize: 11, flexShrink: 0,
                             }}
