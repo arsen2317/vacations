@@ -8,10 +8,19 @@ import { useApp } from '../context/AppContext'
 import { fmtDate, pluralDays } from '../utils/dateUtils'
 
 const STATUS_TAG = {
-  draft:    { label: 'Черновик',        color: 'default'  },
-  pending:  { label: 'На согласовании', color: 'gold'     },
-  approved: { label: 'Согласован',      color: 'success'  },
-  rejected: { label: 'Отклонён',        color: 'error'    },
+  draft:    { label: 'Черновик',        bg: '#F2F3F7', color: '#626C77' },
+  pending:  { label: 'На согласовании', bg: '#C7E1FF', color: '#005CBD' },
+  approved: { label: 'Согласован',      bg: '#BEF4BD', color: '#007502' },
+  rejected: { label: 'Отклонён',        bg: '#FCD4C9', color: '#AD3400' },
+}
+
+function StatusBadge({ status }) {
+  const s = STATUS_TAG[status] ?? STATUS_TAG.draft
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', background: s.bg, color: s.color, borderRadius: 8, fontSize: 14, fontWeight: 500, lineHeight: '20px', whiteSpace: 'nowrap', fontFamily: "'MTSCompact', sans-serif" }}>
+      {s.label}
+    </span>
+  )
 }
 
 export default function ManagerPage() {
@@ -110,8 +119,7 @@ export default function ManagerPage() {
       title: 'Статус',
       key: 'status',
       render: (_, sub) => {
-        const sc = STATUS_TAG[sub.planStatus] ?? STATUS_TAG.draft
-        return <Tag color={sc.color} style={{ marginInlineEnd: 0 }}>{sc.label}</Tag>
+        return <StatusBadge status={sub.planStatus} />
       },
     },
     {

@@ -1,11 +1,13 @@
 const STATUS_STYLES = {
-  planned:   { bg: "#E1F3FE", color: "#1D2023", label: "Запланировано" },
-  active:    { bg: "#26CD58", color: "#fff",     label: "Активно" },
-  done:      { bg: "#F2F3F7", color: "#1D2023",  label: "Завершено" },
-  rejected:  { bg: "#F95721", color: "#fff",     label: "Отклонено" },
-  assigned:  { bg: "#E1F3FE", color: "#1D2023",  label: "Назначена" },
-  conducted: { bg: "#26CD58", color: "#fff",     label: "Проведена" },
-  cancelled: { bg: "#F95721", color: "#fff",     label: "Отменена" },
+  draft:     { bg: '#F2F3F7', color: '#626C77', label: 'Черновик' },
+  pending:   { bg: '#C7E1FF', color: '#005CBD', label: 'На согласовании' },
+  reviewing: { bg: '#E3CCFF', color: '#7936C9', label: 'Ознакомление' },
+  approved:  { bg: '#BEF4BD', color: '#007502', label: 'Согласован' },
+  rejected:  { bg: '#FCD4C9', color: '#AD3400', label: 'Отклонена' },
+  cancelled: { bg: '#F2F3F7', color: '#626C77', label: 'Отменена' },
+  planned:   { bg: '#C7E1FF', color: '#005CBD', label: 'Запланировано' },
+  active:    { bg: '#BEF4BD', color: '#007502', label: 'Активно' },
+  done:      { bg: '#F2F3F7', color: '#626C77', label: 'Завершено' },
 };
 
 export function StatusBadge({ type }) {
