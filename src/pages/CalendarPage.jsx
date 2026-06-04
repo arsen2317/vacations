@@ -49,19 +49,27 @@ function toDateStr(year, month, day) {
 function MonthCard({ year, month, holidays, vacationDays }) {
   const firstDow = getDow(new Date(year, month, 1))
   const totalDays = new Date(year, month + 1, 0).getDate()
+  const totalRows = Math.ceil((firstDow + totalDays) / 7)
 
-  const cells = []
-  for (let i = 0; i < firstDow; i++) cells.push(null)
-  for (let d = 1; d <= totalDays; d++) cells.push(d)
-  while (cells.length % 7 !== 0) cells.push(null)
+  // Build 7 columns (one per weekday). Each column is an array of day numbers or null.
+  const columns = Array.from({ length: 7 }, (_, col) =>
+    Array.from({ length: totalRows }, (_, row) => {
+      const day = row * 7 + col - firstDow + 1
+      return day >= 1 && day <= totalDays ? day : null
+    })
+  )
 
   return (
     <div style={{
-      width: 316,
       background: '#fff',
       borderRadius: 32,
+      paddingLeft: 16,
+      paddingRight: 16,
       paddingTop: 20,
       paddingBottom: 20,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
     }}>
       <div style={{
         textAlign: 'center',
@@ -69,76 +77,88 @@ function MonthCard({ year, month, holidays, vacationDays }) {
         fontFamily: "'MTSCompact', sans-serif",
         fontWeight: 500,
         color: '#1D2023',
-        marginBottom: 8,
-        paddingLeft: 12,
-        paddingRight: 12,
       }}>
         {MONTH_NAMES[month]}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', paddingLeft: 8, paddingRight: 8 }}>
-        {WEEKDAY_NAMES.map(w => (
-          <div key={w} style={{
-            textAlign: 'center',
-            fontSize: 12,
-            color: '#626C77',
-            fontWeight: 500,
-            textTransform: 'uppercase',
-            padding: '6px 2px',
+      {/* 7 weekday columns */}
+      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+        {WEEKDAY_NAMES.map((w, col) => (
+          <div key={col} style={{
+            flex: '1 1 0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12,
           }}>
-            {w}
+            {/* Weekday header */}
+            <div style={{
+              alignSelf: 'stretch',
+              textAlign: 'center',
+              fontSize: 12,
+              fontFamily: "'MTSCompact', sans-serif",
+              fontWeight: 500,
+              color: '#626C77',
+              textTransform: 'uppercase',
+              lineHeight: '16px',
+            }}>
+              {w}
+            </div>
+
+            {/* Day cells */}
+            <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {columns[col].map((day, row) => {
+                if (day === null) {
+                  return <div key={row} style={{ alignSelf: 'stretch', height: 36, position: 'relative' }} />
+                }
+
+                const ds = toDateStr(year, month, day)
+                const isHoliday = holidays.has(ds)
+                const vacStatus = vacationDays.get(ds)
+                const st = vacStatus ? STATUS_STYLE[vacStatus] : null
+
+                return (
+                  <div key={row} style={{
+                    alignSelf: 'stretch',
+                    padding: 4,
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                    {st && (
+                      <div style={{
+                        width: 36, height: 36,
+                        left: 2, top: 0,
+                        position: 'absolute',
+                        background: st.bg,
+                        borderRadius: 12,
+                      }} />
+                    )}
+                    <div style={{
+                      alignSelf: 'stretch',
+                      height: 28,
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      position: 'relative',
+                      zIndex: 1,
+                      color: isHoliday ? '#FF0032' : st ? st.color : '#1D2023',
+                      fontSize: 14,
+                      fontFamily: "'MTSCompact', sans-serif",
+                      fontWeight: st ? 500 : 400,
+                      lineHeight: st ? '20px' : '18px',
+                    }}>
+                      {day}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         ))}
-
-        {cells.map((day, i) => {
-          if (day === null) {
-            return <div key={`empty-${i}`} style={{ height: 36 }} />
-          }
-
-          const ds = toDateStr(year, month, day)
-          const isHoliday = holidays.has(ds)
-          const vacStatus = vacationDays.get(ds)
-          const st = vacStatus ? STATUS_STYLE[vacStatus] : null
-
-          const textColor = isHoliday
-            ? '#FF0032'
-            : st ? st.color : '#1D2023'
-          const fontWeight = st ? 500 : 400
-
-          return (
-            <div key={ds} style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: 36,
-              padding: '0 2px',
-            }}>
-              {st && (
-                <div style={{
-                  position: 'absolute',
-                  width: 36,
-                  height: 36,
-                  borderRadius: 12,
-                  background: st.bg,
-                }} />
-              )}
-              <span style={{
-                position: 'relative',
-                zIndex: 1,
-                fontSize: 14,
-                fontWeight,
-                color: textColor,
-                lineHeight: '36px',
-                width: 28,
-                textAlign: 'center',
-                fontFamily: "'MTSCompact', sans-serif",
-              }}>
-                {day}
-              </span>
-            </div>
-          )
-        })}
       </div>
     </div>
   )
