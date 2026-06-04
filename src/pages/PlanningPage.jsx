@@ -580,36 +580,38 @@ export default function PlanningPage({ onGoToRequests }) {
 
                   return (
                     <div key={seg.id} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 12,
-                      padding: '12px 0', borderBottom: `1px solid ${COLORS.stroke}`,
+                      width: '100%',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      paddingTop: 10, paddingBottom: 10,
+                      borderBottom: `1px solid ${COLORS.stroke}`,
                     }}>
                       {planStatus === 'draft' && (
                         <button
                           onClick={() => { setSegments(prev => prev.filter(s => s.id !== seg.id)); setDraftSaved(false) }}
                           style={{
-                            width: 28, height: 28, borderRadius: '50%',
-                            background: '#F95721', border: 'none', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0, marginTop: 2,
+                            width: 24, height: 24, position: 'relative',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            padding: 0, flexShrink: 0,
                           }}
                         >
-                          <svg width="12" height="2" viewBox="0 0 12 2" fill="none">
-                            <path d="M1 1H11" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ position: 'absolute', left: 1, top: 1 }}>
+                            <path fillRule="evenodd" clipRule="evenodd" d="M2.04351 2.04351C0.476114 3.6109 0.353796 5.18347 0.109159 8.32861C0.0414809 9.1987 0 10.0993 0 11C0 11.9007 0.0414808 12.8013 0.109159 13.6714C0.353796 16.8165 0.476114 18.3891 2.04351 19.9565C3.6109 21.5239 5.18347 21.6462 8.32861 21.8908C9.1987 21.9585 10.0994 22 11 22C11.9007 22 12.8013 21.9585 13.6714 21.8908C16.8165 21.6462 18.3891 21.5239 19.9565 19.9565C21.5239 18.3891 21.6462 16.8165 21.8908 13.6714C21.9585 12.8013 22 11.9007 22 11C22 10.0993 21.9585 9.1987 21.8908 8.32861C21.6462 5.18347 21.5239 3.6109 19.9565 2.04351C18.3891 0.476114 16.8165 0.353796 13.6714 0.109158C12.8013 0.0414806 11.9007 0 11 0C10.0994 0 9.1987 0.0414806 8.32861 0.109158C5.18347 0.353796 3.6109 0.476115 2.04351 2.04351Z" fill="#F95721"/>
                           </svg>
+                          <div style={{ width: 10, height: 2, left: 7, top: 11, position: 'absolute', background: '#fff', borderRadius: 1 }} />
                         </button>
                       )}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif", marginBottom: 2 }}>
-                          {fmtDate(seg.startDate)} — {fmtDate(seg.endDate)}
+                      <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ color: COLORS.text, fontSize: 17, fontFamily: "'MTSCompact',sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
+                          {fmtDate(seg.startDate)} – {fmtDate(seg.endDate)}
                         </div>
-                        <div style={{ fontSize: 13, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif", display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ color: COLORS.secondary, fontSize: 14, fontFamily: "'MTSCompact',sans-serif", fontWeight: 400, lineHeight: '20px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           {pluralDays(seg.days)}
                           {rInfo.pending && (
-                            <span style={{ color: '#FFBB00', fontSize: 12 }}>перенос на согласовании</span>
+                            <span style={{ color: '#FFBB00' }}>перенос на согласовании</span>
                           )}
                         </div>
                         {rInfo.pending && (
-                          <div style={{ fontSize: 12, color: COLORS.secondary, marginTop: 4 }}>
+                          <div style={{ fontSize: 12, color: COLORS.secondary, marginTop: 2 }}>
                             Новые даты: {fmtDate(rInfo.pending.startDate)} — {fmtDate(rInfo.pending.endDate)}
                           </div>
                         )}
