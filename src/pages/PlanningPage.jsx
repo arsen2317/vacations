@@ -103,8 +103,14 @@ function Overlay({ onClose, children }) {
 }
 
 // ─────────── Colleagues Gantt Panel ───────────
+const YEAR_OPTIONS = [
+  { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
+  { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
+  { id: String(CAMPAIGN.year + 1), name: String(CAMPAIGN.year + 1) },
+]
+
 function ColleaguesPlanPanel({ planStatus, userSegments }) {
-  const colYear                        = CAMPAIGN.year
+  const [colYear, setColYear]         = useState(CAMPAIGN.year)
   const [viewStart, setViewStart]     = useState(0)
   const [showDrafts, setShowDrafts]   = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -138,11 +144,12 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
     const name = col?.name ?? emp?.name ?? `Сотрудник ${id}`
     const me   = col?.me ?? false
     const avatar = col?.avatar ?? emp?.avatar
-    const allSegs = col?.segments ?? []
+    const allSegs = (col?.segments ?? []).filter(s => new Date(s.startDate + 'T00:00:00').getFullYear() === colYear)
     const segs = showDrafts ? allSegs : allSegs.filter(s => s.status !== 'draft')
+    const meSegs = colYear === CAMPAIGN.year ? userSegments.map(s => ({ ...s, status: planStatus })) : []
     return {
       id, name, me, avatar,
-      segments: me ? userSegments.map(s => ({ ...s, status: planStatus })) : segs,
+      segments: me ? meSegs : segs,
     }
   }), [colIds, showDrafts, userSegments, planStatus])
 
@@ -212,10 +219,14 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
           )}
         </div>
 
-        {/* Year label */}
-        <span style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif", flexShrink: 0 }}>
-          {colYear}
-        </span>
+        {/* Year selector */}
+        <div style={{ flexShrink: 0, width: 120 }}>
+          <SelectField
+            value={String(colYear)}
+            options={YEAR_OPTIONS}
+            onChange={id => { setColYear(Number(id)); setViewStart(0) }}
+          />
+        </div>
 
         {/* Nav arrows — 1-month step */}
         {[
