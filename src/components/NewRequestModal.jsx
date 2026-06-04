@@ -231,7 +231,7 @@ export default function NewRequestModal({ onClose }) {
           </div>
 
           {/* Body */}
-          <div className="modal-scroll" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+          <div className="modal-scroll" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
 
             {/* Тип отпуска */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -283,7 +283,7 @@ export default function NewRequestModal({ onClose }) {
             <TextAreaField label="Комментарий" value={comment} onChange={setComment} description="До 255 символов" />
 
             {/* Согласующий */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase' }}>Согласующий</span>
               {changeApprover ? (
                 <SelectField
@@ -312,32 +312,35 @@ export default function NewRequestModal({ onClose }) {
             </div>
 
             {/* Дополнительный согласующий */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Checkbox checked={addExtraApprover} onChange={v => { setAddExtraApprover(v); if (!v) setExtraApprover('') }} label="Добавить дополнительного согласующего" />
               {addExtraApprover && (
-                extraApprover ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <PersonAvatar src={APPROVER_OPTIONS.find(o => o.id === extraApprover)?.avatar} />
-                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>
-                        {APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name}
+                <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase' }}>Дополнительный согласующий</span>
+                  {extraApprover ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <PersonAvatar src={APPROVER_OPTIONS.find(o => o.id === extraApprover)?.avatar} />
+                        <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>
+                          {APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name}
+                        </div>
                       </div>
+                      <button onClick={() => setExtraApprover('')} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M0.292893 10.2929C-0.0976311 10.6834 -0.0976311 11.3166 0.292893 11.7071C0.683418 12.0976 1.31658 12.0976 1.70711 11.7071L5.99993 7.41429L10.2929 11.7073C10.6834 12.0978 11.3166 12.0978 11.7071 11.7073C12.0976 11.3167 12.0976 10.6836 11.7071 10.293L7.41414 6.00007L11.7071 1.70711C12.0976 1.31658 12.0976 0.683417 11.7071 0.292893C11.3166 -0.0976313 10.6834 -0.0976309 10.2929 0.292894L5.99992 4.58586L1.70711 0.293045C1.31658 -0.0974801 0.683419 -0.0974798 0.292895 0.293044C-0.0976297 0.683569 -0.0976293 1.31673 0.292895 1.70726L4.58571 6.00007L0.292893 10.2929Z" fill="#8D969F"/>
+                        </svg>
+                      </button>
                     </div>
-                    <button onClick={() => setExtraApprover('')} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M0.292893 10.2929C-0.0976311 10.6834 -0.0976311 11.3166 0.292893 11.7071C0.683418 12.0976 1.31658 12.0976 1.70711 11.7071L5.99993 7.41429L10.2929 11.7073C10.6834 12.0978 11.3166 12.0978 11.7071 11.7073C12.0976 11.3167 12.0976 10.6836 11.7071 10.293L7.41414 6.00007L11.7071 1.70711C12.0976 1.31658 12.0976 0.683417 11.7071 0.292893C11.3166 -0.0976313 10.6834 -0.0976309 10.2929 0.292894L5.99992 4.58586L1.70711 0.293045C1.31658 -0.0974801 0.683419 -0.0974798 0.292895 0.293044C-0.0976297 0.683569 -0.0976293 1.31673 0.292895 1.70726L4.58571 6.00007L0.292893 10.2929Z" fill="#8D969F"/>
-                      </svg>
-                    </button>
-                  </div>
-                ) : (
-                  <SelectField
-                    value={extraApprover}
-                    options={APPROVER_OPTIONS}
-                    placeholder="Выберите согласующего"
-                    onChange={setExtraApprover}
-                    searchable
-                  />
-                )
+                  ) : (
+                    <SelectField
+                      value={extraApprover}
+                      options={APPROVER_OPTIONS}
+                      placeholder="Выберите согласующего"
+                      onChange={setExtraApprover}
+                      searchable
+                    />
+                  )}
+                </div>
               )}
             </div>
           </div>
