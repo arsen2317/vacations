@@ -636,15 +636,14 @@ export default function PlanningPage({ onGoToRequests }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 32, marginTop: 40, marginBottom: 32 }}>
         {balanceCards.map((card, i) => (
           <div key={i} style={{ ...CARD_STYLE, gridColumn: 'span 4', padding: 32 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            <div
+              title={card.info || undefined}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8, cursor: card.info ? 'help' : 'default' }}
+            >
               <span style={{ fontSize: 17, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif", lineHeight: '24px' }}>
                 {card.label}
               </span>
-              {card.info && (
-                <span title={card.info} style={{ cursor: 'help', display: 'flex', alignItems: 'center' }}>
-                  <InfoIcon color={COLORS.hint} />
-                </span>
-              )}
+              {card.info && <InfoIcon color={COLORS.hint} />}
             </div>
             <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSCompact',sans-serif", fontWeight: 500, lineHeight: '28px', wordWrap: 'break-word' }}>
               {card.value}
