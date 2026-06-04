@@ -97,18 +97,22 @@ function Overlay({ onClose, children }) {
 // ─────────── Colleagues Gantt Panel ───────────
 function ColleaguesPlanPanel({ planStatus, userSegments }) {
   const [colYear, setColYear]         = useState(2026)
+  const [viewStart, setViewStart]     = useState(0)
   const [showDrafts, setShowDrafts]   = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [colIds, setColIds]           = useState(INITIAL_COL_IDS)
 
-  const visibleMonths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-  const rangeStart   = new Date(colYear, 0, 1)
-  const rangeEnd     = new Date(colYear, 11, 31)
-  const rangeDays    = Math.round((rangeEnd - rangeStart) / 86400000) + 1
+  const visibleMonths = useMemo(
+    () => Array.from({ length: 6 }, (_, i) => viewStart + i),
+    [viewStart],
+  )
+  const rangeStart   = useMemo(() => new Date(colYear, viewStart, 1), [colYear, viewStart])
+  const rangeEnd     = useMemo(() => new Date(colYear, viewStart + 6, 0), [colYear, viewStart])
+  const rangeDays    = useMemo(() => Math.round((rangeEnd - rangeStart) / 86400000) + 1, [rangeStart, rangeEnd])
   const totalMoDays  = useMemo(
     () => visibleMonths.reduce((s, m) => s + daysInMonth(colYear, m), 0),
-    [colYear],
+    [colYear, visibleMonths],
   )
 
   const searchResults = useMemo(() => {
@@ -137,10 +141,9 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
 
   return (
     <div style={{
-      flex: 8, minWidth: 0,
       background: '#fff',
       borderRadius: 24,
-      padding: 24,
+      padding: 32,
       outline: `1px ${COLORS.stroke} solid`,
       outlineOffset: '-1px',
       display: 'flex',
@@ -204,10 +207,36 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
         <div style={{ width: 110 }}>
           <SelectField
             value={colYear}
-            onChange={v => setColYear(v)}
+            onChange={v => { setColYear(v); setViewStart(0) }}
             options={YEAR_OPTIONS}
           />
         </div>
+
+        {/* Nav arrows — 1-month step */}
+        {[
+          { dir: -1, path: 'M7 1L1 7L7 13' },
+          { dir:  1, path: 'M1 1L7 7L1 13' },
+        ].map(({ dir, path }) => {
+          const next = viewStart + dir
+          const disabled = next < 0 || next > 6
+          return (
+            <button
+              key={dir}
+              onClick={() => !disabled && setViewStart(next)}
+              style={{
+                width: 44, height: 44, background: COLORS.bg, border: 'none', borderRadius: 16,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: disabled ? 0.35 : 1, flexShrink: 0,
+              }}
+            >
+              <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
+                <path d={path} stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )
+        })}
       </div>
 
       {/* Show drafts */}
@@ -236,7 +265,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
       {/* Gantt table */}
       <div style={{ overflow: 'auto' }}>
         {/* Month headers */}
-        <div style={{ display: 'flex', height: 40, minWidth: 800 }}>
+        <div style={{ display: 'flex', height: 40, minWidth: 0 }}>
           <div style={{
             width: PERSON_COL_W, flexShrink: 0,
             paddingLeft: 16, paddingRight: 16, paddingTop: 10, paddingBottom: 10,
@@ -269,7 +298,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
             </div>
           : people.map((person, idx) => (
             <div key={person.id}>
-              <div style={{ display: 'flex', alignItems: 'center', minWidth: 800 }}>
+              <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
                 {/* Person cell */}
                 <div style={{
                   width: PERSON_COL_W, flexShrink: 0,
@@ -326,8 +355,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                     if (!bp) return null
                     return (
                       <div key={bi} style={{
-                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                        height: 24, borderRadius: 8,
+                        position: 'absolute', top: 0, bottom: 0,
                         background: SEG_COLORS[seg.status ?? 'approved'] ?? SEG_COLORS.approved,
                         ...bp,
                       }} title={`${fmtDate(seg.startDate)} — ${fmtDate(seg.endDate)}`} />
@@ -337,7 +365,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
               </div>
               {/* Row separator — only between rows */}
               {idx < people.length - 1 && (
-                <div style={{ height: 1, background: 'rgba(188,195,208,0.50)', minWidth: 800 }} />
+                <div style={{ height: 1, background: 'rgba(188,195,208,0.50)', minWidth: 0 }} />
               )}
             </div>
           ))
@@ -484,9 +512,9 @@ export default function PlanningPage({ onGoToRequests }) {
     <div style={{ fontFamily: "'MTSCompact',sans-serif" }}>
 
       {/* ── Balance cards ── */}
-      <div style={{ display: 'flex', gap: 32, marginTop: 40, marginBottom: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 32, marginTop: 40, marginBottom: 32 }}>
         {balanceCards.map((card, i) => (
-          <div key={i} style={{ ...CARD_STYLE, flex: 1 }}>
+          <div key={i} style={{ ...CARD_STYLE, gridColumn: 'span 4', padding: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
               <span style={{ fontSize: 13, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif", lineHeight: '18px' }}>
                 {card.label}
@@ -505,12 +533,12 @@ export default function PlanningPage({ onGoToRequests }) {
       </div>
 
       {/* ── Two-column layout ── */}
-      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 32, alignItems: 'start' }}>
 
         {/* ── Left: Vacation Periods (4/12 cols) ── */}
         <div style={{
-          flex: 4,
-          background: '#fff', borderRadius: 24, padding: 24,
+          gridColumn: 'span 4',
+          background: '#fff', borderRadius: 24, padding: 32,
           outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
           display: 'flex', flexDirection: 'column', gap: 16,
         }}>
@@ -676,11 +704,13 @@ export default function PlanningPage({ onGoToRequests }) {
           )}
         </div>
 
-        {/* ── Right: Colleagues Plans ── */}
-        <ColleaguesPlanPanel
-          planStatus={planStatus}
-          userSegments={planStatus === 'approved' ? approvedSegments : segments}
-        />
+        {/* ── Right: Colleagues Plans (8/12 cols) ── */}
+        <div style={{ gridColumn: 'span 8', minWidth: 0 }}>
+          <ColleaguesPlanPanel
+            planStatus={planStatus}
+            userSegments={planStatus === 'approved' ? approvedSegments : segments}
+          />
+        </div>
       </div>
 
       {/* ── Demo switcher ── */}
