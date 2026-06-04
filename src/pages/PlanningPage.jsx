@@ -8,6 +8,7 @@ import {
   SearchIcon, InfoIcon,
 } from '../ds/index.js'
 import StatusBadge from '../components/StatusBadge'
+import RequestModal from '../components/RequestModal'
 
 const TODAY = new Date('2026-05-19T00:00:00')
 
@@ -69,17 +70,6 @@ function getBarProps(segStart, segEnd, rangeStart, rangeEnd, rangeDays) {
   }
 }
 
-function segTemporalStatus(seg) {
-  const start = new Date(seg.startDate + 'T00:00:00')
-  const end   = new Date(seg.endDate   + 'T00:00:00')
-  if (TODAY > end)    return 'past'
-  if (TODAY >= start) return 'ongoing'
-  return 'upcoming'
-}
-
-function daysUntilStart(seg) {
-  return Math.ceil((new Date(seg.startDate + 'T00:00:00') - TODAY) / 86400000)
-}
 
 function Overlay({ onClose, children }) {
   return (
@@ -141,12 +131,12 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
     const avatar = col?.avatar ?? emp?.avatar
     const allSegs = (col?.segments ?? []).filter(s => new Date(s.startDate + 'T00:00:00').getFullYear() === Number(colYear))
     const segs = showDrafts ? allSegs : allSegs.filter(s => s.status !== 'draft')
-    const meSegs = colYear === CAMPAIGN.year ? userSegments.map(s => ({ ...s, status: planStatus })) : []
+    const meSegs = colYear === CAMPAIGN.year ? userSegments.map(s => ({ ...s, status: planStatus })) : segs
     return {
       id, name, me, avatar,
       segments: me ? meSegs : segs,
     }
-  }), [colIds, showDrafts, userSegments, planStatus])
+  }), [colIds, showDrafts, userSegments, planStatus, colYear])
 
   // Map of "startDate_endDate" → overlapping colleague names (for user's draft segs)
   const overlapInfo = useMemo(() => {
@@ -530,8 +520,7 @@ export default function PlanningPage({ onGoToRequests }) {
   const [addError,          setAddError]          = useState('')
   const [showSubmitDialog,  setShowSubmitDialog]  = useState(false)
   const [extraApprover,     setExtraApprover]     = useState(null)
-  const [rescheduleSegId,   setRescheduleSegId]   = useState(null)
-  const [rescheduleError,   setRescheduleError]   = useState('')
+  const [segModal,          setSegModal]          = useState(null)
 
   const displaySegments = planStatus === 'approved' ? approvedSegments : segments
 
@@ -563,31 +552,42 @@ export default function PlanningPage({ onGoToRequests }) {
     if (tryAddSegment(start, end)) setShowAddDialog(false)
   }
 
-  function handleRescheduleApply(start, end) {
-    setRescheduleError('')
+  function handleSegReschedule(segId, start, end) {
     const startStr = dateToISO(start)
     const endStr   = dateToISO(end)
     const ns = new Date(startStr + 'T00:00:00')
     const ne = new Date(endStr   + 'T00:00:00')
     for (const seg of approvedSegments) {
-      if (seg.id === rescheduleSegId) continue
+      if (seg.id === segId) continue
       const ss = new Date(seg.startDate + 'T00:00:00')
       const se = new Date(seg.endDate   + 'T00:00:00')
-      if (ns <= se && ne >= ss) { setRescheduleError('Период пересекается с другим отрезком'); return }
+      if (ns <= se && ne >= ss) return
     }
     setReschedules(prev => ({
       ...prev,
-      [rescheduleSegId]: {
-        count:   (prev[rescheduleSegId]?.count ?? 0) + 1,
+      [segId]: {
+        count:   (prev[segId]?.count ?? 0) + 1,
         pending: { startDate: startStr, endDate: endStr },
       },
     }))
-    setRescheduleSegId(null)
   }
 
-  const rescheduleSegment = rescheduleSegId
-    ? approvedSegments.find(s => s.id === rescheduleSegId)
-    : null
+  const segModalRequest = segModal ? (() => {
+    const rInfo = reschedules[segModal.id] ?? { count: 0 }
+    return {
+      id: segModal.id,
+      type: 'planned',
+      typeLabel: 'Плановый',
+      typeFullName: 'Ежегодный основной оплачиваемый отпуск',
+      startDate: new Date(segModal.startDate + 'T00:00:00'),
+      endDate: new Date(segModal.endDate + 'T00:00:00'),
+      days: segModal.days,
+      status: 'approved',
+      approver: DEFAULT_APPROVER,
+      rescheduleCount: rInfo.count ?? 0,
+      rescheduleLimit: 2,
+    }
+  })() : null
 
   const submitBlockers = [
     remainingDays > 0 && `нераспределено ${pluralDays(remainingDays)}`,
@@ -666,13 +666,6 @@ export default function PlanningPage({ onGoToRequests }) {
             Периоды отпуска
           </div>
 
-          {/* Status badge */}
-          {(planStatus === 'pending' || planStatus === 'approved') && (
-            <div style={{ alignSelf: 'flex-start' }}>
-              <StatusBadge status={planStatus} />
-            </div>
-          )}
-
           {/* Rules link (draft only) */}
           {planStatus === 'draft' && (
             <button style={{
@@ -720,26 +713,17 @@ export default function PlanningPage({ onGoToRequests }) {
               : displaySegments.map((seg, segIdx) => {
                   const isLastSeg = segIdx === displaySegments.length - 1
                   const rInfo = reschedules[seg.id] ?? { count: 0, pending: null }
-                  const tStatus = planStatus === 'approved' ? segTemporalStatus(seg) : null
-                  const dl = tStatus === 'upcoming' ? daysUntilStart(seg) : 0
-                  const canReschedule = planStatus === 'approved'
-                    && tStatus === 'upcoming' && dl >= 10
-                    && rInfo.count < 2 && !rInfo.pending
-
-                  const rescheduleTitle = !canReschedule && planStatus === 'approved'
-                    ? tStatus === 'past'    ? 'Отрезок уже прошёл'
-                    : tStatus === 'ongoing' ? 'Уже начался'
-                    : dl < 10              ? 'Менее 10 дней до начала'
-                    : rInfo.count >= 2     ? 'Лимит переносов (2/2)'
-                    : rInfo.pending        ? 'Перенос на согласовании'
-                    : '' : ''
 
                   return (
                     <div key={seg.id}>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        paddingTop: 10, paddingBottom: 10,
-                      }}>
+                      <div
+                        onClick={planStatus === 'approved' ? () => setSegModal(seg) : undefined}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          paddingTop: 10, paddingBottom: 10,
+                          cursor: planStatus === 'approved' ? 'pointer' : 'default',
+                        }}
+                      >
                         {planStatus === 'draft' && (
                           <button
                             onClick={() => { setSegments(prev => prev.filter(s => s.id !== seg.id)); setDraftSaved(false) }}
@@ -773,32 +757,10 @@ export default function PlanningPage({ onGoToRequests }) {
                             </div>
                           )}
                         </div>
-                        {planStatus === 'approved' && (
-                          <button
-                            onClick={() => canReschedule && setRescheduleSegId(seg.id)}
-                            disabled={!canReschedule}
-                            title={rescheduleTitle}
-                            style={{
-                              padding: 4,
-                              background: canReschedule ? '#F2F3F7' : COLORS.bg,
-                              borderRadius: 8,
-                              border: 'none',
-                              cursor: canReschedule ? 'pointer' : 'not-allowed',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              flexShrink: 0,
-                              opacity: canReschedule ? 1 : 0.4,
-                            }}
-                          >
-                            <div style={{ paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2 }}>
-                              <div style={{
-                                color: '#1D2023', fontSize: 10, fontFamily: "'MTSWide', sans-serif",
-                                fontWeight: 700, textTransform: 'uppercase', lineHeight: '12px',
-                                letterSpacing: 0.5, whiteSpace: 'nowrap',
-                              }}>
-                                Перенести
-                              </div>
-                            </div>
-                          </button>
+                        {(planStatus === 'pending' || planStatus === 'approved') && (
+                          <div style={{ flexShrink: 0 }}>
+                            <StatusBadge status={planStatus} />
+                          </div>
                         )}
                       </div>
                       {/* Divider skips under the icon in draft mode */}
@@ -817,7 +779,7 @@ export default function PlanningPage({ onGoToRequests }) {
           {/* Draft actions */}
           {planStatus === 'draft' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4 }}>
-              <button onClick={() => setShowAddDialog(true)} style={BTN({ background: COLORS.bg, color: COLORS.text, height: 32, borderRadius: 12 })}>
+              <button onClick={() => setShowAddDialog(true)} style={BTN({ background: COLORS.bg, color: COLORS.text })}>
                 Добавить период
               </button>
               <button
@@ -835,11 +797,6 @@ export default function PlanningPage({ onGoToRequests }) {
             </div>
           )}
 
-          {planStatus === 'approved' && (
-            <div style={{ fontSize: 12, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif" }}>
-              Перенос возможен за 10 и более дней до начала — не более 2 переносов на отрезок
-            </div>
-          )}
         </div>
 
         {/* ── Right: Colleagues Plans (8/12 cols) ── */}
@@ -943,25 +900,13 @@ export default function PlanningPage({ onGoToRequests }) {
         </Overlay>
       )}
 
-      {/* ── Reschedule dialog ── */}
-      {rescheduleSegId && rescheduleSegment && (
-        <Overlay onClose={() => { setRescheduleSegId(null); setRescheduleError('') }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-            <CalendarRange
-              initialStart={new Date(rescheduleSegment.startDate + 'T00:00:00')}
-              initialEnd={new Date(rescheduleSegment.endDate + 'T00:00:00')}
-              onApply={handleRescheduleApply}
-            />
-            {rescheduleError && (
-              <div style={{
-                padding: '10px 20px', background: '#FFF3F0', borderRadius: 12,
-                color: '#F95721', fontSize: 14, fontFamily: "'MTSCompact',sans-serif",
-              }}>
-                {rescheduleError}
-              </div>
-            )}
-          </div>
-        </Overlay>
+      {/* ── Approved segment modal ── */}
+      {segModal && segModalRequest && (
+        <RequestModal
+          request={segModalRequest}
+          onClose={() => setSegModal(null)}
+          onReschedule={(start, end) => handleSegReschedule(segModal.id, start, end)}
+        />
       )}
     </div>
   )

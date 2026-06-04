@@ -179,7 +179,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
   )
 }
 
-export function CalendarRange({ initialStart, initialEnd, initialViewMonth, onApply, onClose }) {
+export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = 'Применить', onApply, onClose }) {
   const today = dayOnly(new Date())
 
   const [viewMonth, setViewMonth] = useState(() => {
@@ -289,14 +289,14 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, onAp
         <div style={{ flex: 1, display: 'flex', gap: 4, alignItems: 'baseline' }}>
           <span style={{ fontSize: 12, fontWeight: 500, color: '#626C77', textTransform: 'uppercase', lineHeight: '16px' }}>Дней отпуска:</span>
           <span style={{ fontSize: 12, fontWeight: 500, color: '#1D2023', textTransform: 'uppercase', lineHeight: '16px' }}>
-            {start && (end || start) ? countWorkDays(start, end || start) : '—'}
+            {start ? countWorkDays(start, effectiveEnd || start) : '—'}
           </span>
         </div>
         <button onClick={handleReset} style={{ height: 44, padding: '0 16px', background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#1D2023', textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: "'MTSWide', sans-serif" }}>
           Сбросить
         </button>
         <button onClick={handleApply} style={{ height: 44, padding: '0 16px', background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: "'MTSWide', sans-serif" }}>
-          Применить
+          {applyLabel}
         </button>
       </div>
     </div>

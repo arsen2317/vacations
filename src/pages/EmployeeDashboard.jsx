@@ -35,7 +35,6 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       <RequestModal
         request={selectedRequest}
         onClose={() => setSelectedRequest(null)}
-        onReschedule={() => { setSelectedRequest(null); onGoToPlanning() }}
       />
       {showNewRequest && <NewRequestModal onClose={() => setShowNewRequest(false)} />}
     </div>
