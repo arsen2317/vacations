@@ -8,11 +8,17 @@ const BASE_TABS = [
 ]
 
 export default function TabNav({ activeTab, onTabChange }) {
-  const { role } = useApp()
+  const { role, subordinates } = useApp()
+
+  const pendingCount = subordinates
+    ? subordinates.filter(s => s.planStatus === 'pending').length
+    : 0
 
   const tabs = [
     ...BASE_TABS,
-    ...(role === 'manager' || role === 'hr_admin' ? [{ key: 'team', label: 'Команда' }] : []),
+    ...(role === 'manager' || role === 'hr_admin'
+      ? [{ key: 'team', label: 'Команда', count: pendingCount > 0 ? pendingCount : undefined }]
+      : []),
     ...(role === 'hr_admin' ? [{ key: 'hr', label: 'HR-панель' }] : []),
   ]
 

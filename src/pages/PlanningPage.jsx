@@ -22,6 +22,13 @@ const SEG_COLORS = {
   draft:     '#EAF1FF',
 }
 
+const SEG_STATUS_LABEL = {
+  approved:  'Согласован',
+  pending:   'На согласовании',
+  reviewing: 'Ознакомление',
+  draft:     'Черновик',
+}
+
 const COLLEAGUES_MAP = Object.fromEntries(COLLEAGUES.map(c => [c.id, c]))
 const INITIAL_COL_IDS = COLLEAGUES
   .filter(c => c.team === CURRENT_USER.team)
@@ -102,7 +109,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [colIds, setColIds]           = useState(INITIAL_COL_IDS)
-  const [tooltip, setTooltip]         = useState(null) // { text, x, y }
+  const [tooltip, setTooltip]         = useState(null) // { startDate, endDate, status, x, y }
 
   const visibleMonths = useMemo(
     () => Array.from({ length: 6 }, (_, i) => viewStart + i),
@@ -349,17 +356,22 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                   {person.segments.map((seg, bi) => {
                     const bp = getBarProps(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
                     if (!bp) return null
-                    const tipText = `${fmtDateFull(seg.startDate)} – ${fmtDateFull(seg.endDate)}`
+                    const segStatus = seg.status ?? 'approved'
                     return (
                       <div
                         key={bi}
                         style={{
                           position: 'absolute', top: 0, bottom: 0,
-                          background: SEG_COLORS[seg.status ?? 'approved'] ?? SEG_COLORS.approved,
+                          background: SEG_COLORS[segStatus] ?? SEG_COLORS.approved,
                           cursor: 'default',
                           ...bp,
                         }}
-                        onMouseEnter={e => setTooltip({ text: tipText, x: e.clientX, y: e.clientY })}
+                        onMouseEnter={e => setTooltip({
+                          startDate: fmtDateFull(seg.startDate),
+                          endDate: fmtDateFull(seg.endDate),
+                          status: segStatus,
+                          x: e.clientX, y: e.clientY,
+                        })}
                         onMouseMove={e => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
                         onMouseLeave={() => setTooltip(null)}
                       />
@@ -390,25 +402,62 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
         ))}
       </div>
 
-      {/* Hover tooltip — fixed so overflow:hidden on rows doesn't clip it */}
+      {/* Hover tooltip — Figma DS spec, fixed to escape overflow:hidden */}
       {tooltip && (
         <div style={{
           position: 'fixed',
-          left: tooltip.x + 14,
-          top: tooltip.y - 36,
-          background: '#1D2023',
-          color: '#fff',
-          borderRadius: 8,
-          padding: '5px 10px',
-          fontSize: 13,
-          fontFamily: "'MTSCompact',sans-serif",
-          lineHeight: '18px',
-          whiteSpace: 'nowrap',
+          left: tooltip.x,
+          top: tooltip.y,
+          transform: 'translate(-50%, calc(-100% - 4px))',
           zIndex: 9999,
           pointerEvents: 'none',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+          display: 'inline-flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}>
-          {tooltip.text}
+          {/* Card */}
+          <div style={{
+            padding: 12,
+            background: '#1D2023',
+            borderRadius: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+          }}>
+            {/* Date range */}
+            <div style={{
+              color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact',sans-serif",
+              fontWeight: 500, lineHeight: '24px', whiteSpace: 'nowrap',
+            }}>
+              {tooltip.startDate} – {tooltip.endDate}
+            </div>
+            {/* Status row */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              {/* Bullet */}
+              <div style={{ width: 4, height: 20, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{
+                  width: 4, height: 4, borderRadius: 12,
+                  background: SEG_COLORS[tooltip.status] ?? SEG_COLORS.approved,
+                }} />
+              </div>
+              {/* Label */}
+              <div style={{
+                color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact',sans-serif",
+                fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap',
+              }}>
+                {SEG_STATUS_LABEL[tooltip.status] ?? 'Согласован'}
+              </div>
+            </div>
+          </div>
+          {/* Arrow pointing down */}
+          <div style={{ width: 36, height: 8, position: 'relative', flexShrink: 0 }}>
+            <div style={{
+              width: 20, height: 8,
+              left: 8, top: 0,
+              position: 'absolute',
+              background: '#1D2023',
+            }} />
+          </div>
         </div>
       )}
     </div>
