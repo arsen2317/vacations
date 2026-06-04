@@ -37,6 +37,17 @@ const INITIAL_COL_IDS = COLLEAGUES
   .filter(c => c.team === CURRENT_USER.team)
   .map(c => c.id)
 
+const EMPLOYEE_FULL_NAMES = {
+  1: 'Морозов Алексей Иванович',
+  2: 'Соколов Дмитрий Александрович',
+  3: 'Иванова Мария Сергеевна',
+  4: 'Петрова Анна Николаевна',
+  5: 'Смирнов Игорь Петрович',
+  6: 'Николаев Сергей Владимирович',
+  7: 'Козлова Елена Михайловна',
+  8: 'Васильева Ольга Андреевна',
+}
+
 const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
 const EXTRA_APPROVER_OPTIONS = COLLEAGUES
   .filter(c => !c.me)
@@ -362,7 +373,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                     fontWeight: 400, lineHeight: '20px',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
-                    {person.name}{person.me ? ' (вы)' : ''}
+                    {(EMPLOYEE_FULL_NAMES[person.id] ?? person.name)}{person.me ? ' (вы)' : ''}
                   </span>
                   {/* X button */}
                   <button
@@ -430,7 +441,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {[
           { key: 'draft',    label: 'черновик' },
-          { key: 'overlap',  label: 'Черновик, есть пересечения с коллегами' },
+          ...(colYear === CAMPAIGN.year ? [{ key: 'overlap', label: 'Черновик, есть пересечения с коллегами' }] : []),
           { key: 'pending',  label: 'на согласовании' },
           { key: 'approved', label: 'согласован' },
         ].map(({ key, label }) => (
@@ -521,6 +532,8 @@ export default function PlanningPage({ onGoToRequests }) {
   const [showSubmitDialog,  setShowSubmitDialog]  = useState(false)
   const [extraApprover,     setExtraApprover]     = useState(null)
   const [segModal,          setSegModal]          = useState(null)
+  const [infoTooltip,       setInfoTooltip]       = useState(null)
+  const [showRulesModal,    setShowRulesModal]    = useState(false)
 
   const displaySegments = planStatus === 'approved' ? approvedSegments : segments
 
@@ -582,7 +595,7 @@ export default function PlanningPage({ onGoToRequests }) {
       startDate: new Date(segModal.startDate + 'T00:00:00'),
       endDate: new Date(segModal.endDate + 'T00:00:00'),
       days: segModal.days,
-      status: 'approved',
+      status: planStatus === 'pending' ? 'pending' : 'approved',
       approver: DEFAULT_APPROVER,
       rescheduleCount: rInfo.count ?? 0,
       rescheduleLimit: 2,
@@ -636,14 +649,19 @@ export default function PlanningPage({ onGoToRequests }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 32, marginTop: 40, marginBottom: 32 }}>
         {balanceCards.map((card, i) => (
           <div key={i} style={{ ...CARD_STYLE, gridColumn: 'span 4', padding: 32 }}>
-            <div
-              title={card.info || undefined}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8, cursor: card.info ? 'help' : 'default' }}
-            >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
               <span style={{ fontSize: 17, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif", lineHeight: '24px' }}>
                 {card.label}
               </span>
-              {card.info && <InfoIcon color={COLORS.hint} />}
+              {card.info && (
+                <div
+                  style={{ position: 'relative', cursor: 'default', display: 'flex', alignItems: 'center' }}
+                  onMouseEnter={e => setInfoTooltip({ text: card.info, x: e.currentTarget.getBoundingClientRect().left + 10, y: e.currentTarget.getBoundingClientRect().top })}
+                  onMouseLeave={() => setInfoTooltip(null)}
+                >
+                  <InfoIcon color={COLORS.hint} />
+                </div>
+              )}
             </div>
             <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSCompact',sans-serif", fontWeight: 500, lineHeight: '28px', wordWrap: 'break-word' }}>
               {card.value}
@@ -668,11 +686,13 @@ export default function PlanningPage({ onGoToRequests }) {
 
           {/* Rules link (draft only) */}
           {planStatus === 'draft' && (
-            <button style={{
-              width: '100%', padding: '10px 16px',
-              background: COLORS.bg, border: 'none', borderRadius: 16, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-            }}>
+            <button
+              onClick={() => setShowRulesModal(true)}
+              style={{
+                width: '100%', padding: '10px 16px',
+                background: COLORS.bg, border: 'none', borderRadius: 16, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <InfoIcon color={COLORS.blue} />
                 <span style={{ fontSize: 14, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif" }}>
@@ -717,11 +737,11 @@ export default function PlanningPage({ onGoToRequests }) {
                   return (
                     <div key={seg.id}>
                       <div
-                        onClick={planStatus === 'approved' ? () => setSegModal(seg) : undefined}
+                        onClick={(planStatus === 'approved' || planStatus === 'pending') ? () => setSegModal(seg) : undefined}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 12,
                           paddingTop: 10, paddingBottom: 10,
-                          cursor: planStatus === 'approved' ? 'pointer' : 'default',
+                          cursor: (planStatus === 'approved' || planStatus === 'pending') ? 'pointer' : 'default',
                         }}
                       >
                         {planStatus === 'draft' && (
@@ -900,13 +920,87 @@ export default function PlanningPage({ onGoToRequests }) {
         </Overlay>
       )}
 
-      {/* ── Approved segment modal ── */}
+      {/* ── Approved/Pending segment modal ── */}
       {segModal && segModalRequest && (
         <RequestModal
           request={segModalRequest}
           onClose={() => setSegModal(null)}
           onReschedule={(start, end) => handleSegReschedule(segModal.id, start, end)}
         />
+      )}
+
+      {/* ── Info tooltip ── */}
+      {infoTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: infoTooltip.x,
+          top: infoTooltip.y,
+          transform: 'translate(-50%, calc(-100% - 8px))',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          maxWidth: 280,
+        }}>
+          <div style={{
+            padding: '10px 14px',
+            background: '#1D2023',
+            borderRadius: 12,
+            color: '#FAFAFA',
+            fontSize: 13,
+            fontFamily: "'MTSCompact',sans-serif",
+            lineHeight: '18px',
+          }}>
+            {infoTooltip.text}
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="8" viewBox="0 0 20 8" fill="none" style={{ display: 'block', margin: '0 auto' }}>
+            <path fillRule="evenodd" clipRule="evenodd" d="M10 8C13 8 15.9999 0 20 0H0C3.9749 0 7 8 10 8Z" fill="#1D2023"/>
+          </svg>
+        </div>
+      )}
+
+      {/* ── Rules modal ── */}
+      {showRulesModal && (
+        <Overlay onClose={() => setShowRulesModal(false)}>
+          <div style={{
+            background: '#fff', borderRadius: 32, padding: 32, width: 520,
+            boxShadow: '0px 12px 20px rgba(0,0,0,0.14)',
+            display: 'flex', flexDirection: 'column', gap: 20,
+            maxHeight: '80vh', overflowY: 'auto',
+            fontFamily: "'MTSCompact',sans-serif",
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+              <div style={{ fontSize: 20, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSWide',sans-serif", lineHeight: '28px' }}>
+                Правила планирования отпуска
+              </div>
+              <button
+                onClick={() => setShowRulesModal(false)}
+                style={{ width: 32, height: 32, background: '#F2F3F7', border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M1 1L11 11M11 1L1 11" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                'Отпуска предоставляются по утверждённому Графику отпусков без отдельных заявлений (ст. 123 ТК РФ).',
+                'Допускается не более 2 переносов одного периода — не позднее чем за 14 дней до даты его начала.',
+                'Один из отпусков в году должен составить не менее 14 календарных дней.',
+                'Суммарно за год можно запланировать не более 40 дней, включая накопленные за прошлые годы.',
+                'Плановый период нельзя разделить на части. Для более короткого отдыха оформляйте внеплановый отпуск.',
+                'За 10 дней до начала отпуска данные передаются в 1С и формируется отпускной приказ.',
+              ].map((text, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 8, background: COLORS.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13, fontWeight: 500, color: COLORS.secondary }}>
+                    {i + 1}
+                  </div>
+                  <span style={{ fontSize: 14, color: COLORS.text, lineHeight: '20px', paddingTop: 2 }}>
+                    {text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Overlay>
       )}
     </div>
   )

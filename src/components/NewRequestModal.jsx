@@ -5,10 +5,10 @@ import { COLLEAGUES } from '../data/mockData'
 import { BTN_STYLE, PersonAvatar, SelectField, CalendarRange } from '../ds/index'
 
 const REQUEST_TYPES = [
-  { id: 'annual',       name: 'Ежегодный оплачиваемый',              desc: 'Списывается из баланса основного отпуска', deductsBalance: true  },
-  { id: 'unpaid',       name: 'Без сохранения зарплаты',             desc: 'Не списывается из баланса',                deductsBalance: false },
-  { id: 'study_paid',   name: 'Учебный оплачиваемый',                desc: 'Не списывается из баланса',                deductsBalance: false },
-  { id: 'study_unpaid', name: 'Учебный без сохранения зарплаты',     desc: 'Не списывается из баланса',                deductsBalance: false },
+  { id: 'annual',       name: 'Ежегодный оплачиваемый',              deductsBalance: true  },
+  { id: 'unpaid',       name: 'Без сохранения зарплаты',             desc: 'Не списывается из баланса', deductsBalance: false },
+  { id: 'study_paid',   name: 'Учебный оплачиваемый',                desc: 'Не списывается из баланса', deductsBalance: false },
+  { id: 'study_unpaid', name: 'Учебный без сохранения зарплаты',     desc: 'Не списывается из баланса', deductsBalance: false },
 ]
 
 const TYPE_LABEL_MAP = {
@@ -127,7 +127,7 @@ function Checkbox({ checked, onChange, label }) {
   )
 }
 
-export default function NewRequestModal({ onClose }) {
+export default function NewRequestModal({ onClose, onSubmitted }) {
   const { requests, setRequests, balance, setBalance } = useApp()
   const [type, setType] = useState('')
   const [startDate, setStartDate] = useState(null)
@@ -142,8 +142,6 @@ export default function NewRequestModal({ onClose }) {
   const [addExtraApprover, setAddExtraApprover] = useState(false)
   const [extraApprover, setExtraApprover] = useState('')
   const [errors, setErrors] = useState({})
-  const [submitted, setSubmitted] = useState(false)
-
   const selectedType = REQUEST_TYPES.find(t => t.id === type)
 
   const previewDays = useMemo(() => {
@@ -186,7 +184,7 @@ export default function NewRequestModal({ onClose }) {
     if (selectedType.deductsBalance) {
       setBalance(prev => ({ ...prev, main: Math.max(0, prev.main - previewDays) }))
     }
-    setSubmitted(true)
+    onSubmitted ? onSubmitted() : onClose()
   }
 
   const approverColleague = approverOverride ? COLLEAGUES.find(c => String(c.id) === approverOverride) : null
@@ -198,24 +196,6 @@ export default function NewRequestModal({ onClose }) {
       <div onClick={e => e.stopPropagation()}>{children}</div>
     </div>
   )
-
-  if (submitted) {
-    return (
-      <Overlay onClick={onClose}>
-        <div style={{ width: 480, background: '#fff', borderRadius: 32, padding: '32px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ paddingLeft: 16, paddingRight: 16, display: 'flex', flexDirection: 'column', gap: 8, alignSelf: 'stretch' }}>
-            <div style={{ textAlign: 'center', color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px' }}>Заявка отправлена</div>
-            <div style={{ textAlign: 'center', color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>
-              Заявка передана на согласование руководителю{addExtraApprover && extraApprover ? ' и дополнительному согласующему' : ''}.
-            </div>
-          </div>
-          <div style={{ alignSelf: 'stretch', paddingTop: 24 }}>
-            <button onClick={onClose} style={{ width: '100%', height: 52, background: '#0066FF', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}>ЗАКРЫТЬ</button>
-          </div>
-        </div>
-      </Overlay>
-    )
-  }
 
   return (
     <>
@@ -245,7 +225,9 @@ export default function NewRequestModal({ onClose }) {
               {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
               {selectedType && (
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
-                  {selectedType.desc}{selectedType.deductsBalance && ` · Баланс: ${balance.main} дн.`}
+                  {selectedType.id === 'annual'
+                    ? `За счёт накопленного ежегодного основного оплачиваемого отпуска: ${balance.main} дней`
+                    : selectedType.desc}
                 </span>
               )}
             </div>
@@ -284,7 +266,7 @@ export default function NewRequestModal({ onClose }) {
 
             {/* Согласующий */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase' }}>Согласующий</span>
+              <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>Согласующий</span>
               {changeApprover ? (
                 <SelectField
                   value={approverOverride}
@@ -315,8 +297,8 @@ export default function NewRequestModal({ onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Checkbox checked={addExtraApprover} onChange={v => { setAddExtraApprover(v); if (!v) setExtraApprover('') }} label="Добавить дополнительного согласующего" />
               {addExtraApprover && (
-                <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase' }}>Дополнительный согласующий</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>Дополнительный согласующий</span>
                   {extraApprover ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

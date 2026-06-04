@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import StatusBadge from './StatusBadge'
 import { Chip, COLORS, BTN_STYLE } from '../ds/index'
 import { useApp } from '../context/AppContext'
@@ -31,8 +31,10 @@ const TH = {
   fontFamily: "'MTSCompact', sans-serif",
   background: COLORS.bg,
   borderBottom: `1px solid ${COLORS.stroke}`,
+  borderRight: `1px solid ${COLORS.stroke}`,
   whiteSpace: 'nowrap',
 }
+const TH_LAST = { ...TH, borderRight: 'none' }
 
 const TD = {
   padding: '16px',
@@ -126,12 +128,33 @@ function Pagination({ page, total, onPage }) {
   )
 }
 
+const PLAN_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель' }
+
 export default function RequestsTable({ onSelectRequest, onNewRequest }) {
-  const { requests } = useApp()
+  const { requests, segments, planStatus } = useApp()
   const [filter, setFilter] = useState('all')
   const [page, setPage] = useState(1)
 
-  const filtered = filter === 'all' ? requests : requests.filter(r => r.status === filter)
+  const planningRequests = useMemo(() => {
+    if (!segments?.length || !planStatus || planStatus === 'approved') return []
+    return segments.map(seg => ({
+      id: seg.id,
+      type: 'planned',
+      typeLabel: 'Плановый',
+      typeFullName: 'Ежегодный основной оплачиваемый отпуск',
+      planCategory: 'Плановый',
+      startDate: new Date(seg.startDate + 'T00:00:00'),
+      endDate: new Date(seg.endDate + 'T00:00:00'),
+      days: seg.days,
+      status: planStatus,
+      approver: PLAN_APPROVER,
+      rescheduleCount: 0,
+      rescheduleLimit: 2,
+    }))
+  }, [segments, planStatus])
+
+  const allRequests = [...planningRequests, ...requests]
+  const filtered = filter === 'all' ? allRequests : allRequests.filter(r => r.status === filter)
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   function handleFilter(key) {
@@ -195,7 +218,7 @@ export default function RequestsTable({ onSelectRequest, onNewRequest }) {
               <th style={TH}>Период</th>
               <th style={{ ...TH, textAlign: 'center' }}>Переносы</th>
               <th style={TH}>Статус</th>
-              <th style={{ ...TH, textAlign: 'center' }}>Действия</th>
+              <th style={{ ...TH_LAST, textAlign: 'center' }}>Действия</th>
             </tr>
           </thead>
           <tbody>
