@@ -450,14 +450,9 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
             </div>
           </div>
           {/* Arrow pointing down */}
-          <div style={{ width: 36, height: 8, position: 'relative', flexShrink: 0 }}>
-            <div style={{
-              width: 20, height: 8,
-              left: 8, top: 0,
-              position: 'absolute',
-              background: '#1D2023',
-            }} />
-          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="8" viewBox="0 0 20 8" fill="none" style={{ flexShrink: 0 }}>
+            <path fillRule="evenodd" clipRule="evenodd" d="M10 8C13 8 15.9999 0 20 0H0C3.9749 0 7 8 10 8Z" fill="#1D2023"/>
+          </svg>
         </div>
       )}
     </div>
