@@ -96,12 +96,13 @@ function Overlay({ onClose, children }) {
 
 // ─────────── Colleagues Gantt Panel ───────────
 function ColleaguesPlanPanel({ planStatus, userSegments }) {
-  const [colYear, setColYear]         = useState(CAMPAIGN.year)
+  const colYear                        = CAMPAIGN.year
   const [viewStart, setViewStart]     = useState(0)
   const [showDrafts, setShowDrafts]   = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [colIds, setColIds]           = useState(INITIAL_COL_IDS)
+  const [tooltip, setTooltip]         = useState(null) // { text, x, y }
 
   const visibleMonths = useMemo(
     () => Array.from({ length: 6 }, (_, i) => viewStart + i),
@@ -203,14 +204,10 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
           )}
         </div>
 
-        {/* Year select */}
-        <div style={{ width: 110 }}>
-          <SelectField
-            value={colYear}
-            onChange={v => { setColYear(v); setViewStart(0) }}
-            options={YEAR_OPTIONS}
-          />
-        </div>
+        {/* Year label */}
+        <span style={{ fontSize: 14, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif", flexShrink: 0 }}>
+          {colYear}
+        </span>
 
         {/* Nav arrows — 1-month step */}
         {[
@@ -352,12 +349,20 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                   {person.segments.map((seg, bi) => {
                     const bp = getBarProps(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
                     if (!bp) return null
+                    const tipText = `${fmtDateFull(seg.startDate)} – ${fmtDateFull(seg.endDate)}`
                     return (
-                      <div key={bi} style={{
-                        position: 'absolute', top: 0, bottom: 0,
-                        background: SEG_COLORS[seg.status ?? 'approved'] ?? SEG_COLORS.approved,
-                        ...bp,
-                      }} title={`${fmtDateFull(seg.startDate)} – ${fmtDateFull(seg.endDate)}`} />
+                      <div
+                        key={bi}
+                        style={{
+                          position: 'absolute', top: 0, bottom: 0,
+                          background: SEG_COLORS[seg.status ?? 'approved'] ?? SEG_COLORS.approved,
+                          cursor: 'default',
+                          ...bp,
+                        }}
+                        onMouseEnter={e => setTooltip({ text: tipText, x: e.clientX, y: e.clientY })}
+                        onMouseMove={e => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
+                        onMouseLeave={() => setTooltip(null)}
+                      />
                     )
                   })}
                 </div>
@@ -384,6 +389,28 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
           </div>
         ))}
       </div>
+
+      {/* Hover tooltip — fixed so overflow:hidden on rows doesn't clip it */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed',
+          left: tooltip.x + 14,
+          top: tooltip.y - 36,
+          background: '#1D2023',
+          color: '#fff',
+          borderRadius: 8,
+          padding: '5px 10px',
+          fontSize: 13,
+          fontFamily: "'MTSCompact',sans-serif",
+          lineHeight: '18px',
+          whiteSpace: 'nowrap',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+        }}>
+          {tooltip.text}
+        </div>
+      )}
     </div>
   )
 }
