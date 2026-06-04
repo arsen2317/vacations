@@ -4,6 +4,7 @@ import TabNav from './components/TabNav'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import PlanningPage from './pages/PlanningPage'
 import ColleaguesPage from './pages/ColleaguesPage'
+import CalendarPage from './pages/CalendarPage'
 import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
 import { COLORS, Header, useIsDocked } from './ds/index'
@@ -60,7 +61,7 @@ function AppInner() {
         {activeTab === 'planning' && (
           <PlanningPage onGoToRequests={() => setActiveTab('home')} />
         )}
-        {activeTab === 'colleagues' && <ColleaguesPage />}
+        {activeTab === 'colleagues' && <CalendarPage />}
         {activeTab === 'team' && (role === 'manager' || role === 'hr_admin') && <ManagerPage />}
         {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
         </div>
