@@ -67,6 +67,18 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
               const rangeHalfEnd = isEnd && start && start.getTime() !== effectiveEnd.getTime()
               const showRangeBg = inRange || rangeHalfStart || rangeHalfEnd
 
+              const isRowStart = di === 0
+              const isRowEnd = di === 6
+              const r = 12
+              // Extend strip 6px under circle to eliminate corner-rounding gap
+              const stripLeft = rangeHalfStart ? 'calc(50% - 6px)' : 0
+              const stripRight = rangeHalfEnd ? 'calc(50% - 6px)' : 0
+              const stripBorderRadius = rangeHalfStart
+                ? `0 ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px 0`
+                : rangeHalfEnd
+                  ? `${isRowStart ? r : 0}px 0 0 ${isRowStart ? r : 0}px`
+                  : `${isRowStart ? r : 0}px ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px ${isRowStart ? r : 0}px`
+
               return (
                 <div
                   key={di}
@@ -80,12 +92,10 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
                     <div style={{
                       position: 'absolute',
                       top: 0, bottom: 0,
-                      left: rangeHalfStart ? '50%' : 0,
-                      right: rangeHalfEnd ? '50%' : 0,
+                      left: stripLeft,
+                      right: stripRight,
                       background: '#F2F3F7',
-                      borderRadius: inRange ? 0
-                        : rangeHalfStart ? '0 12px 12px 0'
-                        : '12px 0 0 12px',
+                      borderRadius: stripBorderRadius,
                     }} />
                   )}
 
