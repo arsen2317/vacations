@@ -16,10 +16,10 @@ const MONTH_NAMES = [
 ]
 
 const SEG_COLORS = {
-  approved:  '#C5E8C8',
-  pending:   '#BDD7F8',
+  approved:  '#BEF4BD',
+  pending:   '#C7E1FF',
   reviewing: '#F8E4C5',
-  draft:     '#D6E4F0',
+  draft:     '#EAF1FF',
 }
 
 const COLLEAGUES_MAP = Object.fromEntries(COLLEAGUES.map(c => [c.id, c]))
@@ -97,22 +97,18 @@ function Overlay({ onClose, children }) {
 // ─────────── Colleagues Gantt Panel ───────────
 function ColleaguesPlanPanel({ planStatus, userSegments }) {
   const [colYear, setColYear]         = useState(2026)
-  const [halfStart, setHalfStart]     = useState(0)
   const [showDrafts, setShowDrafts]   = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [colIds, setColIds]           = useState(INITIAL_COL_IDS)
 
-  const visibleMonths = useMemo(
-    () => Array.from({ length: 6 }, (_, i) => halfStart * 6 + i),
-    [halfStart],
-  )
-  const rangeStart   = new Date(colYear, halfStart * 6, 1)
-  const rangeEnd     = new Date(colYear, halfStart * 6 + 6, 0)
+  const visibleMonths = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  const rangeStart   = new Date(colYear, 0, 1)
+  const rangeEnd     = new Date(colYear, 11, 31)
   const rangeDays    = Math.round((rangeEnd - rangeStart) / 86400000) + 1
   const totalMoDays  = useMemo(
     () => visibleMonths.reduce((s, m) => s + daysInMonth(colYear, m), 0),
-    [colYear, visibleMonths],
+    [colYear],
   )
 
   const searchResults = useMemo(() => {
@@ -137,11 +133,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
     }
   }), [colIds, showDrafts, userSegments, planStatus])
 
-  const SECTION_LABEL = {
-    fontSize: 14, fontWeight: 500, color: COLORS.secondary,
-    textTransform: 'uppercase', fontFamily: "'MTSCompact',sans-serif",
-    letterSpacing: '0.05em',
-  }
+  const PERSON_COL_W = 277
 
   return (
     <div style={{
@@ -216,30 +208,6 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
             options={YEAR_OPTIONS}
           />
         </div>
-
-        {/* Nav arrows */}
-        {[
-          { dir: -1, svg: <path d="M7 1L1 7L7 13" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/> },
-          { dir:  1, svg: <path d="M1 1L7 7L1 13" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/> },
-        ].map(({ dir, svg }) => {
-          const next = halfStart + dir
-          const disabled = next < 0 || next > 1
-          return (
-            <button
-              key={dir}
-              onClick={() => !disabled && setHalfStart(next)}
-              style={{
-                width: 44, height: 44, background: COLORS.bg, border: 'none', borderRadius: 16,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                opacity: disabled ? 0.35 : 1, flexShrink: 0,
-              }}
-            >
-              <svg width="8" height="14" viewBox="0 0 8 14" fill="none">{svg}</svg>
-            </button>
-          )
-        })}
       </div>
 
       {/* Show drafts */}
@@ -255,21 +223,27 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
       </label>
 
       {/* Gantt table */}
-      <div style={{ overflow: 'hidden' }}>
+      <div style={{ overflow: 'auto' }}>
         {/* Month headers */}
-        <div style={{ display: 'flex', borderBottom: `1px solid ${COLORS.stroke}` }}>
-          <div style={{ width: 200, flexShrink: 0, padding: '8px 12px', borderRight: `1px solid ${COLORS.stroke}` }}>
-            <span style={{ ...SECTION_LABEL, fontSize: 11 }}>Сотрудник</span>
+        <div style={{ display: 'flex', height: 40, minWidth: 800 }}>
+          <div style={{
+            width: PERSON_COL_W, flexShrink: 0,
+            paddingLeft: 16, paddingRight: 16, paddingTop: 10, paddingBottom: 10,
+            background: '#F2F3F7', boxShadow: '-1px 0px 0px #E2E5EB inset',
+            display: 'flex', alignItems: 'center',
+          }}>
+            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTS Sans',sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              Сотрудник
+            </span>
           </div>
           <div style={{ flex: 1, display: 'flex' }}>
             {visibleMonths.map(m => (
               <div key={m} style={{
                 width: `${(daysInMonth(colYear, m) / totalMoDays) * 100}%`,
-                padding: '8px 0', textAlign: 'center',
-                fontSize: 11, fontWeight: 500, color: COLORS.secondary,
-                textTransform: 'uppercase', fontFamily: "'MTSCompact',sans-serif",
-                letterSpacing: '0.05em',
-                borderRight: `1px solid rgba(188,195,208,0.2)`,
+                background: '#F2F3F7', boxShadow: '-1px 0px 0px #E2E5EB inset',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#626C77', fontSize: 14, fontFamily: "'MTS Sans',sans-serif",
+                fontWeight: 400, lineHeight: '20px',
               }}>
                 {MONTH_NAMES[m]}
               </div>
@@ -283,54 +257,75 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
               Нет сотрудников
             </div>
           : people.map(person => (
-            <div key={person.id} style={{
-              display: 'flex', alignItems: 'center', height: 60,
-              borderBottom: `1px solid rgba(188,195,208,0.15)`,
-            }}>
-              <div style={{
-                width: 200, flexShrink: 0, padding: '0 12px',
-                borderRight: `1px solid ${COLORS.stroke}`,
-                height: '100%', display: 'flex', alignItems: 'center', gap: 8,
-              }}>
-                <div style={{ width: 36, height: 36, borderRadius: 12, background: COLORS.bg, overflow: 'hidden', flexShrink: 0 }}>
-                  {person.avatar
-                    ? <img src={person.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: COLORS.secondary }}>
-                        {person.name.split(' ').slice(0, 2).map(w => w[0]).join('')}
-                      </div>
-                  }
+            <div key={person.id}>
+              <div style={{ display: 'flex', alignItems: 'center', minWidth: 800 }}>
+                {/* Person cell */}
+                <div style={{
+                  width: PERSON_COL_W, flexShrink: 0,
+                  paddingLeft: 16, paddingRight: 16, paddingTop: 12, paddingBottom: 12,
+                  boxShadow: '-1px 0px 0px #E2E5EB inset',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  {/* Avatar with stroke overlay */}
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 16,
+                    position: 'relative', overflow: 'hidden',
+                    background: COLORS.bg, flexShrink: 0,
+                  }}>
+                    {person.avatar
+                      ? <img src={person.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: COLORS.secondary }}>
+                          {person.name.split(' ').slice(0, 2).map(w => w[0]).join('')}
+                        </div>
+                    }
+                    {/* Inner stroke overlay */}
+                    <div style={{
+                      position: 'absolute', inset: 0, borderRadius: 16,
+                      border: '1px rgba(188,195,208,0.50) solid', pointerEvents: 'none',
+                    }} />
+                  </div>
+                  <span style={{
+                    color: '#1D2023', fontSize: 14, fontFamily: "'MTS Compact',sans-serif",
+                    fontWeight: 400, lineHeight: '20px',
+                    flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {person.name}{person.me ? ' (вы)' : ''}
+                  </span>
+                  {/* X button */}
+                  <button
+                    onClick={() => setColIds(prev => prev.filter(x => x !== person.id))}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      padding: 4, borderRadius: 12, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <div style={{ width: 12, height: 12, position: 'relative', flexShrink: 0 }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M1 1L11 11M11 1L1 11" stroke="#8D969F" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                  </button>
                 </div>
-                <span style={{ fontSize: 12, color: COLORS.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'MTSCompact',sans-serif" }}>
-                  {(() => {
-                    const parts = person.name.split(' ')
-                    return parts.length >= 2
-                      ? `${parts[0]} ${parts.slice(1).map(w => w[0] + '.').join(' ')}`
-                      : person.name
-                  })()}{person.me ? ' (вы)' : ''}
-                </span>
-                <button
-                  onClick={() => setColIds(prev => prev.filter(x => x !== person.id))}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, flexShrink: 0, display: 'flex', alignItems: 'center' }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M1 1L11 11M11 1L1 11" stroke="#8C9BAB" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </button>
+
+                {/* Bars area */}
+                <div style={{ flex: 1, position: 'relative', height: 68, overflow: 'hidden' }}>
+                  {person.segments.map((seg, bi) => {
+                    const bp = getBarProps(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
+                    if (!bp) return null
+                    return (
+                      <div key={bi} style={{
+                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                        height: 24, borderRadius: 8,
+                        background: SEG_COLORS[seg.status ?? 'approved'] ?? SEG_COLORS.approved,
+                        ...bp,
+                      }} title={`${fmtDate(seg.startDate)} — ${fmtDate(seg.endDate)}`} />
+                    )
+                  })}
+                </div>
               </div>
-              <div style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
-                {person.segments.map((seg, bi) => {
-                  const bp = getBarProps(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
-                  if (!bp) return null
-                  return (
-                    <div key={bi} style={{
-                      position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-                      height: 24, borderRadius: 8,
-                      background: SEG_COLORS[seg.status ?? 'approved'] ?? SEG_COLORS.approved,
-                      ...bp,
-                    }} title={`${fmtDate(seg.startDate)} — ${fmtDate(seg.endDate)}`} />
-                  )
-                })}
-              </div>
+              {/* Row separator */}
+              <div style={{ height: 1, background: 'rgba(188,195,208,0.50)' }} />
             </div>
           ))
         }
