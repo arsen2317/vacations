@@ -137,7 +137,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
 
   return (
     <div style={{
-      flex: 1, minWidth: 0,
+      flex: 8, minWidth: 0,
       background: '#fff',
       borderRadius: 24,
       padding: 24,
@@ -211,12 +211,23 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
       </div>
 
       {/* Show drafts */}
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-        <input
-          type="checkbox" checked={showDrafts}
-          onChange={e => setShowDrafts(e.target.checked)}
-          style={{ width: 18, height: 18, accentColor: COLORS.blue, cursor: 'pointer' }}
-        />
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+        <div
+          onClick={() => setShowDrafts(v => !v)}
+          style={{
+            width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+            border: `2px solid ${showDrafts ? COLORS.blue : '#BCC3D0'}`,
+            background: showDrafts ? COLORS.blue : '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s',
+          }}
+        >
+          {showDrafts && (
+            <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+              <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </div>
         <span style={{ fontSize: 14, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif" }}>
           Показывать черновики
         </span>
@@ -256,7 +267,7 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
           ? <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.secondary, fontSize: 14, fontFamily: "'MTSCompact',sans-serif" }}>
               Нет сотрудников
             </div>
-          : people.map(person => (
+          : people.map((person, idx) => (
             <div key={person.id}>
               <div style={{ display: 'flex', alignItems: 'center', minWidth: 800 }}>
                 {/* Person cell */}
@@ -324,8 +335,10 @@ function ColleaguesPlanPanel({ planStatus, userSegments }) {
                   })}
                 </div>
               </div>
-              {/* Row separator */}
-              <div style={{ height: 1, background: 'rgba(188,195,208,0.50)' }} />
+              {/* Row separator — only between rows */}
+              {idx < people.length - 1 && (
+                <div style={{ height: 1, background: 'rgba(188,195,208,0.50)', minWidth: 800 }} />
+              )}
             </div>
           ))
         }
@@ -471,7 +484,7 @@ export default function PlanningPage({ onGoToRequests }) {
     <div style={{ fontFamily: "'MTSCompact',sans-serif" }}>
 
       {/* ── Balance cards ── */}
-      <div style={{ display: 'flex', gap: 16, marginTop: 40, marginBottom: 32 }}>
+      <div style={{ display: 'flex', gap: 32, marginTop: 40, marginBottom: 32 }}>
         {balanceCards.map((card, i) => (
           <div key={i} style={{ ...CARD_STYLE, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
@@ -484,7 +497,7 @@ export default function PlanningPage({ onGoToRequests }) {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: COLORS.text, fontFamily: "'MTSWide',sans-serif", lineHeight: '24px' }}>
+            <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSCompact',sans-serif", fontWeight: 500, lineHeight: '28px', wordWrap: 'break-word' }}>
               {card.value}
             </div>
           </div>
@@ -492,11 +505,11 @@ export default function PlanningPage({ onGoToRequests }) {
       </div>
 
       {/* ── Two-column layout ── */}
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
 
-        {/* ── Left: Vacation Periods ── */}
+        {/* ── Left: Vacation Periods (4/12 cols) ── */}
         <div style={{
-          width: 380, flexShrink: 0,
+          flex: 4,
           background: '#fff', borderRadius: 24, padding: 24,
           outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
           display: 'flex', flexDirection: 'column', gap: 16,
