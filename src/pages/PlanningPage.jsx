@@ -40,12 +40,6 @@ const EXTRA_APPROVER_OPTIONS = COLLEAGUES
   .filter(c => !c.me)
   .map(c => ({ id: String(c.id), name: c.name }))
 
-const YEAR_OPTIONS = [
-  { id: 2025, name: '2025' },
-  { id: 2026, name: '2026' },
-  { id: 2027, name: '2027' },
-]
-
 const PLAN_LABELS = [
   { value: 'draft',    label: 'Черновик' },
   { value: 'pending',  label: 'На согласовании' },
