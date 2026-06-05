@@ -22,87 +22,73 @@ export const UPCOMING_VACATION = {
 }
 
 export const MY_REQUESTS = [
+  // Плановые — 28 дней суммарно, согласованы
   {
-    id: 123456,
+    id: 101,
     type: 'planned',
-    typeLabel: 'Плановый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Плановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
+    startDate: new Date(2026, 2, 9),   // 9 марта
+    endDate:   new Date(2026, 2, 22),  // 22 марта
     days: 14,
+    status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
+  },
+  {
+    id: 102,
+    type: 'planned',
+    typeLabel: 'Ежегодный основной оплачиваемый',
+    planCategory: 'Плановый',
+    startDate: new Date(2026, 7, 3),   // 3 августа
+    endDate:   new Date(2026, 7, 12),  // 12 августа
+    days: 10,
+    status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
+  },
+  {
+    id: 103,
+    type: 'planned',
+    typeLabel: 'Ежегодный основной оплачиваемый',
+    planCategory: 'Плановый',
+    startDate: new Date(2026, 10, 2),  // 2 ноября
+    endDate:   new Date(2026, 10, 5),  // 5 ноября
+    days: 4,
+    status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
+  },
+  // Внеплановый — на согласовании
+  {
+    id: 201,
+    type: 'unplanned',
+    typeLabel: 'Ежегодный основной оплачиваемый',
+    planCategory: 'Внеплановый',
+    startDate: new Date(2026, 5, 15),  // 15 июня
+    endDate:   new Date(2026, 5, 19),  // 19 июня
+    days: 5,
     status: 'pending',
     approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-    rescheduleCount: 0,
-    rescheduleLimit: 2,
   },
+  // Внеплановый — отклонён
   {
-    id: 234567,
-    type: 'planned',
-    typeLabel: 'Плановый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
-    planCategory: 'Плановый',
-    startDate: new Date(2026, 8, 1),
-    endDate: new Date(2026, 8, 14),
-    days: 14,
-    status: 'reviewing',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-    rescheduleCount: 0,
-    rescheduleLimit: 2,
-  },
-  {
-    id: 345678,
-    type: 'planned',
-    typeLabel: 'Плановый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
-    planCategory: 'Плановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
-    status: 'approved',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-    rescheduleCount: 1,
-    rescheduleLimit: 2,
-  },
-  {
-    id: 456789,
+    id: 202,
     type: 'unplanned',
-    typeLabel: 'Внеплановый — ежегодный оплачиваемый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Внеплановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
+    startDate: new Date(2026, 3, 20),  // 20 апреля
+    endDate:   new Date(2026, 3, 24),  // 24 апреля
+    days: 5,
     status: 'rejected',
     rejectionComment: 'Период высокой нагрузки на команду',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-  },
-  {
-    id: 567890,
-    type: 'unplanned',
-    typeLabel: 'Внеплановый — без сохранения зарплаты',
-    typeFullName: 'Без сохранения заработной платы',
-    planCategory: 'Внеплановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
-    status: 'rejected',
-    rejectionComment: 'Период высокой нагрузки на команду',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитемь' },
-  },
-  {
-    id: 678901,
-    type: 'unplanned',
-    typeLabel: 'Внеплановый — учебный',
-    typeFullName: 'Учебный отпуск',
-    planCategory: 'Внеплановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
-    status: 'approved',
     approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
   },
 ]
+
 
 export const STATUS_CONFIG = {
   draft:      { label: 'Черновик',          color: 'bg-gray-100 text-gray-600' },
