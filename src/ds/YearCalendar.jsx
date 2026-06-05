@@ -18,7 +18,9 @@ function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function isHoliday(d) {
+function isWeekendOrHoliday(d) {
+  const dow = d.getDay() // 0=Sun, 6=Sat
+  if (dow === 0 || dow === 6) return true
   const iso = toISODate(d)
   return HOLIDAYS_2026.has(iso) || HOLIDAYS_2027.has(iso)
 }
@@ -105,7 +107,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {dayList.map((date, rowIdx) => {
                   const d = dayOnly(date)
-                  const isHol = isHoliday(d)
+                  const isNonWorking = isWeekendOrHoliday(d)
                   const isToday = sameDay(d, today)
                   const req = getRequestForDay(d, requests)
 
@@ -114,7 +116,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                   const inSel = selStart && effectiveSelEnd && d > selStart && d < effectiveSelEnd
                   const isSelected = isSelStart || isSelEnd
 
-                  // Neighbours in this column (same weekday ±7 days)
+                  // cursor: allow selecting non-working days too (just no holiday block)
                   const prevDate = rowIdx > 0 ? dayOnly(dayList[rowIdx - 1]) : null
                   const nextDate = rowIdx < dayList.length - 1 ? dayOnly(dayList[rowIdx + 1]) : null
 
@@ -170,7 +172,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                   return (
                     <div
                       key={rowIdx}
-                      style={{ position: 'relative', padding: 4, cursor: isHol ? 'default' : 'pointer' }}
+                      style={{ position: 'relative', padding: 4, cursor: 'pointer' }}
                       onClick={() => onDayClick(d, req)}
                       onMouseEnter={() => onDayEnter(d)}
                       onMouseLeave={onDayLeave}
@@ -231,7 +233,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',
-                        color: isSelected ? '#FAFAFA' : isToday ? '#0066FF' : isHol ? '#F95721' : '#1D2023',
+                        color: isSelected ? '#FAFAFA' : isToday ? '#0066FF' : isNonWorking ? '#F95721' : '#1D2023',
                         fontSize: 12,
                         fontFamily: "'MTSCompact', sans-serif",
                         fontWeight: 400,
@@ -272,7 +274,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
       onRequestClick?.(req)
       return
     }
-    if (isHoliday(d)) return
+    if (isWeekendOrHoliday(d)) return
     if (!selStart || selEnd) {
       setSelStart(d); setSelEnd(null); setHover(null)
     } else {
@@ -284,11 +286,11 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
   }
 
   function handleDayEnter(d) {
-    if (selStart && !selEnd && !isHoliday(d)) setHover(d)
+    if (selStart && !selEnd && !isWeekendOrHoliday(d)) setHover(d)
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px 40px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px 24px' }}>
       {Array.from({ length: 12 }, (_, m) => (
         <YearMonthGrid
           key={m}

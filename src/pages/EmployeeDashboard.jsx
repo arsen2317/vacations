@@ -53,10 +53,10 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 24 }}>
-      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', paddingTop: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 8 }}>
 
         {/* Left panel */}
-        <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingRight: 32 }}>
 
           {/* Year chips */}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -64,25 +64,22 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             <Chip active={year === 2027} onClick={() => setYear(2027)}>2027 – планирование</Chip>
           </div>
 
-          {/* Balance card */}
-          <div style={{
-            background: '#F2F3F7', borderRadius: 20, padding: '16px 20px',
-            display: 'flex', gap: 24,
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', gap: 4 }}>
-              <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word' }}>
+          {/* Balance */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
                 Основной отпуск
               </div>
-              <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px', wordWrap: 'break-word' }}>
+              <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
                 {balance.main} {pluralDays(balance.main)}
               </div>
             </div>
             {balance.extra > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', gap: 4 }}>
-                <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
                   Дополнительный
                 </div>
-                <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px', wordWrap: 'break-word' }}>
+                <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
                   {balance.extra} {pluralDays(balance.extra)}
                 </div>
               </div>
@@ -110,7 +107,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               subtitleLink={{ label: 'по ссылке', href: '#' }}
             />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {yearRequests.length === 0 ? (
                 <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", padding: '8px 0' }}>
                   Нет&nbsp;заявок за&nbsp;{year} год
@@ -123,7 +120,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
                     style={{
                       paddingTop: 10, paddingBottom: 10, paddingLeft: 0, paddingRight: 0,
                       display: 'flex', alignItems: 'center', gap: 12,
-                      background: 'none', border: 'none', borderBottom: '1px solid #F2F3F7',
+                      background: 'none', border: 'none',
                       cursor: 'pointer', textAlign: 'left', width: '100%',
                     }}
                   >
@@ -151,8 +148,11 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           </div>
         </div>
 
+        {/* Vertical divider */}
+        <div style={{ width: 1, background: '#E8EDF2', alignSelf: 'stretch', flexShrink: 0 }} />
+
         {/* Right panel — year calendar */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, paddingLeft: 32 }}>
           <YearCalendar
             year={year}
             requests={yearRequests}

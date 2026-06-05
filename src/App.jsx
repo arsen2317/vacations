@@ -24,7 +24,7 @@ function AppInner() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'MTSCompact', sans-serif" }}>
-      <style>{`.modal-scroll::-webkit-scrollbar { width: 4px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; } .modal-scroll::-webkit-scrollbar-thumb { background: #BCC3D0; border-radius: 2px; } .modal-scroll { scrollbar-width: thin; scrollbar-color: #BCC3D0 transparent; } .mts-textarea::placeholder { color: #8C9BAB !important; }`}</style>
+      <style>{`.modal-scroll::-webkit-scrollbar { width: 3px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 0; } .modal-scroll::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; } .modal-scroll { scrollbar-width: thin; scrollbar-color: #D0D5DC transparent; } .mts-textarea::placeholder { color: #8C9BAB !important; }`}</style>
 
       <Header role={role} onRoleChange={handleRoleChange} />
 
