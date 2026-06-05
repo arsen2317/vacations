@@ -91,6 +91,7 @@ export default function RequestModal({ request, onClose, onAction }) {
 
   if (!request) return null
 
+  const isReschedule = request.type === 'reschedule'
   const status = request.status
   const isPlanned = request.type === 'planned' || request.isPlanned
 
@@ -101,13 +102,12 @@ export default function RequestModal({ request, onClose, onAction }) {
   const tooCloseToReschedule = !isPast && startDaysLeft <= 10
   const rescheduleLeft = (request.rescheduleLimit ?? 2) - (request.rescheduleCount ?? 0)
 
-  // Actions depend on type and status
-  const canWithdraw   = !isPlanned && status === 'pending'
-  const canCancel     = !isPlanned && status === 'approved'
+  const canWithdraw   = !isPlanned && !isReschedule && status === 'pending'
+  const canCancel     = !isPlanned && !isReschedule && status === 'approved'
   const canReschedule = isPlanned && status === 'approved' && rescheduleLeft > 0 && !tooCloseToReschedule && !isPast
+  const canWithdrawReschedule = isReschedule && status === 'rescheduling'
   const showRescheduleInfo = isPlanned && status === 'approved' && tooCloseToReschedule && !isPast
-  // planned pending → no actions at all
-  const hasActions = canWithdraw || canCancel || canReschedule
+  const hasActions = canWithdraw || canCancel || canReschedule || canWithdrawReschedule
 
   function handleWithdraw() {
     setRequests(prev => prev.filter(r => r.id !== request.id))
@@ -119,6 +119,14 @@ export default function RequestModal({ request, onClose, onAction }) {
     onAction?.('Отпуск отменён')
   }
 
+  function handleWithdrawReschedule() {
+    setRequests(prev => {
+      const without = prev.filter(r => r.id !== request.id)
+      return [...without, request.originalRequest]
+    })
+    onAction?.('Заявка на перенос отозвана')
+  }
+
   function handleRescheduleApply(start, end) {
     const newDays = countVacationDays(start, end)
     if (newDays !== request.days) {
@@ -127,6 +135,22 @@ export default function RequestModal({ request, onClose, onAction }) {
     }
     setRescheduleError(null)
     setShowReschedule(false)
+
+    const rescheduleRequest = {
+      id: Date.now(),
+      type: 'reschedule',
+      typeLabel: 'Перенос планового отпуска',
+      status: 'rescheduling',
+      startDate: start,
+      endDate: end,
+      days: newDays,
+      originalRequest: { ...request },
+      approver: request.approver,
+      rescheduleCount: (request.rescheduleCount ?? 0) + 1,
+      rescheduleLimit: request.rescheduleLimit ?? 2,
+    }
+
+    setRequests(prev => [...prev.filter(r => r.id !== request.id), rescheduleRequest])
     onAction?.('Заявка на перенос направлена')
   }
 
@@ -165,6 +189,10 @@ export default function RequestModal({ request, onClose, onAction }) {
   const approverRole = request.approver?.role ?? 'Руководитель'
   const extraApproverName = typeof request.extraApprover === 'string' ? request.extraApprover : request.extraApprover?.name
 
+  const modalTitle = isReschedule
+    ? 'Заявка на перенос планового отпуска'
+    : isPlanned ? 'Плановый отпуск' : 'Внеплановый отпуск'
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -178,7 +206,7 @@ export default function RequestModal({ request, onClose, onAction }) {
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              {isPlanned ? 'Плановый отпуск' : 'Внеплановый отпуск'}
+              {modalTitle}
             </div>
             <button
               onClick={onClose}
@@ -201,13 +229,25 @@ export default function RequestModal({ request, onClose, onAction }) {
             <StatusBadge status={status} />
           </div>
 
-          {/* Info: vertical layout */}
-          <InfoCell label="Тип отпуска" value={request.typeLabel || (isPlanned ? 'Плановый' : 'Внеплановый')} />
-          <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
-          <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
-          {/* Reschedule count only for planned approved */}
-          {isPlanned && status === 'approved' && (
-            <InfoCell label="Доступно переносов" value={`${rescheduleLeft} из ${request.rescheduleLimit ?? 2}`} />
+          {isReschedule ? (
+            <>
+              <InfoCell label="Тип отпуска" value="Плановый" />
+              <InfoCell
+                label="Старый период"
+                value={fmtRange(request.originalRequest.startDate, request.originalRequest.endDate)}
+              />
+              <InfoCell label="Новый период" value={fmtRange(request.startDate, request.endDate)} />
+              <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+            </>
+          ) : (
+            <>
+              <InfoCell label="Тип отпуска" value={request.typeLabel || (isPlanned ? 'Плановый' : 'Внеплановый')} />
+              <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
+              <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+              {isPlanned && status === 'approved' && (
+                <InfoCell label="Доступно переносов" value={`${rescheduleLeft} из ${request.rescheduleLimit ?? 2}`} />
+              )}
+            </>
           )}
 
           {/* Rejection comment */}
@@ -272,6 +312,14 @@ export default function RequestModal({ request, onClose, onAction }) {
                   style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
                 >
                   ОТМЕНИТЬ ОТПУСК
+                </button>
+              )}
+              {canWithdrawReschedule && (
+                <button
+                  onClick={handleWithdrawReschedule}
+                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
+                >
+                  ОТОЗВАТЬ ЗАЯВКУ
                 </button>
               )}
             </div>

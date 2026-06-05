@@ -5,12 +5,13 @@ const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 
 const STATUS_STYLES = {
-  pending:   { bg: '#C7E1FF', color: '#005CBD' },
-  reviewing: { bg: '#E3CCFF', color: '#7936C9' },
-  approved:  { bg: '#BEF4BD', color: '#007502' },
-  rejected:  { bg: '#FCD4C9', color: '#AD3400' },
-  cancelled: { bg: '#F2F3F7', color: '#626C77' },
-  draft:     { bg: '#F2F3F7', color: '#1D2023' },
+  pending:      { bg: '#C7E1FF', color: '#005CBD' },
+  rescheduling: { bg: '#C7E1FF', color: '#005CBD' },
+  reviewing:    { bg: '#E3CCFF', color: '#7936C9' },
+  approved:     { bg: '#BEF4BD', color: '#007502' },
+  rejected:     { bg: '#FCD4C9', color: '#AD3400' },
+  cancelled:    { bg: '#F2F3F7', color: '#626C77' },
+  draft:        { bg: '#F2F3F7', color: '#1D2023' },
 }
 
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
@@ -153,7 +154,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               if (isPast) {
                 if (vacStyle && !inAnyHighlight) {
                   // Mute the vacation color to ~50% blend with white
-                  const MUTED = { approved: '#80BA81', pending: '#80ADE0', reviewing: '#BC9BE4', cancelled: '#B0B4BE', draft: '#B0B4BE' }
+                  const MUTED = { approved: '#80BA81', pending: '#80ADE0', rescheduling: '#80ADE0', reviewing: '#BC9BE4', cancelled: '#B0B4BE', draft: '#B0B4BE' }
                   textColor = MUTED[req?.status] ?? '#BCC3D0'
                 } else {
                   textColor = '#BCC3D0'

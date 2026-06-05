@@ -61,7 +61,7 @@ function AppInner() {
         {activeTab === 'planning' && (
           <PlanningPage onGoToRequests={() => setActiveTab('home')} />
         )}
-        {activeTab === 'colleagues' && <CalendarPage />}
+        {activeTab === 'colleagues' && <ColleaguesPage />}
         {activeTab === 'team' && (role === 'manager' || role === 'hr_admin') && <ManagerPage />}
         {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
         </div>
