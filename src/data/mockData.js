@@ -144,6 +144,7 @@ export const COLLEAGUES = [
     name: 'Алексей Морозов',
     avatar: '/avatars/mikhail.webp',
     me: true,
+    position: 'Backend-разработчик',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-07-14', endDate: '2026-07-27', status: 'approved' },
@@ -154,6 +155,7 @@ export const COLLEAGUES = [
     id: 2,
     name: 'Дмитрий Соколов',
     avatar: '/avatars/egor.webp',
+    position: 'Руководитель',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-06-01', endDate: '2026-06-14', status: 'approved' },
@@ -166,6 +168,7 @@ export const COLLEAGUES = [
     id: 3,
     name: 'Мария Иванова',
     avatar: '/avatars/maria.webp',
+    position: 'Frontend-разработчик',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-08-04', endDate: '2026-08-17', status: 'approved' },
@@ -178,6 +181,7 @@ export const COLLEAGUES = [
     id: 4,
     name: 'Анна Петрова',
     avatar: '/avatars/sofia.webp',
+    position: 'Аналитик',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-03-02', endDate: '2026-03-15', status: 'approved' },
@@ -190,6 +194,7 @@ export const COLLEAGUES = [
     id: 5,
     name: 'Игорь Смирнов',
     avatar: '/avatars/manokhin.webp',
+    position: 'UI/UX-дизайнер',
     team: 'Дизайн',
     segments: [
       { startDate: '2026-05-25', endDate: '2026-06-07', status: 'approved' },
@@ -202,6 +207,7 @@ export const COLLEAGUES = [
     id: 6,
     name: 'Сергей Николаев',
     avatar: '/avatars/konstantin.webp',
+    position: 'QA-инженер',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-06-15', endDate: '2026-06-28', status: 'approved' },
@@ -213,6 +219,7 @@ export const COLLEAGUES = [
     id: 7,
     name: 'Елена Козлова',
     avatar: '/avatars/marina.webp',
+    position: 'Аналитик',
     team: 'Продуктовая разработка',
     segments: [
       { startDate: '2026-07-01', endDate: '2026-07-14', status: 'approved' },

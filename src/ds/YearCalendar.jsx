@@ -10,7 +10,7 @@ const STATUS_STYLES = {
   approved:  { bg: '#BEF4BD', color: '#007502' },
   rejected:  { bg: '#FCD4C9', color: '#AD3400' },
   cancelled: { bg: '#F2F3F7', color: '#626C77' },
-  draft:     { bg: '#F2F3F7', color: '#626C77' },
+  draft:     { bg: '#F2F3F7', color: '#1D2023' },
 }
 
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
@@ -68,7 +68,7 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave }) {
+function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueDates }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
@@ -117,6 +117,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               const isToday = sameDay(d, today)
               const req = getRequestForDay(d, requests)
               const vacStyle = req ? (STATUS_STYLES[req.status] || STATUS_STYLES.cancelled) : null
+              const hasColleagueDot = colleagueDates?.has(toISODate(d)) ?? false
 
               const isStart = sameDay(d, selStart)
               const isEnd   = sameDay(d, effectiveSelEnd)
@@ -189,6 +190,18 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                     }} />
                   )}
 
+                  {/* Colleague vacation dot */}
+                  {hasColleagueDot && (
+                    <div style={{
+                      position: 'absolute',
+                      width: 6, height: 6,
+                      borderRadius: '50%',
+                      background: '#FFBB00',
+                      top: 2, right: 2,
+                      zIndex: 3,
+                    }} />
+                  )}
+
                   {/* Day number */}
                   <div style={{
                     position: 'absolute', inset: 0,
@@ -218,7 +231,7 @@ const COL_GAP     = 24
 const ROW_GAP     = 32
 export const YEAR_CALENDAR_WIDTH = 3 * MONTH_WIDTH + 2 * COL_GAP  // 756
 
-export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest }) {
+export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueDates }) {
   const today = dayOnly(new Date())
   const [selStart, setSelStart] = useState(null)
   const [selEnd,   setSelEnd]   = useState(null)
@@ -266,6 +279,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
           onDayClick={handleDayClick}
           onDayEnter={handleDayEnter}
           onDayLeave={() => setHover(null)}
+          colleagueDates={colleagueDates}
         />
       ))}
     </div>

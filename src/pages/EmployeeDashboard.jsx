@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
-import { COLORS, Banner, Chip, StatusBadge, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
+import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
+import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 
 const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
@@ -136,8 +137,33 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
   )
 }
 
+function ColleagueRow({ col, onRemove }) {
+  return (
+    <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <PersonAvatar src={col.avatar} />
+      <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {col.name}
+        </div>
+        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+          {col.position ?? col.team}
+        </div>
+      </div>
+      <button
+        onClick={onRemove}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6L18 18" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </button>
+    </div>
+  )
+}
+
 // Left panel for 2027: planning view
-function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, setPlanStatus, setToast }) {
+function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, setPlanStatus, setToast, trackedColleagues, onRemoveColleague }) {
+  const [collapseOverlap, setCollapseOverlap] = useState(false)
   const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
   const hasLongSegment  = segments.some(s => s.days >= 14)
   const canSubmit       = distributedDays >= MIN_PLAN_DAYS && hasLongSegment
@@ -187,6 +213,52 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, s
             {distributedDays} из {MAX_PLAN_DAYS} дней
           </div>
         </div>
+      </div>
+
+      {/* Пересечения section */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Header */}
+        <button
+          onClick={() => setCollapseOverlap(v => !v)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, paddingTop: 36, paddingBottom: 12, display: 'flex', alignItems: 'center', gap: 4, textAlign: 'left' }}
+        >
+          <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
+            Пересечения
+          </span>
+          <svg
+            width="12" height="7" viewBox="0 0 12 7" fill="none"
+            style={{ flexShrink: 0, transition: 'transform 0.2s', transform: collapseOverlap ? 'rotate(0deg)' : 'rotate(180deg)' }}
+          >
+            <path d="M1 6L6 1L11 6" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {!collapseOverlap && (
+          <>
+            {/* Add colleague row */}
+            <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z" fill="#007CFF"/>
+                  <circle cx="20" cy="6" r="3.5" fill="#007CFF"/>
+                  <path d="M20 4.5V7.5M18.5 6H21.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+                Добавить сотрудника
+              </span>
+            </div>
+
+            {/* Colleagues list */}
+            {trackedColleagues.map(col => (
+              <ColleagueRow
+                key={col.id}
+                col={col}
+                onRemove={() => onRemoveColleague(col.id)}
+              />
+            ))}
+          </>
+        )}
       </div>
 
       {/* Periods section */}
@@ -287,6 +359,10 @@ function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+const INITIAL_TRACKED_IDS = COLLEAGUES
+  .filter(c => !c.me && c.team === CURRENT_USER.team)
+  .map(c => c.id)
+
 export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR }) {
   const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign } = useApp()
   const [year, setYear] = useState(2026)
@@ -294,6 +370,30 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [newRequestRange, setNewRequestRange] = useState(null)
   const [calendarKey, setCalendarKey] = useState(0)
   const [toast, setToast] = useState(null)
+  const [trackedColleagueIds, setTrackedColleagueIds] = useState(INITIAL_TRACKED_IDS)
+
+  const trackedColleagues = useMemo(
+    () => trackedColleagueIds.map(id => COLLEAGUES.find(c => c.id === id)).filter(Boolean),
+    [trackedColleagueIds],
+  )
+
+  const colleagueDates2027 = useMemo(() => {
+    const dates = new Set()
+    for (const col of trackedColleagues) {
+      for (const seg of (col.segments ?? [])) {
+        if (!seg.startDate.startsWith('2027')) continue
+        if (seg.status === 'draft') continue
+        const s = new Date(seg.startDate + 'T00:00:00')
+        const e = new Date(seg.endDate   + 'T00:00:00')
+        const cur = new Date(s)
+        while (cur <= e) {
+          dates.add(toISODate(cur))
+          cur.setDate(cur.getDate() + 1)
+        }
+      }
+    }
+    return dates
+  }, [trackedColleagues])
 
   function closeNewRequest() {
     setNewRequestRange(null)
@@ -357,6 +457,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               planStatus={planStatus}
               setPlanStatus={setPlanStatus}
               setToast={setToast}
+              trackedColleagues={trackedColleagues}
+              onRemoveColleague={id => setTrackedColleagueIds(prev => prev.filter(x => x !== id))}
             />
           )}
         </div>
@@ -380,6 +482,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               ? (start, end) => setNewRequestRange({ start, end })
               : (planStatus === 'draft' ? handleAddSegment : undefined)
             }
+            colleagueDates={year === 2027 ? colleagueDates2027 : null}
           />
         </div>
       </div>
