@@ -100,8 +100,7 @@ function SecondaryBtn({ label, onClick }) {
   )
 }
 
-export default function RequestModal({ request, onClose, onReschedule }) {
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+export default function RequestModal({ request, onClose, onReschedule, onAction }) {
   const [showRescheduleCalendar, setShowRescheduleCalendar] = useState(false)
 
   if (!request) return null
@@ -113,8 +112,8 @@ export default function RequestModal({ request, onClose, onReschedule }) {
   const tooCloseToReschedule = startDaysLeft <= 10
 
   // Action logic
-  const canWithdraw = !isPlanned && status === 'pending'   // "Отозвать заявку"
-  const canCancel   = !isPlanned && status === 'approved'  // "Отменить отпуск"
+  const canWithdraw = !isPlanned && status === 'pending'
+  const canCancel   = !isPlanned && status === 'approved'
   const canReschedule = isPlanned && status === 'approved' && rescheduleLeft > 0 && !tooCloseToReschedule
   const showRescheduleInfo = isPlanned && status === 'approved' && tooCloseToReschedule
 
@@ -126,14 +125,21 @@ export default function RequestModal({ request, onClose, onReschedule }) {
     : 'Не указан'
 
   function handleClose() {
-    setShowCancelConfirm(false)
     setShowRescheduleCalendar(false)
     onClose()
   }
 
+  function handleWithdraw() {
+    onAction?.('Заявка отозвана')
+  }
+
+  function handleCancelVacation() {
+    onAction?.('Отпуск отменён')
+  }
+
   function handleRescheduleApply(start, end) {
     onReschedule?.(start, end)
-    onClose()
+    onAction?.('Заявка на перенос направлена на согласование')
   }
 
   // ── Reschedule calendar view ──
@@ -158,45 +164,6 @@ export default function RequestModal({ request, onClose, onReschedule }) {
             onApply={handleRescheduleApply}
             onClose={() => setShowRescheduleCalendar(false)}
           />
-        </div>
-      </div>
-    )
-  }
-
-  // ── Cancel confirm view ──
-  if (showCancelConfirm) {
-    const confirmTitle = canWithdraw ? 'Отозвать заявку?' : 'Отменить отпуск?'
-    const confirmText = canWithdraw
-      ? 'Заявка будет отозвана. Это действие нельзя отменить.'
-      : 'Отпуск будет отменён. Это действие нельзя отменить.'
-    return (
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        onClick={() => setShowCancelConfirm(false)}
-      >
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{ background: '#fff', borderRadius: 32, padding: 32, width: 440, boxShadow: '0px 8px 16px rgba(0,0,0,0.08), 0px 4px 24px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', gap: 20 }}
-        >
-          <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTS Wide', sans-serif", lineHeight: '24px' }}>
-            {confirmTitle}
-          </div>
-          <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            {confirmText}
-          </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <SecondaryBtn label="Назад" onClick={() => setShowCancelConfirm(false)} />
-            <button
-              onClick={handleClose}
-              style={{ flex: 2, height: 44, padding: 10, background: '#F95721', border: 'none', borderRadius: 16, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-            >
-              <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4 }}>
-                <div style={{ color: '#fff', fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700, textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>
-                  Подтвердить
-                </div>
-              </div>
-            </button>
-          </div>
         </div>
       </div>
     )
@@ -296,10 +263,10 @@ export default function RequestModal({ request, onClose, onReschedule }) {
         {/* Footer */}
         <div style={{ paddingTop: 32, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, flexShrink: 0, display: 'flex', gap: 10 }}>
           {canWithdraw && (
-            <NegativeBtn label="Отозвать заявку" onClick={() => setShowCancelConfirm(true)} />
+            <NegativeBtn label="Отозвать заявку" onClick={handleWithdraw} />
           )}
           {canCancel && (
-            <NegativeBtn label="Отменить отпуск" onClick={() => setShowCancelConfirm(true)} />
+            <NegativeBtn label="Отменить отпуск" onClick={handleCancelVacation} />
           )}
           {canReschedule && (
             <SecondaryBtn label="Перенести отпуск" onClick={() => setShowRescheduleCalendar(true)} />

@@ -195,7 +195,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
       status: 'pending',
       approver: { name: approverName, role: 'Руководитель' },
       comment: comment || undefined,
-      extraApprover: extraApprover || undefined,
+      extraApprover: extraApprover ? APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name : undefined,
     }
     setRequests(prev => [newReq, ...prev])
     if (selectedType?.deductsBalance) {

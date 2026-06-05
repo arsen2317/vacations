@@ -428,11 +428,13 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     setCalendarKey(k => k + 1)
   }
 
-  const yearRequests = requests.filter(r => {
-    const s = new Date(r.startDate)
-    const e = new Date(r.endDate)
-    return s.getFullYear() === year || e.getFullYear() === year
-  })
+  const yearRequests = requests
+    .filter(r => {
+      const s = new Date(r.startDate)
+      const e = new Date(r.endDate)
+      return s.getFullYear() === year || e.getFullYear() === year
+    })
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 24 }}>
@@ -496,6 +498,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       <RequestModal
         request={selectedRequest}
         onClose={() => setSelectedRequest(null)}
+        onAction={msg => { setSelectedRequest(null); setToast(msg) }}
       />
 
       {newRequestRange && (
