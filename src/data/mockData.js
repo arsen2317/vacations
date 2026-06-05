@@ -141,6 +141,7 @@ export const COLLEAGUES = [
   {
     id: 1,
     name: 'Алексей Морозов',
+    patronymic: 'Иванович',
     avatar: '/avatars/mikhail.webp',
     me: true,
     position: 'Backend-разработчик',
@@ -154,6 +155,7 @@ export const COLLEAGUES = [
   {
     id: 2,
     name: 'Дмитрий Соколов',
+    patronymic: 'Александрович',
     avatar: '/avatars/egor.webp',
     position: 'Руководитель',
     team: 'Продуктовая разработка',
@@ -167,6 +169,7 @@ export const COLLEAGUES = [
   {
     id: 3,
     name: 'Мария Иванова',
+    patronymic: 'Сергеевна',
     avatar: '/avatars/maria.webp',
     position: 'Frontend-разработчик',
     team: 'Продуктовая разработка',
@@ -180,6 +183,7 @@ export const COLLEAGUES = [
   {
     id: 4,
     name: 'Анна Петрова',
+    patronymic: 'Николаевна',
     avatar: '/avatars/sofia.webp',
     position: 'Аналитик',
     team: 'Продуктовая разработка',
@@ -193,6 +197,7 @@ export const COLLEAGUES = [
   {
     id: 5,
     name: 'Игорь Смирнов',
+    patronymic: 'Петрович',
     avatar: '/avatars/manokhin.webp',
     position: 'UI/UX-дизайнер',
     team: 'Дизайн',
@@ -206,6 +211,7 @@ export const COLLEAGUES = [
   {
     id: 6,
     name: 'Сергей Николаев',
+    patronymic: 'Владимирович',
     avatar: '/avatars/konstantin.webp',
     position: 'QA-инженер',
     team: 'Продуктовая разработка',
@@ -218,6 +224,7 @@ export const COLLEAGUES = [
   {
     id: 7,
     name: 'Елена Козлова',
+    patronymic: 'Михайловна',
     avatar: '/avatars/marina.webp',
     position: 'Аналитик',
     team: 'Продуктовая разработка',

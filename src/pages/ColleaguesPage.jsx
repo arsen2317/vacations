@@ -24,23 +24,22 @@ const BAR = {
   overlap:  '#FAC031',
 }
 
-const PERSON_W = 208
+const PERSON_W = 277
 const ROW_H    = 48
-const BAR_H    = 28
-const BAR_TOP  = (ROW_H - BAR_H) / 2
-const DAY_W    = 38
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function diMonth(y, m)  { return new Date(y, m + 1, 0).getDate() }
 function diYear(y)      { return new Date(y, 1, 29).getMonth() === 1 ? 366 : 365 }
 
-// "Алексей Морозов" → "Морозов А."
-function shortName(name) {
-  if (!name) return ''
-  const p = name.trim().split(/\s+/)
-  if (p.length < 2) return p[0]
-  return `${p[p.length - 1]} ${p.slice(0, -1).map(w => w[0].toUpperCase() + '.').join('')}`
+// "Алексей Морозов" + patronymic "Иванович" → "Морозов А.И."
+function shortName(person) {
+  const parts = (person.name || '').trim().split(/\s+/)
+  const surname = parts[parts.length - 1]
+  const firstName = parts[0] || ''
+  let initials = firstName ? firstName[0].toUpperCase() + '.' : ''
+  if (person.patronymic) initials += person.patronymic[0].toUpperCase() + '.'
+  return `${surname} ${initials}`.trim()
 }
 
 // "2026-03-09" → "9 марта"
@@ -50,7 +49,7 @@ function fmtDate(iso) {
 }
 
 function yearBarPos(seg, year) {
-  const ys   = new Date(year, 0, 1).getTime()
+  const ys    = new Date(year, 0, 1).getTime()
   const total = diYear(year) * 86400000
   const s = Math.max(new Date(seg.startDate + 'T00:00:00').getTime(), ys)
   const e = Math.min(new Date(seg.endDate   + 'T00:00:00').getTime(), new Date(year, 11, 31).getTime())
@@ -62,17 +61,21 @@ function yearBarPos(seg, year) {
 }
 
 function monthBarPos(seg, year, month) {
-  const ms = new Date(year, month, 1).getTime()
-  const me = new Date(year, month + 1, 0).getTime()
-  const s  = Math.max(new Date(seg.startDate + 'T00:00:00').getTime(), ms)
-  const e  = Math.min(new Date(seg.endDate   + 'T00:00:00').getTime(), me)
+  const ms       = new Date(year, month, 1).getTime()
+  const me       = new Date(year, month + 1, 0).getTime()
+  const s        = Math.max(new Date(seg.startDate + 'T00:00:00').getTime(), ms)
+  const e        = Math.min(new Date(seg.endDate   + 'T00:00:00').getTime(), me)
   if (s > me || e < ms) return null
-  const startDay = Math.round((s - ms) / 86400000)
-  const dur      = Math.round((e - s) / 86400000) + 1
-  return { left: startDay * DAY_W, width: dur * DAY_W }
+  const totalDays = diMonth(year, month)
+  const startDay  = Math.round((s - ms) / 86400000)
+  const dur       = Math.round((e - s) / 86400000) + 1
+  return {
+    left:  `${startDay / totalDays * 100}%`,
+    width: `${dur       / totalDays * 100}%`,
+  }
 }
 
-// ── Small avatar (PersonAvatar is 52px-fixed; grid needs 32px) ───────────────
+// ── Small avatar ─────────────────────────────────────────────────────────────
 function SmallAvatar({ src }) {
   return (
     <div style={{ width: 32, height: 32, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: '#E8EDF2', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -89,13 +92,13 @@ function SmallAvatar({ src }) {
 
 // ── Person left-column cell ──────────────────────────────────────────────────
 function PersonCell({ person, onRemove }) {
-  const label = shortName(person.name) + (person.me ? ' (вы)' : '')
+  const label = shortName(person) + (person.me ? ' (вы)' : '')
   return (
     <div style={{
       width: PERSON_W, flexShrink: 0, height: ROW_H,
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '0 10px 0 16px',
-      borderRight: '1px solid #F2F3F7',
+      boxShadow: '-1px 0px 0px #E2E5EB inset',
     }}>
       <SmallAvatar src={person.avatar} />
       <span style={{
@@ -133,11 +136,9 @@ function ColleaguesTooltip({ tooltip }) {
       minWidth: 160,
       maxWidth: 260,
     }}>
-      {/* Date range */}
       <div style={{ fontSize: 13, color: '#FAFAFA', fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, marginBottom: 4 }}>
         {tooltip.fmtStart} — {tooltip.fmtEnd}
       </div>
-      {/* Status row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{
           width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
@@ -150,7 +151,6 @@ function ColleaguesTooltip({ tooltip }) {
           }
         </span>
       </div>
-      {/* Arrow */}
       <div style={{
         position: 'absolute', left: -6, top: 14,
         width: 0, height: 0,
@@ -164,37 +164,27 @@ function ColleaguesTooltip({ tooltip }) {
 
 // ── Year grid ────────────────────────────────────────────────────────────────
 function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onBarLeave }) {
-  const total = diYear(year)
-  // Pre-compute month separator positions (% from left)
-  const separators = useMemo(() => {
-    let acc = 0
-    return Array.from({ length: 11 }, (_, m) => {
-      acc += diMonth(year, m)
-      return (acc / total) * 100
-    })
-  }, [year, total])
-
   return (
     <div style={{ overflowX: 'auto' }}>
       <div style={{ minWidth: 860 }}>
         {/* Header */}
-        <div style={{ display: 'flex', height: 44, borderBottom: '1px solid #F2F3F7' }}>
-          <div style={{ width: PERSON_W, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 16px', borderRight: '1px solid #F2F3F7' }}>
-            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>Сотрудник</span>
+        <div style={{ display: 'flex', height: 40, background: '#F2F3F7' }}>
+          <div style={{ width: PERSON_W, flexShrink: 0, padding: '10px 16px', boxShadow: '-1px 0px 0px #E2E5EB inset', display: 'flex', alignItems: 'center' }}>
+            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400 }}>Сотрудник</span>
           </div>
-          <div style={{ flex: 1, display: 'flex' }}>
-            {Array.from({ length: 12 }, (_, m) => (
-              <div key={m} style={{
-                flex: diMonth(year, m),
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden',
-                borderRight: m < 11 ? '1px solid #F2F3F7' : 'none',
-                color: '#626C77', fontSize: 13, fontFamily: "'MTSCompact', sans-serif",
-              }}>
+          {Array.from({ length: 12 }, (_, m) => (
+            <div key={m} style={{
+              flex: diMonth(year, m),
+              padding: '10px 12px',
+              boxShadow: '-1px 0px 0px #E2E5EB inset',
+              display: 'flex', alignItems: 'center',
+              overflow: 'hidden',
+            }}>
+              <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, whiteSpace: 'nowrap' }}>
                 {MONTHS[m]}
-              </div>
-            ))}
-          </div>
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* Rows */}
@@ -202,9 +192,6 @@ function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onB
           <div key={person.id} style={{ display: 'flex', borderBottom: '1px solid #F2F3F7' }}>
             <PersonCell person={person} onRemove={onRemove} />
             <div style={{ flex: 1, position: 'relative', height: ROW_H }}>
-              {separators.map((pct, i) => (
-                <div key={i} style={{ position: 'absolute', top: 0, bottom: 0, left: `${pct}%`, width: 1, background: '#F2F3F7', pointerEvents: 'none' }} />
-              ))}
               {person.segments.map((seg, i) => {
                 const pos = yearBarPos(seg, year)
                 if (!pos) return null
@@ -214,10 +201,10 @@ function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onB
                     onMouseMove={e => onBarMove?.(e)}
                     onMouseLeave={() => onBarLeave?.()}
                     style={{
-                      position: 'absolute', top: BAR_TOP, height: BAR_H,
+                      position: 'absolute', top: 0, height: ROW_H,
                       left: pos.left, width: pos.width,
                       background: barColor(seg, person.me),
-                      borderRadius: 6, cursor: 'default',
+                      borderRadius: 0,
                     }} />
                 )
               })}
@@ -239,53 +226,67 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <div style={{ minWidth: PERSON_W + totalDays * DAY_W }}>
-        {/* Month navigation */}
-        <div style={{ display: 'flex', height: 44, borderBottom: '1px solid #F2F3F7' }}>
-          <div style={{ width: PERSON_W, flexShrink: 0, borderRight: '1px solid #F2F3F7' }} />
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+      <div style={{ display: 'flex', minWidth: PERSON_W + totalDays * 20 }}>
+        {/* Person column */}
+        <div style={{ width: PERSON_W, flexShrink: 0 }}>
+          {/* Person header: nav + month title */}
+          <div style={{
+            height: 72, background: '#F2F3F7',
+            boxShadow: '-1px 0px 0px #E2E5EB inset',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+          }}>
             <button onClick={onPrev} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}>
               <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-                <path d="M7 1L1 7L7 13" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 1L1 7L7 13" stroke="#626C77" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <span style={{ fontSize: 17, fontWeight: 500, fontFamily: "'MTSCompact', sans-serif", color: '#1D2023', minWidth: 160, textAlign: 'center' }}>
+            <span style={{ fontSize: 14, fontWeight: 400, fontFamily: "'MTSCompact', sans-serif", color: '#626C77', whiteSpace: 'nowrap' }}>
               {MONTHS[month]} {year}
             </span>
             <button onClick={onNext} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}>
               <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-                <path d="M1 1L7 7L1 13" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M1 1L7 7L1 13" stroke="#626C77" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
-        </div>
-
-        {/* Day header */}
-        <div style={{ display: 'flex', height: 44, borderBottom: '1px solid #F2F3F7' }}>
-          <div style={{ width: PERSON_W, flexShrink: 0, borderRight: '1px solid #F2F3F7' }} />
-          {days.map(d => (
-            <div key={d.n} style={{
-              width: DAY_W, flexShrink: 0, height: '100%',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              borderRight: '1px solid #F2F3F7',
-              color: d.isWeekend ? '#F95721' : '#626C77',
-              fontSize: 11, fontFamily: "'MTSCompact', sans-serif",
-            }}>
-              <span>{WD[d.dow]}</span>
-              <span style={{ fontWeight: 500 }}>{d.n}</span>
+          {/* Person rows */}
+          {people.map(person => (
+            <div key={person.id} style={{ borderBottom: '1px solid #F2F3F7' }}>
+              <PersonCell person={person} onRemove={onRemove} />
             </div>
           ))}
         </div>
 
-        {/* Rows */}
-        {people.map(person => (
-          <div key={person.id} style={{ display: 'flex', borderBottom: '1px solid #F2F3F7' }}>
-            <PersonCell person={person} onRemove={onRemove} />
-            <div style={{ position: 'relative', width: totalDays * DAY_W, flexShrink: 0, height: ROW_H }}>
+        {/* Days area */}
+        <div style={{ flex: 1 }}>
+          {/* Day headers */}
+          <div style={{ display: 'flex', height: 72, background: '#F2F3F7' }}>
+            {days.map(d => (
+              <div key={d.n} style={{
+                flex: 1,
+                padding: 8,
+                boxShadow: '-1px 0px 0px #E2E5EB inset',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ color: d.isWeekend ? '#F15641' : '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", lineHeight: '16px' }}>
+                  {WD[d.dow]}
+                </span>
+                <span style={{ color: d.isWeekend ? '#F15641' : '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
+                  {d.n}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Rows */}
+          {people.map(person => (
+            <div key={person.id} style={{ position: 'relative', height: ROW_H, borderBottom: '1px solid #F2F3F7' }}>
+              {/* Day column separators */}
               {days.map(d => (
                 <div key={d.n} style={{
                   position: 'absolute', top: 0, bottom: 0,
-                  left: d.n * DAY_W - 1, width: 1, background: '#F2F3F7',
+                  left: `${(d.n - 1) / totalDays * 100}%`, width: 1,
+                  background: '#E2E5EB', pointerEvents: 'none',
                 }} />
               ))}
               {person.segments.map((seg, i) => {
@@ -297,30 +298,31 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
                     onMouseMove={e => onBarMove?.(e)}
                     onMouseLeave={() => onBarLeave?.()}
                     style={{
-                      position: 'absolute', top: BAR_TOP, height: BAR_H,
+                      position: 'absolute', top: 0, height: ROW_H,
                       left: pos.left, width: pos.width,
                       background: barColor(seg, person.me),
-                      borderRadius: 6, cursor: 'default',
+                      borderRadius: 0, cursor: 'default',
                     }} />
                 )
               })}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
 }
 
 // ── Main page ────────────────────────────────────────────────────────────────
+const CURRENT_YEAR = 2026
 const INITIAL_IDS = COLLEAGUES.map(c => c.id)
 
 export default function ColleaguesPage() {
   const { segments: planSegments, planStatus } = useApp()
 
   const [viewMode,   setViewMode]   = useState('year')
-  const [year,       setYear]       = useState(2027)
-  const [viewMonth,  setViewMonth]  = useState(0)
+  const [year,       setYear]       = useState(CURRENT_YEAR)
+  const [viewMonth,  setViewMonth]  = useState(new Date().getMonth())
   const [showDrafts, setShowDrafts] = useState(true)
   const [searchQ,    setSearchQ]    = useState('')
   const [showDrop,   setShowDrop]   = useState(false)
@@ -329,10 +331,8 @@ export default function ColleaguesPage() {
 
   const searchRef = useRef(null)
 
-  // Reset month when year changes
   useEffect(() => { setViewMonth(0) }, [year])
 
-  // Close dropdown on outside click
   useEffect(() => {
     function h(e) {
       if (searchRef.current && !searchRef.current.contains(e.target)) setShowDrop(false)
@@ -349,18 +349,17 @@ export default function ColleaguesPage() {
       .slice(0, 6)
   }, [searchQ, listIds])
 
-  // Build people data, merging planning state for current user 2027
   const people = useMemo(() => {
     return listIds.map(id => {
       const col = COLLEAGUES.find(c => c.id === id)
       const emp = ALL_EMPLOYEES.find(e => e.id === id)
-      const name   = col?.name   ?? emp?.name   ?? `Сотрудник ${id}`
-      const avatar = col?.avatar ?? emp?.avatar
-      const me     = col?.me     ?? false
+      const name       = col?.name       ?? emp?.name       ?? `Сотрудник ${id}`
+      const patronymic = col?.patronymic ?? emp?.patronymic
+      const avatar     = col?.avatar     ?? emp?.avatar
+      const me         = col?.me         ?? false
 
       let segs = [...(col?.segments ?? [])]
 
-      // For current user in 2027, replace 2027 data with live planning segments
       if (me && year === 2027) {
         segs = [
           ...segs.filter(s => !s.startDate.startsWith('2027')),
@@ -368,25 +367,21 @@ export default function ColleaguesPage() {
         ]
       }
 
-      // Filter to selected year
       const yr = String(year)
       segs = segs.filter(s => s.startDate.startsWith(yr) || s.endDate.startsWith(yr))
-
-      // Optionally hide drafts
       if (!showDrafts) segs = segs.filter(s => s.status !== 'draft')
 
-      return { id, name, avatar, me, segments: segs }
+      return { id, name, patronymic, avatar, me, segments: segs }
     })
   }, [listIds, year, showDrafts, planSegments, planStatus])
 
-  // For current user: mark segments that overlap with any other listed person
   const overlapKeys = useMemo(() => {
     const me = people.find(p => p.me)
     if (!me) return new Set()
     const others = people.filter(p => !p.me)
     const keys = new Set()
     me.segments.forEach(seg => {
-      const ms = new Date(seg.startDate + 'T00:00:00').getTime()
+      const ms  = new Date(seg.startDate + 'T00:00:00').getTime()
       const me2 = new Date(seg.endDate   + 'T00:00:00').getTime()
       const hasOverlap = others.some(o =>
         o.segments.some(os => {
@@ -418,25 +413,14 @@ export default function ColleaguesPage() {
           const oss = new Date(os.startDate + 'T00:00:00').getTime()
           const ose = new Date(os.endDate   + 'T00:00:00').getTime()
           return ms <= ose && me >= oss
-        }).map(() => shortName(p.name)))
+        }).map(() => shortName(p)))
       overlaps = [...new Set(overlaps)]
     }
-    setTooltip({
-      fmtStart: fmtDate(seg.startDate),
-      fmtEnd:   fmtDate(seg.endDate),
-      status:   seg.status,
-      overlaps,
-      x: e.clientX,
-      y: e.clientY,
-    })
+    setTooltip({ fmtStart: fmtDate(seg.startDate), fmtEnd: fmtDate(seg.endDate), status: seg.status, overlaps, x: e.clientX, y: e.clientY })
   }
 
   function handleBarMove(e) {
     setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : prev)
-  }
-
-  function handleBarLeave() {
-    setTooltip(null)
   }
 
   function addPerson(emp) {
@@ -568,7 +552,7 @@ export default function ColleaguesPage() {
       </div>
 
       {/* ── Grid ── */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #F2F3F7', overflow: 'hidden' }}>
+      <div style={{ background: '#fff', borderTop: '1px solid #E2E5EB', borderBottom: '1px solid #E2E5EB', overflow: 'hidden' }}>
         {viewMode === 'year' ? (
           <YearGrid
             year={year}
@@ -577,7 +561,7 @@ export default function ColleaguesPage() {
             onRemove={removePerson}
             onBarEnter={handleBarEnter}
             onBarMove={handleBarMove}
-            onBarLeave={handleBarLeave}
+            onBarLeave={() => setTooltip(null)}
           />
         ) : (
           <MonthGrid
@@ -590,7 +574,7 @@ export default function ColleaguesPage() {
             onNext={nextMonth}
             onBarEnter={handleBarEnter}
             onBarMove={handleBarMove}
-            onBarLeave={handleBarLeave}
+            onBarLeave={() => setTooltip(null)}
           />
         )}
         {people.length === 0 && (
