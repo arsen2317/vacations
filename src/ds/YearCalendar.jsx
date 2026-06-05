@@ -16,7 +16,7 @@ const STATUS_STYLES = {
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
 
 const CELL = 36      // pill size
-const ROW_H = 38     // row cell height: CELL + 1px gap above + 1px gap below
+const ROW_H = 37     // row cell height: CELL + 1px gap at bottom
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -154,11 +154,11 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                   onMouseEnter={() => onDayEnter(d)}
                   onMouseLeave={onDayLeave}
                 >
-                  {/* Selection range strip — 1px inset top/bottom to preserve gap */}
+                  {/* Selection range strip — bottom 1px left empty for gap */}
                   {showStripBg && (
                     <div style={{
                       position: 'absolute',
-                      top: 1, bottom: 1,
+                      top: 0, bottom: 1,
                       left: stripLeft,
                       right: stripRight,
                       background: '#F2F3F7',
@@ -166,23 +166,23 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                     }} />
                   )}
 
-                  {/* Vacation pill — 36×36 centred (1px inset top+bottom) */}
+                  {/* Vacation pill — 36×36, bottom 1px left for gap */}
                   {vacStyle && !showStripBg && !isSelected && (
                     <div style={{
                       position: 'absolute',
                       width: CELL, height: CELL,
-                      top: 1, left: 0,
+                      top: 0, left: 0,
                       background: vacStyle.bg,
                       borderRadius: r,
                     }} />
                   )}
 
-                  {/* Selection circle (start / end) — 36×36 centred */}
+                  {/* Selection circle (start / end) — 36×36 */}
                   {isSelected && (
                     <div style={{
                       position: 'absolute',
                       width: CELL, height: CELL,
-                      top: 1, left: 0,
+                      top: 0, left: 0,
                       background: '#1D2023',
                       borderRadius: r,
                       zIndex: 1,
