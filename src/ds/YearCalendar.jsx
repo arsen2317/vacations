@@ -197,7 +197,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                       width: 6, height: 6,
                       borderRadius: '50%',
                       background: '#FFBB00',
-                      top: 2, right: 2,
+                      top: 6, right: 6,
                       zIndex: 3,
                     }} />
                   )}

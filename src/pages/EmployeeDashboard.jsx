@@ -215,52 +215,6 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, s
         </div>
       </div>
 
-      {/* Пересечения section */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Header */}
-        <button
-          onClick={() => setCollapseOverlap(v => !v)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, paddingTop: 36, paddingBottom: 12, display: 'flex', alignItems: 'center', gap: 4, textAlign: 'left' }}
-        >
-          <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            Пересечения
-          </span>
-          <svg
-            width="12" height="7" viewBox="0 0 12 7" fill="none"
-            style={{ flexShrink: 0, transition: 'transform 0.2s', transform: collapseOverlap ? 'rotate(0deg)' : 'rotate(180deg)' }}
-          >
-            <path d="M1 6L6 1L11 6" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-
-        {!collapseOverlap && (
-          <>
-            {/* Add colleague row */}
-            <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V18H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V18H23V16.5C23 14.17 18.33 13 16 13Z" fill="#007CFF"/>
-                  <circle cx="20" cy="6" r="3.5" fill="#007CFF"/>
-                  <path d="M20 4.5V7.5M18.5 6H21.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-                Добавить сотрудника
-              </span>
-            </div>
-
-            {/* Colleagues list */}
-            {trackedColleagues.map(col => (
-              <ColleagueRow
-                key={col.id}
-                col={col}
-                onRemove={() => onRemoveColleague(col.id)}
-              />
-            ))}
-          </>
-        )}
-      </div>
-
       {/* Periods section */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ paddingTop: 36, paddingBottom: 12 }}>
@@ -349,6 +303,58 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, s
               отправить на согласование
             </span>
           </button>
+        )}
+      </div>
+
+      {/* Пересечения section */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <button
+          onClick={() => setCollapseOverlap(v => !v)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, paddingTop: 36, paddingBottom: 12, display: 'flex', alignItems: 'center', gap: 4, textAlign: 'left' }}
+        >
+          <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
+            Пересечения
+          </span>
+          <svg
+            width="12" height="7" viewBox="0 0 12 7" fill="none"
+            style={{ flexShrink: 0, transition: 'transform 0.2s', transform: collapseOverlap ? 'rotate(0deg)' : 'rotate(180deg)' }}
+          >
+            <path d="M1 6L6 1L11 6" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
+          <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
+          <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+            отметка пересечений
+          </span>
+        </div>
+
+        {!collapseOverlap && (
+          <>
+            {/* Add colleague row */}
+            <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
+                </svg>
+              </div>
+              <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+                Добавить сотрудника
+              </span>
+            </div>
+
+            {/* Colleagues list */}
+            {trackedColleagues.map(col => (
+              <ColleagueRow
+                key={col.id}
+                col={col}
+                onRemove={() => onRemoveColleague(col.id)}
+              />
+            ))}
+          </>
         )}
       </div>
     </div>
