@@ -33,18 +33,6 @@ const STATUS_STYLE = {
 const PAGE_SIZE = 10
 const PERSON_COL_W = 256
 
-const FIGMA_REQUESTS = [
-  { id: 'r1',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-03-13', endDate: '2027-03-20', days: 8,  status: 'approved'  },
-  { id: 'r2',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-05-01', endDate: '2027-05-10', days: 10, status: 'pending'   },
-  { id: 'r3',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-08-15', endDate: '2027-08-20', days: 6,  status: 'pending'   },
-  { id: 'r4',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-12-01', endDate: '2027-12-05', days: 5,  status: 'pending'   },
-  { id: 'r5',  reqNum: '234567', name: 'Анастасия Смирнова',             position: 'Младший дизайнер',         team: 'Отдел графического дизайна',           startDate: '2027-12-10', endDate: '2027-12-15', days: 6,  status: 'rejected'  },
-  { id: 'r6',  reqNum: '345678', name: 'Игорь Петров',                   position: 'Технический писатель',     team: 'Группа документации',                  startDate: '2027-12-20', endDate: '2027-12-25', days: 6,  status: 'approved'  },
-  { id: 'r7',  reqNum: '456789', name: 'Елена Григорьева',               position: 'Аналитик данных',          team: 'Отдел аналитики',                      startDate: '2028-01-02', endDate: '2028-01-07', days: 6,  status: 'approved'  },
-  { id: 'r8',  reqNum: '567890', name: 'Сергей Ковалев',                 position: 'Front-end разработчик',    team: 'Команда веб-разработки',               startDate: '2028-01-15', endDate: '2028-01-20', days: 6,  status: 'pending'   },
-  { id: 'r9',  reqNum: '678901', name: 'Мария Федорова',                 position: 'UX/UI дизайнер',           team: 'Отдел пользовательского опыта',        startDate: '2028-01-28', endDate: '2028-02-02', days: 6,  status: 'reviewing' },
-  { id: 'r10', reqNum: '789012', name: 'Дмитрий Соловьев',               position: 'Системный администратор',  team: 'IT поддержка',                         startDate: '2028-02-07', endDate: '2028-02-12', days: 6,  status: 'reviewing' },
-]
 
 function fmtDateShort(dateStr) {
   const [y, m, d] = dateStr.split('-')
@@ -216,12 +204,11 @@ function Pagination({ page, total, onPage }) {
 }
 
 export default function ManagerPage() {
-  const { subordinates, setSubordinates, campaign } = useApp()
+  const { subordinates, setSubordinates, campaign, incomingRequests, setIncomingRequests } = useApp()
   const [view, setView]           = useState('table')
   const [search, setSearch]       = useState('')
   const [page, setPage]           = useState(1)
   const [actionsOpen, setActionsOpen] = useState(null)
-  const [statusOverrides, setStatusOverrides] = useState({})
   const [rejectTarget, setRejectTarget] = useState(null)
   const [rejectComment, setRejectComment] = useState('')
   const [rejectError, setRejectError]   = useState('')
@@ -236,9 +223,7 @@ export default function ManagerPage() {
   const rangeDays     = useMemo(() => Math.round((rangeEnd - rangeStart) / 86400000) + 1, [rangeStart, rangeEnd])
   const totalMoDays   = useMemo(() => visibleMonths.reduce((s, m) => s + daysInMonth(ganttYear, m), 0), [ganttYear, visibleMonths])
 
-  const allRequests = useMemo(() =>
-    FIGMA_REQUESTS.map(r => ({ ...r, status: statusOverrides[r.id] ?? r.status }))
-  , [statusOverrides])
+  const allRequests = incomingRequests
 
   const filteredRequests = useMemo(() => {
     if (!search.trim()) return allRequests
@@ -291,7 +276,7 @@ export default function ManagerPage() {
   }, [subordinates, search, ganttYear])
 
   function handleApprove(rowId) {
-    setStatusOverrides(prev => ({ ...prev, [rowId]: 'approved' }))
+    setIncomingRequests(prev => prev.map(r => r.id === rowId ? { ...r, status: 'approved' } : r))
     setActionsOpen(null)
   }
 
@@ -304,7 +289,7 @@ export default function ManagerPage() {
 
   function confirmReject() {
     if (!rejectComment.trim()) { setRejectError('Укажите причину отклонения'); return }
-    setStatusOverrides(prev => ({ ...prev, [rejectTarget.id]: 'rejected' }))
+    setIncomingRequests(prev => prev.map(r => r.id === rejectTarget.id ? { ...r, status: 'rejected' } : r))
     setRejectTarget(null)
   }
 
@@ -343,54 +328,44 @@ export default function ManagerPage() {
   return (
     <div style={{ paddingTop: 32, paddingBottom: 48, fontFamily: "'MTSCompact', sans-serif" }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '32px' }}>
-          Статистика по кампании {campaign.year}
-        </h2>
-        <button
-          onClick={downloadReport}
-          style={{
-            padding: 10, background: '#F2F3F7', borderRadius: 16,
-            border: 'none', cursor: 'pointer', flexShrink: 0,
-            display: 'inline-flex', justifyContent: 'center', alignItems: 'center',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
-            <div style={{
-              textAlign: 'center', color: '#1D2023',
-              fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700,
-              textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60,
-              wordWrap: 'break-word',
-            }}>
-              Скачать отчёт
-            </div>
+      {/* Campaign stats */}
+      <div style={{ paddingBottom: 20, display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+        {/* Title row */}
+        <div style={{ paddingBottom: 12, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 12 }}>
+          <div style={{ flex: '1 1 0', color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
+            Статистика по кампании {campaign.year}
           </div>
-        </button>
-      </div>
+          <button
+            onClick={downloadReport}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1v9M8 10l-3-3M8 10l3-3M2 12h12" stroke="#0070E5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+              Скачать отчет
+            </span>
+          </button>
+        </div>
 
-      {/* Stats cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 40 }}>
-        {[
-          { label: 'Подано заявок',    value: totalCount },
-          { label: 'На согласовании',  value: pendingCount },
-          { label: 'Согласованы',      value: approvedCount },
-          { label: 'На ознакомлении',  value: reviewingCount },
-        ].map(({ label, value }) => (
-          <div key={label} style={{
-            background: '#fff', borderRadius: 32,
-            padding: '24px 32px',
-            outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
-          }}>
-            <div style={{ fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, color: COLORS.secondary, lineHeight: '24px', marginBottom: 4 }}>
-              {label}
+        {/* Stats row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+          {[
+            { label: 'Подано заявок',    value: totalCount },
+            { label: 'На согласовании',  value: pendingCount },
+            { label: 'Согласованы',      value: approvedCount },
+            { label: 'На ознакомлении',  value: reviewingCount },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ flex: '1 1 0', height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
+              <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+                {label}
+              </div>
+              <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
+                {value}
+              </div>
             </div>
-            <div style={{ fontSize: 24, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, color: COLORS.text, lineHeight: '32px' }}>
-              {value}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Section heading */}
@@ -631,9 +606,9 @@ export default function ManagerPage() {
                   {rejectTarget.name} · {fmtPeriod(rejectTarget.startDate, rejectTarget.endDate)}
                 </div>
               </div>
-              <button onClick={() => setRejectTarget(null)} style={{ width: 32, height: 32, background: COLORS.bg, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M1 1L11 11M11 1L1 11" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
+              <button onClick={() => setRejectTarget(null)} style={{ background: COLORS.bg, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4 }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
                 </svg>
               </button>
             </div>

@@ -317,6 +317,19 @@ export const SUBORDINATES = [
   },
 ]
 
+export const INCOMING_REQUESTS = [
+  { id: 'r1',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-03-13', endDate: '2027-03-20', days: 8,  status: 'approved'  },
+  { id: 'r2',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-05-01', endDate: '2027-05-10', days: 10, status: 'pending'   },
+  { id: 'r3',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-08-15', endDate: '2027-08-20', days: 6,  status: 'pending'   },
+  { id: 'r4',  reqNum: '123456', name: 'Константинопольский Константин', position: 'Старший разработчик',      team: 'Центр компетенций портальных решений', startDate: '2027-12-01', endDate: '2027-12-05', days: 5,  status: 'pending'   },
+  { id: 'r5',  reqNum: '234567', name: 'Анастасия Смирнова',             position: 'Младший дизайнер',         team: 'Отдел графического дизайна',           startDate: '2027-12-10', endDate: '2027-12-15', days: 6,  status: 'rejected'  },
+  { id: 'r6',  reqNum: '345678', name: 'Игорь Петров',                   position: 'Технический писатель',     team: 'Группа документации',                  startDate: '2027-12-20', endDate: '2027-12-25', days: 6,  status: 'approved'  },
+  { id: 'r7',  reqNum: '456789', name: 'Елена Григорьева',               position: 'Аналитик данных',          team: 'Отдел аналитики',                      startDate: '2028-01-02', endDate: '2028-01-07', days: 6,  status: 'approved'  },
+  { id: 'r8',  reqNum: '567890', name: 'Сергей Ковалев',                 position: 'Front-end разработчик',    team: 'Команда веб-разработки',               startDate: '2028-01-15', endDate: '2028-01-20', days: 6,  status: 'pending'   },
+  { id: 'r9',  reqNum: '678901', name: 'Мария Федорова',                 position: 'UX/UI дизайнер',           team: 'Отдел пользовательского опыта',        startDate: '2028-01-28', endDate: '2028-02-02', days: 6,  status: 'reviewing' },
+  { id: 'r10', reqNum: '789012', name: 'Дмитрий Соловьев',               position: 'Системный администратор',  team: 'IT поддержка',                         startDate: '2028-02-07', endDate: '2028-02-12', days: 6,  status: 'reviewing' },
+]
+
 export const ALL_EMPLOYEES = [
   { id: 1,  name: 'Алексей Морозов',  avatar: '/avatars/mikhail.webp',    team: 'Продуктовая разработка', planStatus: 'approved' },
   { id: 2,  name: 'Дмитрий Соколов',  avatar: '/avatars/egor.webp',       team: 'Продуктовая разработка', planStatus: 'approved' },

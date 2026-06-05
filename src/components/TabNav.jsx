@@ -7,10 +7,10 @@ const BASE_TABS = [
 ]
 
 export default function TabNav({ activeTab, onTabChange }) {
-  const { role, subordinates } = useApp()
+  const { role, incomingRequests } = useApp()
 
-  const pendingCount = subordinates
-    ? subordinates.filter(s => s.planStatus === 'pending').length
+  const pendingCount = incomingRequests
+    ? incomingRequests.filter(r => r.status === 'pending').length
     : 0
 
   const tabs = [
