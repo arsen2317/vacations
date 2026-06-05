@@ -521,11 +521,13 @@ export default function PlanningPage({ onGoToRequests }) {
 
   const year = campaign.year
 
+  const MAX_PLAN_DAYS   = 40
+  const MIN_PLAN_DAYS   = 28
   const distributedDays = useMemo(() => segments.reduce((s, seg) => s + seg.days, 0), [segments])
-  const remainingDays   = campaign.totalDays - distributedDays
+  const remainingDays   = Math.max(0, MAX_PLAN_DAYS - distributedDays)
   const hasLongSegment  = segments.some(s => s.days >= 14)
-  const canSubmit       = remainingDays === 0 && hasLongSegment
-  const progressPct     = Math.min(100, Math.round((distributedDays / campaign.totalDays) * 100))
+  const canSubmit       = distributedDays >= MIN_PLAN_DAYS && hasLongSegment
+  const progressPct     = Math.min(100, Math.round((distributedDays / MAX_PLAN_DAYS) * 100))
 
   const [showAddDialog,     setShowAddDialog]     = useState(false)
   const [addError,          setAddError]          = useState('')
@@ -552,8 +554,8 @@ export default function PlanningPage({ onGoToRequests }) {
       if (s <= se && e >= ss) { setAddError('Период пересекается с существующим'); return false }
     }
     const days = countVacationDays(s, e)
-    if (days > remainingDays) {
-      setAddError(`${pluralDays(days)} — превышает остаток ${pluralDays(remainingDays)}`); return false
+    if (distributedDays + days > MAX_PLAN_DAYS) {
+      setAddError(`Превышает максимум ${MAX_PLAN_DAYS} дней (доступно ещё ${pluralDays(remainingDays)})`); return false
     }
     const seg = { id: Date.now(), startDate: startStr, endDate: endStr, days }
     setSegments(prev => [...prev, seg].sort((a, b) => a.startDate.localeCompare(b.startDate)))
@@ -603,8 +605,8 @@ export default function PlanningPage({ onGoToRequests }) {
   })() : null
 
   const submitBlockers = [
-    remainingDays > 0 && `нераспределено ${pluralDays(remainingDays)}`,
-    !hasLongSegment   && 'нет отрезка ≥ 14 дней',
+    distributedDays < MIN_PLAN_DAYS && `нужно минимум ${MIN_PLAN_DAYS} дней`,
+    !hasLongSegment                 && 'нет отрезка ≥ 14 дней',
   ].filter(Boolean)
 
   // ── Balance cards data ──
@@ -619,7 +621,7 @@ export default function PlanningPage({ onGoToRequests }) {
     },
     {
       label: 'Распределено',
-      value: `${distributedDays} из ${campaign.totalDays} дней`,
+      value: `${distributedDays} из ${MAX_PLAN_DAYS} дней`,
       info: 'Минимум 28 дней обязательно к распределению. Максимум — 40 дней.',
     },
   ]
@@ -716,7 +718,7 @@ export default function PlanningPage({ onGoToRequests }) {
                 }} />
               </div>
               <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif" }}>
-                {distributedDays} из {campaign.totalDays} дней распределено
+                {distributedDays} из {MAX_PLAN_DAYS} дней распределено
               </span>
             </div>
           )}

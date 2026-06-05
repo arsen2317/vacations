@@ -7,6 +7,7 @@ export const CURRENT_USER = {
   managerId: 2,
   balanceDays: 18,
   balanceExtra: 3,
+  balanceAccumulated: 12,
 }
 
 export const CAMPAIGN = {
@@ -32,20 +33,6 @@ export const MY_REQUESTS = [
     endDate: new Date(2026, 6, 27),
     days: 14,
     status: 'pending',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-    rescheduleCount: 0,
-    rescheduleLimit: 2,
-  },
-  {
-    id: 234567,
-    type: 'planned',
-    typeLabel: 'Плановый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
-    planCategory: 'Плановый',
-    startDate: new Date(2026, 8, 1),
-    endDate: new Date(2026, 8, 14),
-    days: 14,
-    status: 'reviewing',
     approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
     rescheduleCount: 0,
     rescheduleLimit: 2,
@@ -135,12 +122,10 @@ export const HOLIDAYS_2027 = new Set([
 ])
 
 export const INITIAL_SEGMENTS = [
-  {
-    id: 1,
-    startDate: '2027-07-14',
-    endDate: '2027-07-27',
-    days: 14,
-  },
+  { id: 1, startDate: '2027-05-18', endDate: '2027-05-31', days: 14 },
+  { id: 2, startDate: '2027-07-08', endDate: '2027-07-12', days: 5 },
+  { id: 3, startDate: '2027-09-08', endDate: '2027-09-12', days: 5 },
+  { id: 4, startDate: '2027-11-16', endDate: '2027-11-19', days: 4 },
 ]
 
 export const APPROVED_SEGMENTS = [
