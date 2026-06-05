@@ -10,7 +10,7 @@ const MONTHS_SHORT = ['янв','фев','мар','апр','май','июн','и�
 
 const PAGE_SIZE   = 10
 const PERSON_W    = 256
-const ROW_H       = 48
+const ROW_H       = 64
 const COL_SHADOW  = 'inset -1px 0 0 #E2E5EB'
 const DIVIDER     = '1px solid #E2E5EB'
 
@@ -82,7 +82,9 @@ function fmtRangeRu(s, e) {
 function shortName(fullName) {
   const p = fullName.trim().split(' ')
   if (p.length < 2) return fullName
-  return `${p[1]} ${p[0][0]}.`
+  // Фамилия И.О. — первое слово фамилия, остальные инициалы
+  const initials = p.slice(1).map(w => w[0] + '.').join('')
+  return `${p[0]} ${initials}`
 }
 
 function pluralDays(n) {
@@ -146,18 +148,32 @@ function ManagerPersonCell({ person }) {
       padding: '0 16px', boxShadow: COL_SHADOW, boxSizing: 'border-box',
     }}>
       <div style={{
-        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-        background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
+        width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+        background: '#F2F3F7', overflow: 'hidden', position: 'relative',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {initials}
+        {person.avatar
+          ? <img src={person.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          : <span style={{ fontSize: 12, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{initials}</span>
+        }
+        <div style={{ position: 'absolute', inset: 0, borderRadius: 12, border: '1px rgba(188,195,208,0.50) solid', pointerEvents: 'none' }} />
       </div>
-      <span style={{
-        flex: 1, fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
-        color: '#1D2023', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>
-        {shortName(person.name)}
-      </span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{
+          fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
+          color: '#1D2023', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {shortName(person.name)}
+        </div>
+        {person.position && (
+          <div style={{
+            fontSize: 12, fontFamily: "'MTSCompact', sans-serif",
+            color: '#626C77', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
+          }}>
+            {person.position}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -532,7 +548,7 @@ export default function ManagerPage() {
     const byName = {}
     for (const req of filteredRequests) {
       if (req.status === 'rejected') continue
-      if (!byName[req.name]) byName[req.name] = { name: req.name, position: req.position, team: req.team, requests: [] }
+      if (!byName[req.name]) byName[req.name] = { name: req.name, position: req.position, team: req.team, avatar: req.avatar, requests: [] }
       byName[req.name].requests.push(req)
     }
     return Object.values(byName)
@@ -697,7 +713,7 @@ export default function ManagerPage() {
                 <col style={{ width: 120 }} />
                 <col style={{ width: 280 }} />
                 <col />
-                <col style={{ width: 180 }} />
+                <col style={{ width: 220 }} />
                 <col style={{ width: 180 }} />
                 <col style={{ width: 80 }} />
               </colgroup>
