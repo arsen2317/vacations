@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
 import { BTN_STYLE, Chip, SearchIcon, SelectField } from '../ds/index'
 import StatusBadge from '../components/StatusBadge'
+import Toast from '../components/Toast'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
@@ -514,6 +515,7 @@ export default function ManagerPage() {
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [rejectTarget,    setRejectTarget]    = useState(null)
   const [tooltip,         setTooltip]         = useState(null)
+  const [toast,           setToast]           = useState(null)
 
   // Department options (dynamic from data)
   const deptOptions = useMemo(() => {
@@ -596,11 +598,13 @@ export default function ManagerPage() {
 
   function handleApprove(id) {
     setIncomingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r))
+    setToast('Заявка согласована')
   }
 
   function handleReject(id, comment) {
     setIncomingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected', rejectionComment: comment } : r))
     setRejectTarget(null)
+    setToast('Заявка отклонена')
   }
 
   const TH = {
@@ -827,6 +831,7 @@ export default function ManagerPage() {
           onConfirm={handleReject}
         />
       )}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   )
 }

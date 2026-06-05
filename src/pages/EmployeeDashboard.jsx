@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
+import Toast from '../components/Toast'
 import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
@@ -29,24 +30,6 @@ function pluralDays(n) {
   return 'дней'
 }
 
-function Toast({ message, onDone }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000)
-    return () => clearTimeout(t)
-  }, [onDone])
-
-  return (
-    <div style={{
-      position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-      zIndex: 2000, background: '#1D2023', color: '#FAFAFA', borderRadius: 16,
-      padding: '14px 24px', fontSize: 15, fontFamily: "'MTSCompact', sans-serif",
-      lineHeight: '22px', boxShadow: '0px 8px 24px rgba(0,0,0,0.20)',
-      pointerEvents: 'none', whiteSpace: 'nowrap',
-    }}>
-      {message}
-    </div>
-  )
-}
 
 // Left panel for 2026: balance + vacation list
 function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRange }) {
