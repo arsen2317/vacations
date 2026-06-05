@@ -163,7 +163,7 @@ function ColleagueRow({ col, onRemove }) {
 }
 
 // Left panel for 2027: planning view
-function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, onOpenPlanModal, trackedColleagues, onRemoveColleague }) {
+function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, onOpenPlanModal, trackedColleagues, onRemoveColleague, onSegmentClick }) {
   const [collapseOverlap, setCollapseOverlap] = useState(false)
   const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
   const hasLongSegment  = segments.some(s => s.days >= 14)
@@ -258,7 +258,10 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
                     </div>
                   </>
                 ) : (
-                  <>
+                  <button
+                    onClick={() => onSegmentClick?.(seg)}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+                  >
                     <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                       <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
                         {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
@@ -268,7 +271,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
                       </div>
                     </div>
                     <StatusBadge type={planStatus} />
-                  </>
+                  </button>
                 )}
               </div>
             ))}
@@ -462,6 +465,17 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               onOpenPlanModal={() => setShowPlanModal(true)}
               trackedColleagues={trackedColleagues}
               onRemoveColleague={id => setTrackedColleagueIds(prev => prev.filter(x => x !== id))}
+              onSegmentClick={seg => setSelectedRequest({
+                ...seg,
+                id: seg.id,
+                startDate: new Date(seg.startDate + 'T00:00:00'),
+                endDate: new Date(seg.endDate + 'T00:00:00'),
+                status: planStatus,
+                type: 'planned',
+                typeLabel: 'Плановый',
+                isPlanned: true,
+                approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+              })}
             />
           )}
         </div>

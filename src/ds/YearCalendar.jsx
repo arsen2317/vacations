@@ -142,20 +142,31 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                   ? `${isRowStart ? r : 0}px 0 0 ${isRowStart ? r : 0}px`
                   : `${isRowStart ? r : 0}px ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px ${isRowStart ? r : 0}px`
 
+              // Past dates with a vacation are still clickable (view-only)
+              const canClick = !isPast || req !== null
+
               // Text color
               const inAnyHighlight = isSelected || showStripBg
               let textColor = isToday ? '#0066FF' : isNonWorking ? '#F95721' : '#1D2023'
               if (isSelected) textColor = '#FAFAFA'
               else if (vacStyle && !inAnyHighlight) textColor = vacStyle.color
-              if (isPast) textColor = '#BCC3D0'
+              if (isPast) {
+                if (vacStyle && !inAnyHighlight) {
+                  // Mute the vacation color to ~50% blend with white
+                  const MUTED = { approved: '#80BA81', pending: '#80ADE0', reviewing: '#BC9BE4', cancelled: '#B0B4BE', draft: '#B0B4BE' }
+                  textColor = MUTED[req?.status] ?? '#BCC3D0'
+                } else {
+                  textColor = '#BCC3D0'
+                }
+              }
               const fontWeight = (isSelected || (vacStyle && !inAnyHighlight)) ? 500 : 400
 
               return (
                 <div
                   key={di}
-                  style={{ position: 'relative', width: CELL, height: ROW_H, cursor: isPast ? 'default' : 'pointer' }}
-                  onClick={() => { if (!isPast) onDayClick(d, req) }}
-                  onMouseEnter={() => { if (!isPast) onDayEnter(d) }}
+                  style={{ position: 'relative', width: CELL, height: ROW_H, cursor: canClick ? 'pointer' : 'default' }}
+                  onClick={() => { if (canClick) onDayClick(d, req) }}
+                  onMouseEnter={() => { if (canClick) onDayEnter(d) }}
                   onMouseLeave={onDayLeave}
                 >
                   {/* Selection range strip — bottom 1px left empty for gap */}
