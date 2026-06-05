@@ -69,41 +69,47 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           {/* Balance card */}
           <div style={{
             background: '#F2F3F7', borderRadius: 20, padding: '16px 20px',
-            display: 'flex', flexDirection: 'column', gap: 6,
+            display: 'flex', gap: 24,
           }}>
-            <div style={{ fontSize: 13, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '18px' }}>
-              Доступно дней отпуска
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', gap: 4 }}>
+              <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word' }}>
+                Основной отпуск
+              </div>
+              <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px', wordWrap: 'break-word' }}>
+                {balance.main} {pluralDays(balance.main)}
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 28, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '32px' }}>
-                {balance.main}
-              </span>
-              <span style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>основных</span>
-              {balance.extra > 0 && (
-                <>
-                  <span style={{ fontSize: 14, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>+</span>
-                  <span style={{ fontSize: 28, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '32px' }}>
-                    {balance.extra}
-                  </span>
-                  <span style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>доп.</span>
-                </>
-              )}
-            </div>
+            {balance.extra > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', gap: 4 }}>
+                <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word' }}>
+                  Дополнительный
+                </div>
+                <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px', wordWrap: 'break-word' }}>
+                  {balance.extra} {pluralDays(balance.extra)}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Vacation list section */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <h2 style={{
-              margin: 0, fontSize: 17, fontWeight: 500,
-              color: COLORS.text, lineHeight: '24px',
+            <h3 style={{
+              margin: 0,
+              color: '#1D2023',
+              fontFeatureSettings: "'liga' off, 'clig' off",
               fontFamily: "'MTSWide', sans-serif",
+              fontSize: 24,
+              fontWeight: 500,
+              lineHeight: '28px',
             }}>
               Мои отпуска
-            </h2>
+            </h3>
 
             <Banner
               type="info"
-              title="Для создания заявки выберите период в&nbsp;календаре справа"
+              title="Для создания новой заявки на&nbsp;отпуск выберите период в&nbsp;календаре"
+              subtitle="Узнать больше о&nbsp;правилах планирования отпусков можно "
+              subtitleLink={{ label: 'по ссылке', href: '#' }}
             />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
