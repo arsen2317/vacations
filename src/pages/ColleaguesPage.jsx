@@ -26,7 +26,8 @@ const BAR = {
 
 const PERSON_W = 277
 const ROW_H    = 48
-const DIVIDER  = '1px solid #E2E5EB'
+const DIVIDER     = '1px solid #E2E5EB'
+const COL_SHADOW  = 'inset -1px 0 0 #E2E5EB'  // column divider — doesn't affect layout
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,7 +98,7 @@ function PersonCell({ person, onRemove, height = ROW_H }) {
       width: PERSON_W, flexShrink: 0, height,
       display: 'flex', alignItems: 'center', gap: 10,
       padding: '0 10px 0 16px',
-      borderRight: DIVIDER,
+      boxShadow: COL_SHADOW,
       boxSizing: 'border-box',
     }}>
       <SmallAvatar src={person.avatar} />
@@ -178,7 +179,7 @@ function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onB
 
         {/* Header */}
         <div style={{ display: 'flex', height: 40, background: '#F2F3F7' }}>
-          <div style={{ width: PERSON_W, flexShrink: 0, padding: '0 16px', borderRight: DIVIDER, display: 'flex', alignItems: 'center', boxSizing: 'border-box' }}>
+          <div style={{ width: PERSON_W, flexShrink: 0, padding: '0 16px', boxShadow: COL_SHADOW, display: 'flex', alignItems: 'center', boxSizing: 'border-box' }}>
             <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>Сотрудник</span>
           </div>
           <div style={{ flex: 1, display: 'flex' }}>
@@ -186,7 +187,7 @@ function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onB
               <div key={m} style={{
                 flex: diMonth(year, m),
                 padding: '0 12px',
-                borderRight: m < 11 ? DIVIDER : 'none',
+                boxShadow: m < 11 ? COL_SHADOW : 'none',
                 display: 'flex', alignItems: 'center',
                 overflow: 'hidden',
               }}>
@@ -244,7 +245,7 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
         {/* Header: nav cell + day cells in one flex row */}
         <div style={{ display: 'flex', height: 72, background: '#F2F3F7' }}>
           {/* Nav + title */}
-          <div style={{ width: PERSON_W, flexShrink: 0, borderRight: DIVIDER, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxSizing: 'border-box' }}>
+          <div style={{ width: PERSON_W, flexShrink: 0, boxShadow: COL_SHADOW, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxSizing: 'border-box' }}>
             <button onClick={onPrev} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}>
               <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
                 <path d="M7 1L1 7L7 13" stroke="#626C77" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -264,7 +265,7 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
             {days.map(d => (
               <div key={d.n} style={{
                 flex: 1,
-                borderRight: d.n < totalDays ? DIVIDER : 'none',
+                boxShadow: d.n < totalDays ? COL_SHADOW : 'none',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               }}>
                 <span style={{ color: d.isWeekend ? '#F15641' : '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", lineHeight: '16px' }}>{WD[d.dow]}</span>
