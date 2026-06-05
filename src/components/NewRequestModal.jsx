@@ -157,6 +157,20 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     }
   }, [startDate, endDate])
 
+  const intersectingColleagues = useMemo(() => {
+    if (!startDate) return []
+    const s = startDate.getTime()
+    const e = (endDate || startDate).getTime()
+    return COLLEAGUES.filter(c => !c.me).filter(c =>
+      c.segments?.some(seg => {
+        if (seg.status === 'draft') return false
+        const segS = new Date(seg.startDate + 'T00:00:00').getTime()
+        const segE = new Date(seg.endDate + 'T00:00:00').getTime()
+        return s <= segE && e >= segS
+      })
+    )
+  }, [startDate, endDate])
+
   function validate() {
     const errs = {}
     if (!type) errs.type = 'Выберите вид отпуска'
@@ -242,6 +256,25 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                 }}
               />
             </div>
+
+            {/* Intersection warning */}
+            {intersectingColleagues.length > 0 && (
+              <div style={{ width: '100%', padding: 12, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'flex-start', gap: 8, boxSizing: 'border-box' }}>
+                <div style={{ flexShrink: 0, marginTop: 1 }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path fillRule="evenodd" clipRule="evenodd" d="M4.68597 19.314C3.3731 18.0012 3.27575 16.6932 3.08105 14.0772C3.03058 13.399 3 12.6995 3 12C3 11.3005 3.03058 10.601 3.08105 9.92282C3.27575 7.30684 3.3731 5.99884 4.68597 4.68597C5.99884 3.37309 7.30684 3.27575 9.92282 3.08105C10.601 3.03058 11.3005 3 12 3C12.6995 3 13.399 3.03058 14.0772 3.08105C16.6932 3.27575 18.0012 3.37309 19.314 4.68597C20.6269 5.99884 20.7243 7.30684 20.9189 9.92282C20.9694 10.601 21 11.3005 21 12C21 12.6995 20.9694 13.399 20.9189 14.0772C20.7243 16.6932 20.6269 18.0012 19.314 19.314C18.0012 20.6269 16.6932 20.7243 14.0772 20.9189C13.399 20.9694 12.6995 21 12 21C11.3005 21 10.601 20.9694 9.92282 20.9189C7.30684 20.7243 5.99884 20.6269 4.68597 19.314ZM12 13C12.5523 13 13 12.5523 13 12L13 8.00244C13 7.45015 12.5523 7.00244 12 7.00244C11.4477 7.00244 11 7.45016 11 8.00244L11 12C11 12.5523 11.4477 13 12 13ZM13.2477 16.0011C13.2477 15.3114 12.6886 14.7523 11.9989 14.7523C11.3091 14.7523 10.75 15.3114 10.75 16.0011C10.75 16.6909 11.3091 17.25 11.9989 17.25C12.6886 17.25 13.2477 16.6909 13.2477 16.0011Z" fill="#FAC031"/>
+                  </svg>
+                </div>
+                <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <div style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+                    Пересечение с отпуском {intersectingColleagues.map(c => c.name).join(', ')}
+                  </div>
+                  <div style={{ color: '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '16px' }}>
+                    Подробнее — во вкладке «Планы коллег»
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Вид отпуска */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
