@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { COLLEAGUES, ALL_EMPLOYEES } from '../data/mockData'
-import { Chip, SearchIcon } from '../ds/index'
+import { Chip, SearchIcon, SelectField } from '../ds/index'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -479,29 +479,12 @@ export default function ColleaguesPage() {
         </div>
 
         {/* Year selector */}
-        <div style={{
-          height: 44, paddingLeft: 16, paddingRight: 32,
-          background: '#F2F3F7', borderRadius: 12,
-          display: 'flex', alignItems: 'center', position: 'relative',
-          outline: '1px rgba(188,195,208,0.5) solid', outlineOffset: '-1px',
-        }}>
-          <select
-            value={year}
-            onChange={e => setYear(Number(e.target.value))}
-            style={{
-              border: 'none', background: 'transparent', cursor: 'pointer',
-              fontSize: 17, fontFamily: "'MTSCompact', sans-serif", color: '#1D2023',
-              appearance: 'none', outline: 'none',
-            }}
-          >
-            <option value={2026}>2026</option>
-            <option value={2027}>2027</option>
-          </select>
-          <div style={{ position: 'absolute', right: 12, pointerEvents: 'none' }}>
-            <svg width="12" height="7" viewBox="0 0 12 7" fill="none">
-              <path d="M1 1L6 6L11 1" stroke="#626C77" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+        <div style={{ width: 120 }}>
+          <SelectField
+            value={String(year)}
+            options={[{ id: '2026', name: '2026' }, { id: '2027', name: '2027' }]}
+            onChange={v => setYear(Number(v))}
+          />
         </div>
 
         {/* Show drafts */}
