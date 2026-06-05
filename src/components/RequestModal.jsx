@@ -27,6 +27,17 @@ function pluralDays(n) {
   return `${n} дней`
 }
 
+// "Дмитрий Соколов" → "Соколов Д.", "Иван Петрович Сидоров" → "Сидоров И.П."
+function formatNameShort(name) {
+  if (!name) return '—'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0]
+  // Assume "Имя Фамилия" or "Имя Отчество Фамилия"
+  const surname = parts[parts.length - 1]
+  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join('')
+  return `${surname} ${initials}`
+}
+
 function daysUntil(date) {
   if (!date) return Infinity
   const today = new Date()
@@ -36,21 +47,27 @@ function daysUntil(date) {
   return Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 }
 
+function InfoCell({ item }) {
+  if (!item) return null
+  return (
+    <div style={{ flex: '1 1 0', paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center' }}>
+      <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+          {item.label}
+        </div>
+        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+          {item.value ?? '—'}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function InfoPair({ left, right }) {
   return (
     <div style={{ alignSelf: 'stretch', display: 'flex', gap: 16 }}>
-      {[left, right].map((item, i) => (
-        <div key={i} style={{ flex: '1 1 0', paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center' }}>
-          <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              {item?.label ?? ''}
-            </div>
-            <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-              {item?.value ?? '—'}
-            </div>
-          </div>
-        </div>
-      ))}
+      <InfoCell item={left} />
+      {right && <InfoCell item={right} />}
     </div>
   )
 }
@@ -125,9 +142,12 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
   const title = isPlanned ? 'Заявка на плановый отпуск' : 'Заявка на внеплановый отпуск'
   const typeValue = request.planCategory || (isPlanned ? 'Плановый' : 'Основной оплачиваемый')
   const substituteValue = request.substitute || 'Не указан'
-  const extraApproverValue = request.extraApprover
+  const rawApproverName = request.approver?.name ?? null
+  const rawExtraName = request.extraApprover
     ? (typeof request.extraApprover === 'string' ? request.extraApprover : request.extraApprover.name)
-    : 'Не указан'
+    : null
+  const approverValue = rawApproverName ? formatNameShort(rawApproverName) : '—'
+  const extraApproverValue = rawExtraName ? formatNameShort(rawExtraName) : 'Не указан'
 
   function handleClose() {
     setShowRescheduleCalendar(false)
@@ -249,7 +269,7 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
               right={{ label: 'Заместитель', value: substituteValue }}
             />
             <InfoPair
-              left={{ label: 'Согласующий', value: request.approver?.name ?? '—' }}
+              left={{ label: 'Согласующий', value: approverValue }}
               right={{ label: 'Дополнительный согласующий', value: extraApproverValue }}
             />
             {isPlanned && status === 'approved' && (

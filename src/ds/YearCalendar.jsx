@@ -57,6 +57,7 @@ function getRequestForDay(d, requests) {
   const t = d.getTime()
   let best = null
   for (const req of requests) {
+    if (req.status === 'rejected') continue
     const s = dayOnly(req.startDate).getTime()
     const e = dayOnly(req.endDate).getTime()
     if (t >= s && t <= e) {

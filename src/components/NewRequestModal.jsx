@@ -21,6 +21,24 @@ const TYPE_LABEL_MAP = {
 const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель', avatar: '/avatars/egor.webp' }
 const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.id), name: c.name, avatar: c.avatar }))
 
+// "Дмитрий Соколов" → "Соколов Дмитрий", "Иван Петрович Сидоров" → "Сидоров Иван Петрович"
+function formatSurnameFirst(name) {
+  if (!name) return name
+  const parts = name.trim().split(/\s+/)
+  if (parts.length <= 1) return name
+  return `${parts[parts.length - 1]} ${parts.slice(0, -1).join(' ')}`
+}
+
+// "Дмитрий Соколов" → "Соколов Д."
+function formatNameShort(name) {
+  if (!name) return '—'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0]
+  const surname = parts[parts.length - 1]
+  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join('')
+  return `${surname} ${initials}`
+}
+
 function fmt(d) {
   if (!d) return ''
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
@@ -195,7 +213,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
       status: 'pending',
       approver: { name: approverName, role: 'Руководитель' },
       comment: comment || undefined,
-      extraApprover: extraApprover ? APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name : undefined,
+      extraApprover: extraApprover ? formatSurnameFirst(APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name) : undefined,
     }
     setRequests(prev => [newReq, ...prev])
     if (selectedType?.deductsBalance) {
@@ -320,7 +338,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <PersonAvatar src={approverAvatar} size={52} />
                     <div>
-                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{approverName}</div>
+                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{formatNameShort(approverName)}</div>
                       <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{DEFAULT_APPROVER.role}</div>
                     </div>
                   </div>
@@ -344,7 +362,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <PersonAvatar src={extraApproverColleague.avatar} size={52} />
                     <div>
-                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{extraApproverColleague.name}</div>
+                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{formatSurnameFirst(extraApproverColleague.name)}</div>
                     </div>
                   </div>
                   <button
