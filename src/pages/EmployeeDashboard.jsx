@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
+import PlanSubmitModal from '../components/PlanSubmitModal'
 import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
@@ -162,17 +163,11 @@ function ColleagueRow({ col, onRemove }) {
 }
 
 // Left panel for 2027: planning view
-function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, setPlanStatus, setToast, trackedColleagues, onRemoveColleague }) {
+function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, onOpenPlanModal, trackedColleagues, onRemoveColleague }) {
   const [collapseOverlap, setCollapseOverlap] = useState(false)
   const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
   const hasLongSegment  = segments.some(s => s.days >= 14)
   const canSubmit       = distributedDays >= MIN_PLAN_DAYS && hasLongSegment
-
-  function handleSubmit() {
-    if (!canSubmit) return
-    setPlanStatus('pending')
-    setToast('Заявка направлена на согласование')
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
@@ -283,7 +278,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, s
         {/* Submit button */}
         {planStatus === 'draft' && (
           <button
-            onClick={handleSubmit}
+            onClick={() => canSubmit && onOpenPlanModal()}
             disabled={!canSubmit}
             style={{
               alignSelf: 'stretch', height: 44, padding: 10,
@@ -376,6 +371,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [newRequestRange, setNewRequestRange] = useState(null)
   const [calendarKey, setCalendarKey] = useState(0)
   const [toast, setToast] = useState(null)
+  const [showPlanModal, setShowPlanModal] = useState(false)
   const [trackedColleagueIds, setTrackedColleagueIds] = useState(INITIAL_TRACKED_IDS)
 
   const trackedColleagues = useMemo(
@@ -463,8 +459,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               segments={segments}
               onRemoveSegment={handleRemoveSegment}
               planStatus={planStatus}
-              setPlanStatus={setPlanStatus}
-              setToast={setToast}
+              onOpenPlanModal={() => setShowPlanModal(true)}
               trackedColleagues={trackedColleagues}
               onRemoveColleague={id => setTrackedColleagueIds(prev => prev.filter(x => x !== id))}
             />
@@ -484,8 +479,17 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               startDate: new Date(s.startDate + 'T00:00:00'),
               endDate: new Date(s.endDate + 'T00:00:00'),
               status: planStatus,
+              type: 'planned',
+              typeLabel: 'Плановый',
+              isPlanned: true,
+              approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
             }))}
-            onRequestClick={year === 2026 ? setSelectedRequest : undefined}
+            onRequestClick={year === 2026
+              ? setSelectedRequest
+              : planStatus !== 'draft'
+                ? (req) => setSelectedRequest({ ...req, type: 'planned', typeLabel: 'Плановый', isPlanned: true })
+                : undefined
+            }
             onNewRequest={year === 2026
               ? (start, end) => setNewRequestRange({ start, end })
               : (planStatus === 'draft' ? handleAddSegment : undefined)
@@ -508,6 +512,18 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           onClose={closeNewRequest}
           onSubmitted={() => {
             closeNewRequest()
+            setToast('Заявка направлена на согласование')
+          }}
+        />
+      )}
+
+      {showPlanModal && (
+        <PlanSubmitModal
+          segments={segments}
+          onClose={() => setShowPlanModal(false)}
+          onSubmit={() => {
+            setShowPlanModal(false)
+            setPlanStatus('pending')
             setToast('Заявка направлена на согласование')
           }}
         />
