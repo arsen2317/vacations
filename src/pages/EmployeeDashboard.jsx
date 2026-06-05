@@ -148,9 +148,9 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
       {/* Balance */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Основной отпуск */}
         <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
           <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
