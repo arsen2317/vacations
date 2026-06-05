@@ -4,7 +4,6 @@ import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
 const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 
-// Matches StatusBadge colors exactly
 const STATUS_STYLES = {
   pending:   { bg: '#C7E1FF', color: '#005CBD' },
   reviewing: { bg: '#E3CCFF', color: '#7936C9' },
@@ -15,6 +14,9 @@ const STATUS_STYLES = {
 }
 
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
+
+// Cell size — must match pill size
+const CELL = 36
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -38,27 +40,17 @@ function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
-// Returns 7 arrays (Mon–Sun). Each array starts with null placeholders so
-// rows align across columns (Mon=0 … Sun=6, Mon-based week).
-function getMonthColumns(year, month) {
-  const firstDate = new Date(year, month, 1)
-  const firstDow = (firstDate.getDay() + 6) % 7 // Mon=0 … Sun=6
+// Standard row-based calendar grid (same approach as CalendarRange)
+function getMonthWeeks(year, month) {
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7 // Mon=0
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-  // Build plain day lists per weekday
-  const cols = [[], [], [], [], [], [], []]
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(year, month, d)
-    const dow = (date.getDay() + 6) % 7
-    cols[dow].push(date)
-  }
-
-  // Prepend leading nulls so that all columns start on the same visual row
-  // Columns whose weekday index < firstDow appear empty in week 1
-  return cols.map((dayList, colIdx) => {
-    const leading = colIdx < firstDow ? 1 : 0
-    return [...Array(leading).fill(null), ...dayList]
-  })
+  const grid = []
+  for (let i = 0; i < firstDow; i++) grid.push(null)
+  for (let d = 1; d <= daysInMonth; d++) grid.push(new Date(year, month, d))
+  while (grid.length % 7 !== 0) grid.push(null)
+  const weeks = []
+  for (let i = 0; i < grid.length; i += 7) weeks.push(grid.slice(i, i + 7))
+  return weeks
 }
 
 function getRequestForDay(d, requests) {
@@ -77,11 +69,11 @@ function getRequestForDay(d, requests) {
 }
 
 function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave }) {
-  const cols = getMonthColumns(year, month)
-  const numRows = Math.max(...cols.map(c => c.length))
+  const weeks = getMonthWeeks(year, month)
+  const r = 12
 
   return (
-    <div>
+    <div style={{ width: CELL * 7 }}>
       {/* Month name */}
       <div style={{
         textAlign: 'center',
@@ -90,124 +82,141 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
         fontFamily: "'MTSCompact', sans-serif",
         fontWeight: 500,
         lineHeight: '21px',
-        marginBottom: 16,
+        marginBottom: 12,
       }}>
         {MONTH_NAMES[month]}
       </div>
 
-      {/* 7 weekday columns */}
-      <div style={{ display: 'flex' }}>
-        {cols.map((dayList, colIdx) => {
-          const trailingCount = numRows - dayList.length
+      {/* Weekday headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)`, marginBottom: 4 }}>
+        {WEEKDAYS.map(wd => (
+          <div key={wd} style={{
+            width: CELL,
+            textAlign: 'center',
+            color: '#626C77',
+            fontSize: 12,
+            fontFamily: "'MTSCompact', sans-serif",
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            lineHeight: '16px',
+          }}>
+            {wd}
+          </div>
+        ))}
+      </div>
 
-          return (
-            <div key={colIdx} style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Weekday header */}
-              <div style={{
-                textAlign: 'center',
-                color: '#626C77',
-                fontSize: 12,
-                fontFamily: "'MTSCompact', sans-serif",
-                fontWeight: 500,
-                textTransform: 'uppercase',
-                lineHeight: '16px',
-              }}>
-                {WEEKDAYS[colIdx]}
-              </div>
+      {/* Week rows */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {weeks.map((week, wi) => (
+          <div key={wi} style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)` }}>
+            {week.map((date, di) => {
+              if (!date) return <div key={di} style={{ width: CELL, height: CELL }} />
 
-              {/* Day cells */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {/* Leading/trailing null slots (null items in dayList) + actual dates */}
-                {Array.from({ length: numRows }, (_, rowIdx) => {
-                  const date = dayList[rowIdx] ?? null
+              const d = dayOnly(date)
+              const isNonWorking = isWeekendOrHoliday(d)
+              const isToday = sameDay(d, today)
+              const req = getRequestForDay(d, requests)
+              const vacStyle = req ? (STATUS_STYLES[req.status] || STATUS_STYLES.cancelled) : null
 
-                  if (!date) {
-                    return <div key={rowIdx} style={{ height: 36 }} />
-                  }
+              const isStart = sameDay(d, selStart)
+              const isEnd   = sameDay(d, effectiveSelEnd)
+              const inRange = selStart && effectiveSelEnd && d > selStart && d < effectiveSelEnd
+              const isSelected = isStart || isEnd
 
-                  const d = dayOnly(date)
-                  const isNonWorking = isWeekendOrHoliday(d)
-                  const isToday = sameDay(d, today)
-                  const req = getRequestForDay(d, requests)
+              // Strip logic — identical to CalendarRange
+              const rangeHalfStart = isStart && effectiveSelEnd && selStart.getTime() !== effectiveSelEnd.getTime()
+              const rangeHalfEnd   = isEnd   && selStart       && selStart.getTime() !== effectiveSelEnd.getTime()
+              const showStripBg    = inRange || rangeHalfStart || rangeHalfEnd
 
-                  const isSelStart = sameDay(d, selStart)
-                  const isSelEnd   = sameDay(d, effectiveSelEnd)
-                  const inSel = selStart && effectiveSelEnd && d > selStart && d < effectiveSelEnd
-                  const isSelected = isSelStart || isSelEnd
+              const isRowStart = di === 0
+              const isRowEnd   = di === 6
 
-                  const vacStyle = req ? (STATUS_STYLES[req.status] || STATUS_STYLES.cancelled) : null
+              const stripLeft  = rangeHalfStart ? 'calc(50% - 6px)' : 0
+              const stripRight = rangeHalfEnd   ? 'calc(50% - 6px)' : 0
+              const stripBr    = rangeHalfStart
+                ? `0 ${isRowEnd   ? r : 0}px ${isRowEnd   ? r : 0}px 0`
+                : rangeHalfEnd
+                  ? `${isRowStart ? r : 0}px 0 0 ${isRowStart ? r : 0}px`
+                  : `${isRowStart ? r : 0}px ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px ${isRowStart ? r : 0}px`
 
-                  // Pill background and text color
-                  let pillBg = null
-                  let pillColor = null
-                  let fontWeight = 400
+              // Text color
+              const inAnyHighlight = isSelected || showStripBg
+              let textColor = isToday ? '#0066FF' : isNonWorking ? '#F95721' : '#1D2023'
+              if (isSelected) textColor = '#FAFAFA'
+              else if (vacStyle && !inAnyHighlight) textColor = vacStyle.color
+              const fontWeight = (isSelected || (vacStyle && !inAnyHighlight)) ? 500 : 400
 
-                  if (isSelected) {
-                    pillBg = '#1D2023'
-                    pillColor = '#FAFAFA'
-                    fontWeight = 500
-                  } else if (vacStyle) {
-                    pillBg = vacStyle.bg
-                    pillColor = vacStyle.color
-                    fontWeight = 500
-                  } else if (inSel) {
-                    pillBg = '#EBF0FF'
-                    pillColor = '#0055CC'
-                    fontWeight = 500
-                  }
+              return (
+                <div
+                  key={di}
+                  style={{ position: 'relative', width: CELL, height: CELL, cursor: 'pointer' }}
+                  onClick={() => onDayClick(d, req)}
+                  onMouseEnter={() => onDayEnter(d)}
+                  onMouseLeave={onDayLeave}
+                >
+                  {/* Selection range strip (gray, behind circle) */}
+                  {showStripBg && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0, bottom: 0,
+                      left: stripLeft,
+                      right: stripRight,
+                      background: '#F2F3F7',
+                      borderRadius: stripBr,
+                    }} />
+                  )}
 
-                  const textColor = pillColor
-                    ?? (isToday ? '#0066FF' : isNonWorking ? '#F95721' : '#1D2023')
+                  {/* Vacation pill (only when no selection active) */}
+                  {vacStyle && !showStripBg && !isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      width: CELL, height: CELL,
+                      top: 0, left: 0,
+                      background: vacStyle.bg,
+                      borderRadius: r,
+                    }} />
+                  )}
 
-                  return (
-                    <div
-                      key={rowIdx}
-                      style={{ position: 'relative', height: 36, cursor: 'pointer' }}
-                      onClick={() => onDayClick(d, req)}
-                      onMouseEnter={() => onDayEnter(d)}
-                      onMouseLeave={onDayLeave}
-                    >
-                      {/* 36×36 pill, borderRadius 12 */}
-                      {pillBg && (
-                        <div style={{
-                          position: 'absolute',
-                          width: 36, height: 36,
-                          top: 0, left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: pillBg,
-                          borderRadius: 12,
-                        }} />
-                      )}
+                  {/* Selection circle (start / end) */}
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      width: CELL, height: CELL,
+                      top: 0, left: 0,
+                      background: '#1D2023',
+                      borderRadius: r,
+                      zIndex: 1,
+                    }} />
+                  )}
 
-                      {/* Day number */}
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 12,
-                        fontFamily: "'MTSCompact', sans-serif",
-                        fontWeight,
-                        color: textColor,
-                        lineHeight: '16px',
-                        zIndex: 1,
-                      }}>
-                        {date.getDate()}
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {/* Trailing null slots */}
-                {Array.from({ length: trailingCount }, (_, i) => (
-                  <div key={`t${i}`} style={{ height: 36 }} />
-                ))}
-              </div>
-            </div>
-          )
-        })}
+                  {/* Day number */}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 12,
+                    fontFamily: "'MTSCompact', sans-serif",
+                    fontWeight,
+                    color: textColor,
+                    lineHeight: '16px',
+                    zIndex: 2,
+                  }}>
+                    {date.getDate()}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
     </div>
   )
 }
+
+// Calendar width: 3 months × (7 × CELL) + 2 × gap
+const MONTH_WIDTH = CELL * 7          // 252
+const COL_GAP     = 24
+const ROW_GAP     = 32
+export const YEAR_CALENDAR_WIDTH = 3 * MONTH_WIDTH + 2 * COL_GAP  // 756
 
 export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest }) {
   const today = dayOnly(new Date())
@@ -219,8 +228,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
     || (selStart && hover && hover > selStart ? hover : null)
 
   function handleDayClick(d, req) {
-    if (req) {
-      setSelStart(null); setSelEnd(null); setHover(null)
+    if (req && !selStart) {
       onRequestClick?.(req)
       return
     }
@@ -239,7 +247,13 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px 24px' }}>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: `repeat(3, ${MONTH_WIDTH}px)`,
+      columnGap: COL_GAP,
+      rowGap: ROW_GAP,
+      width: YEAR_CALENDAR_WIDTH,
+    }}>
       {Array.from({ length: 12 }, (_, m) => (
         <YearMonthGrid
           key={m}

@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 import CampaignBanner from '../components/CampaignBanner'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
-import { COLORS, Banner, Chip, StatusBadge, YearCalendar } from '../ds/index'
+import { COLORS, Banner, Chip, StatusBadge, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
 
 const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
@@ -55,8 +55,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 24 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 8 }}>
 
-        {/* Left panel */}
-        <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', paddingRight: 32 }}>
+        {/* Left panel — stretches to fill remaining space */}
+        <div style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', paddingRight: 32 }}>
 
           {/* Year chips */}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -151,8 +151,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         {/* Vertical divider */}
         <div style={{ width: 1, background: '#E8EDF2', alignSelf: 'stretch', flexShrink: 0 }} />
 
-        {/* Right panel — year calendar */}
-        <div style={{ flex: 1, minWidth: 0, paddingLeft: 32 }}>
+        {/* Right panel — fixed width, never stretches */}
+        <div style={{ width: YEAR_CALENDAR_WIDTH, flexShrink: 0, paddingLeft: 32 }}>
           <YearCalendar
             year={year}
             requests={yearRequests}
