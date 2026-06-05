@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import { COLORS, Banner, Chip, StatusBadge, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
+import { countVacationDays } from '../utils/dateUtils'
 
 const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
@@ -136,7 +137,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
 }
 
 // Left panel for 2027: planning view
-function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, setToast }) {
+function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, setPlanStatus, setToast }) {
   const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
   const hasLongSegment  = segments.some(s => s.days >= 14)
   const canSubmit       = distributedDays >= MIN_PLAN_DAYS && hasLongSegment
@@ -151,7 +152,6 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
       {/* Balance */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Основной отпуск */}
         <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
           <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
             Основной отпуск
@@ -168,7 +168,6 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
           </div>
         </div>
 
-        {/* Дополнительный отпуск */}
         {balance.extra > 0 && (
           <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
             <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
@@ -180,7 +179,6 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
           </div>
         )}
 
-        {/* Распределено */}
         <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
           <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
             Распределено
@@ -193,7 +191,6 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
 
       {/* Periods section */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* H3 + subtitle */}
         <div style={{ paddingTop: 36, paddingBottom: 12 }}>
           <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
             Периоды отпуска
@@ -211,33 +208,49 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
         />
 
         {/* Segments list */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {segments.length === 0 ? (
-            <div style={{ padding: '8px 0', fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>
-              Нет добавленных периодов
-            </div>
-          ) : (
-            segments.map(seg => (
+        {segments.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {segments.map(seg => (
               <div
                 key={seg.id}
-                style={{
-                  paddingTop: 10, paddingBottom: 10,
-                  display: 'flex', alignItems: 'center', gap: 12,
-                }}
+                style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}
               >
-                <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                    {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
-                  </div>
-                  <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                    {seg.days} {pluralDays(seg.days)}
-                  </div>
-                </div>
-                <StatusBadge type={planStatus === 'draft' ? 'draft' : planStatus} />
+                {planStatus === 'draft' ? (
+                  <>
+                    {/* Remove button */}
+                    <button
+                      onClick={() => onRemoveSegment(seg.id)}
+                      style={{ width: 24, height: 24, position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+                    >
+                      <div style={{ width: 22, height: 22, left: 1, top: 1, position: 'absolute', background: '#F95721', borderRadius: 11 }} />
+                      <div style={{ width: 10, height: 2, left: 7, top: 11, position: 'absolute', background: '#FFFFFF', borderRadius: 1 }} />
+                    </button>
+                    <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+                        {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
+                      </div>
+                      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+                        {seg.days} {pluralDays(seg.days)}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+                        {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
+                      </div>
+                      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+                        {seg.days} {pluralDays(seg.days)}
+                      </div>
+                    </div>
+                    <StatusBadge type={planStatus} />
+                  </>
+                )}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Submit button */}
         {planStatus === 'draft' && (
@@ -245,28 +258,19 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
             onClick={handleSubmit}
             disabled={!canSubmit}
             style={{
-              alignSelf: 'stretch',
-              height: 44,
-              padding: 10,
+              alignSelf: 'stretch', height: 44, padding: 10,
               background: canSubmit ? '#0066FF' : '#F2F3F7',
-              overflow: 'hidden',
-              borderRadius: 16,
-              border: 'none',
+              overflow: 'hidden', borderRadius: 16, border: 'none',
               cursor: canSubmit ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
+              display: 'flex', justifyContent: 'center', alignItems: 'center',
             }}
           >
             <span style={{
               paddingLeft: 8, paddingRight: 8,
               color: canSubmit ? '#FFFFFF' : '#8C9BAB',
-              fontSize: 12,
-              fontFamily: "'MTSWide', sans-serif",
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              lineHeight: '16px',
-              letterSpacing: 0.6,
+              fontSize: 12, fontFamily: "'MTSWide', sans-serif",
+              fontWeight: 700, textTransform: 'uppercase',
+              lineHeight: '16px', letterSpacing: 0.6,
             }}>
               отправить на согласование
             </span>
@@ -277,8 +281,12 @@ function Panel2027({ balance, campaign, segments, planStatus, setPlanStatus, set
   )
 }
 
+function toISODate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR }) {
-  const { requests, balance, segments, planStatus, setPlanStatus, campaign } = useApp()
+  const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign } = useApp()
   const [year, setYear] = useState(2026)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [newRequestRange, setNewRequestRange] = useState(null)
@@ -287,6 +295,28 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
 
   function closeNewRequest() {
     setNewRequestRange(null)
+    setCalendarKey(k => k + 1)
+  }
+
+  function handleRemoveSegment(id) {
+    setSegments(prev => prev.filter(s => s.id !== id))
+    setCalendarKey(k => k + 1)
+  }
+
+  function handleAddSegment(start, end) {
+    const startStr = toISODate(start)
+    const endStr   = toISODate(end)
+    const days = countVacationDays(start, end)
+    const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
+    if (distributedDays + days > MAX_PLAN_DAYS) return
+    // check overlap
+    for (const seg of segments) {
+      const ss = new Date(seg.startDate + 'T00:00:00')
+      const se = new Date(seg.endDate   + 'T00:00:00')
+      if (start <= se && end >= ss) return
+    }
+    setSegments(prev => [...prev, { id: Date.now(), startDate: startStr, endDate: endStr, days }]
+      .sort((a, b) => a.startDate.localeCompare(b.startDate)))
     setCalendarKey(k => k + 1)
   }
 
@@ -321,6 +351,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               balance={balance}
               campaign={campaign}
               segments={segments}
+              onRemoveSegment={handleRemoveSegment}
               planStatus={planStatus}
               setPlanStatus={setPlanStatus}
               setToast={setToast}
@@ -343,7 +374,10 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               status: planStatus,
             }))}
             onRequestClick={year === 2026 ? setSelectedRequest : undefined}
-            onNewRequest={year === 2026 ? (start, end) => setNewRequestRange({ start, end }) : undefined}
+            onNewRequest={year === 2026
+              ? (start, end) => setNewRequestRange({ start, end })
+              : (planStatus === 'draft' ? handleAddSegment : undefined)
+            }
           />
         </div>
       </div>

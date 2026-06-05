@@ -121,12 +121,7 @@ export const HOLIDAYS_2027 = new Set([
   '2027-12-31',
 ])
 
-export const INITIAL_SEGMENTS = [
-  { id: 1, startDate: '2027-05-18', endDate: '2027-05-31', days: 14 },
-  { id: 2, startDate: '2027-07-08', endDate: '2027-07-12', days: 5 },
-  { id: 3, startDate: '2027-09-08', endDate: '2027-09-12', days: 5 },
-  { id: 4, startDate: '2027-11-16', endDate: '2027-11-19', days: 4 },
-]
+export const INITIAL_SEGMENTS = []
 
 export const APPROVED_SEGMENTS = [
   {
