@@ -43,7 +43,13 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [year, setYear] = useState(2026)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [newRequestRange, setNewRequestRange] = useState(null)
+  const [calendarKey, setCalendarKey] = useState(0)
   const [toast, setToast] = useState(null)
+
+  function closeNewRequest() {
+    setNewRequestRange(null)
+    setCalendarKey(k => k + 1) // forces YearCalendar to remount → clears selection state
+  }
 
   const yearRequests = requests.filter(r => {
     const s = new Date(r.startDate)
@@ -154,6 +160,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         {/* Right panel — fixed width, never stretches */}
         <div style={{ width: YEAR_CALENDAR_WIDTH, flexShrink: 0, paddingLeft: 32 }}>
           <YearCalendar
+            key={calendarKey}
             year={year}
             requests={yearRequests}
             onRequestClick={setSelectedRequest}
@@ -171,9 +178,9 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         <NewRequestModal
           initialStart={newRequestRange.start}
           initialEnd={newRequestRange.end}
-          onClose={() => setNewRequestRange(null)}
+          onClose={closeNewRequest}
           onSubmitted={() => {
-            setNewRequestRange(null)
+            closeNewRequest()
             setToast('Заявка направлена на согласование')
           }}
         />

@@ -15,8 +15,8 @@ const STATUS_STYLES = {
 
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
 
-// Cell size — must match pill size
-const CELL = 36
+const CELL = 36      // pill size
+const ROW_H = 38     // row cell height: CELL + 1px gap above + 1px gap below
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -105,12 +105,12 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
         ))}
       </div>
 
-      {/* Week rows */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {/* Week rows — ROW_H = CELL + 1px top + 1px bottom so pills have 1px gap */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         {weeks.map((week, wi) => (
           <div key={wi} style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)` }}>
             {week.map((date, di) => {
-              if (!date) return <div key={di} style={{ width: CELL, height: CELL }} />
+              if (!date) return <div key={di} style={{ width: CELL, height: ROW_H }} />
 
               const d = dayOnly(date)
               const isNonWorking = isWeekendOrHoliday(d)
@@ -149,16 +149,16 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               return (
                 <div
                   key={di}
-                  style={{ position: 'relative', width: CELL, height: CELL, cursor: 'pointer' }}
+                  style={{ position: 'relative', width: CELL, height: ROW_H, cursor: 'pointer' }}
                   onClick={() => onDayClick(d, req)}
                   onMouseEnter={() => onDayEnter(d)}
                   onMouseLeave={onDayLeave}
                 >
-                  {/* Selection range strip (gray, behind circle) */}
+                  {/* Selection range strip — 1px inset top/bottom to preserve gap */}
                   {showStripBg && (
                     <div style={{
                       position: 'absolute',
-                      top: 0, bottom: 0,
+                      top: 1, bottom: 1,
                       left: stripLeft,
                       right: stripRight,
                       background: '#F2F3F7',
@@ -166,23 +166,23 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                     }} />
                   )}
 
-                  {/* Vacation pill (only when no selection active) */}
+                  {/* Vacation pill — 36×36 centred (1px inset top+bottom) */}
                   {vacStyle && !showStripBg && !isSelected && (
                     <div style={{
                       position: 'absolute',
                       width: CELL, height: CELL,
-                      top: 0, left: 0,
+                      top: 1, left: 0,
                       background: vacStyle.bg,
                       borderRadius: r,
                     }} />
                   )}
 
-                  {/* Selection circle (start / end) */}
+                  {/* Selection circle (start / end) — 36×36 centred */}
                   {isSelected && (
                     <div style={{
                       position: 'absolute',
                       width: CELL, height: CELL,
-                      top: 0, left: 0,
+                      top: 1, left: 0,
                       background: '#1D2023',
                       borderRadius: r,
                       zIndex: 1,
