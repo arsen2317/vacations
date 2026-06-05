@@ -37,7 +37,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Balance */}
       <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
           <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
             Основной отпуск
           </div>
@@ -46,9 +46,9 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
           </div>
         </div>
         {balance.extra > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
             <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              Дополнительный
+              Дополнительный отпуск
             </div>
             <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
               {balance.extra} {pluralDays(balance.extra)}

@@ -16,7 +16,7 @@ export default function Toast({ message, onDone }) {
       pointerEvents: 'none', whiteSpace: 'nowrap',
       display: 'flex', alignItems: 'center', gap: 10,
     }}>
-      <InfoIcon color="#FAFAFA" />
+      <InfoIcon color="#45B6FC" />
       {message}
     </div>
   )
