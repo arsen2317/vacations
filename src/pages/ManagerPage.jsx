@@ -21,7 +21,7 @@ const BAR_STATUS_COLOR = {
   reviewing: '#E3CCFF',
   draft:     '#F2F3F7',
 }
-const BAR_OVERLAP_COLOR = '#FAE89E'
+const BAR_OVERLAP_COLOR = '#FAC031'
 
 const STATUS_LABEL = {
   pending:   'на согласовании',
