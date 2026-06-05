@@ -98,12 +98,12 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
             <SectionLabel>Периоды отпуска</SectionLabel>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {segments.map(seg => (
-                <div key={seg.id} style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div key={seg.id} style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                    {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
+                    {seg.days} {pluralDays(seg.days)} отпуска
                   </div>
                   <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                    {seg.days} {pluralDays(seg.days)}
+                    {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
                   </div>
                 </div>
               ))}
