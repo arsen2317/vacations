@@ -34,14 +34,16 @@ function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
-function getMonthGrid(year, month) {
-  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7
+// Returns 7 arrays (Mon–Sun), each containing Date objects for that weekday in the month
+function getMonthColumns(year, month) {
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const grid = []
-  for (let i = 0; i < firstDow; i++) grid.push(null)
-  for (let d = 1; d <= daysInMonth; d++) grid.push(new Date(year, month, d))
-  while (grid.length % 7 !== 0) grid.push(null)
-  return grid
+  const cols = [[], [], [], [], [], [], []]
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month, d)
+    const dow = (date.getDay() + 6) % 7 // Mon=0 … Sun=6
+    cols[dow].push(date)
+  }
+  return cols
 }
 
 function getRequestForDay(d, requests) {
@@ -60,149 +62,196 @@ function getRequestForDay(d, requests) {
 }
 
 function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave }) {
-  const grid = getMonthGrid(year, month)
-  const weeks = []
-  for (let i = 0; i < grid.length; i += 7) weeks.push(grid.slice(i, i + 7))
-  const r = 8
+  const cols = getMonthColumns(year, month)
+  const numRows = Math.max(...cols.map(c => c.length))
+  const R = 8
 
   return (
     <div>
+      {/* Month name */}
       <div style={{
-        fontSize: 13, fontWeight: 500, color: '#1D2023', lineHeight: '18px',
-        marginBottom: 6, fontFamily: "'MTSWide', sans-serif",
-        textTransform: 'uppercase', letterSpacing: 0.4,
+        textAlign: 'center',
+        color: '#1D2023',
+        fontSize: 18,
+        fontFamily: "'MTSCompact', sans-serif",
+        fontWeight: 500,
+        lineHeight: '21px',
+        marginBottom: 16,
       }}>
         {MONTH_NAMES[month]}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 3 }}>
-        {WEEKDAYS.map(d => (
-          <div key={d} style={{
-            textAlign: 'center', fontSize: 10, fontWeight: 500,
-            color: '#626C77', textTransform: 'uppercase',
-            lineHeight: '14px', fontFamily: "'MTSCompact', sans-serif",
-          }}>
-            {d}
-          </div>
-        ))}
-      </div>
+      {/* 7 weekday columns */}
+      <div style={{ display: 'flex' }}>
+        {cols.map((dayList, colIdx) => {
+          const nullCount = numRows - dayList.length
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-            {week.map((date, di) => {
-              if (!date) return <div key={di} style={{ height: 28 }} />
+          return (
+            <div key={colIdx} style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Weekday header */}
+              <div style={{
+                textAlign: 'center',
+                color: '#626C77',
+                fontSize: 12,
+                fontFamily: "'MTSCompact', sans-serif",
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                lineHeight: '16px',
+              }}>
+                {WEEKDAYS[colIdx]}
+              </div>
 
-              const d = dayOnly(date)
-              const isHol = isHoliday(d)
-              const isToday = sameDay(d, today)
-              const req = getRequestForDay(d, requests)
+              {/* Day cells */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {dayList.map((date, rowIdx) => {
+                  const d = dayOnly(date)
+                  const isHol = isHoliday(d)
+                  const isToday = sameDay(d, today)
+                  const req = getRequestForDay(d, requests)
 
-              const isSelStart = sameDay(d, selStart)
-              const isSelEnd = sameDay(d, effectiveSelEnd)
-              const inSel = selStart && effectiveSelEnd && d > selStart && d < effectiveSelEnd
-              const isSelected = isSelStart || isSelEnd
+                  const isSelStart = sameDay(d, selStart)
+                  const isSelEnd   = sameDay(d, effectiveSelEnd)
+                  const inSel = selStart && effectiveSelEnd && d > selStart && d < effectiveSelEnd
+                  const isSelected = isSelStart || isSelEnd
 
-              const isRowStart = di === 0
-              const isRowEnd = di === 6
+                  // Neighbours in this column (same weekday ±7 days)
+                  const prevDate = rowIdx > 0 ? dayOnly(dayList[rowIdx - 1]) : null
+                  const nextDate = rowIdx < dayList.length - 1 ? dayOnly(dayList[rowIdx + 1]) : null
 
-              // Vacation period strip
-              let vacBg = null
-              let isVacStart = false
-              let isVacEnd = false
-              if (req && !isSelected) {
-                vacBg = STATUS_BG[req.status] || '#F2F3F7'
-                isVacStart = sameDay(d, dayOnly(req.startDate))
-                isVacEnd = sameDay(d, dayOnly(req.endDate))
-              }
+                  // --- Vacation strip ---
+                  let vacBg = null
+                  let vacStripUp = false
+                  let vacStripDown = false
+                  if (req && !isSelected) {
+                    vacBg = STATUS_BG[req.status] || '#F2F3F7'
+                    if (prevDate) {
+                      const pr = getRequestForDay(prevDate, requests)
+                      if (pr?.id === req.id) vacStripUp = true
+                    }
+                    if (nextDate) {
+                      const nr = getRequestForDay(nextDate, requests)
+                      if (nr?.id === req.id) vacStripDown = true
+                    }
+                  }
 
-              const vacBorderRadius = isVacStart && isVacEnd
-                ? `${r}px`
-                : isVacStart
-                  ? `${r}px 0 0 ${r}px`
-                  : isVacEnd
-                    ? `0 ${r}px ${r}px 0`
-                    : isRowStart && isRowEnd
-                      ? `${r}px`
-                      : isRowStart
-                        ? `${r}px 0 0 ${r}px`
-                        : isRowEnd
-                          ? `0 ${r}px ${r}px 0`
-                          : '0'
+                  // --- Selection strip ---
+                  let selBg = null
+                  let selStripUp = false
+                  let selStripDown = false
+                  if (inSel) {
+                    selBg = '#EBF0FF'
+                    if (prevDate) {
+                      const pd = dayOnly(prevDate)
+                      if (selStart && effectiveSelEnd && pd >= selStart && pd <= effectiveSelEnd) selStripUp = true
+                    }
+                    if (nextDate) {
+                      const nd = dayOnly(nextDate)
+                      if (selStart && effectiveSelEnd && nd >= selStart && nd <= effectiveSelEnd) selStripDown = true
+                    }
+                  }
 
-              // Selection range strip (for new range being drawn)
-              const selHalfStart = isSelStart && effectiveSelEnd && selStart.getTime() !== effectiveSelEnd.getTime()
-              const selHalfEnd = isSelEnd && selStart && selStart.getTime() !== effectiveSelEnd.getTime()
-              const showSelStrip = inSel || selHalfStart || selHalfEnd
-              const selStripLeft = selHalfStart ? 'calc(50% - 5px)' : 0
-              const selStripRight = selHalfEnd ? 'calc(50% - 5px)' : 0
-              const selStripBr = selHalfStart
-                ? `0 ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px 0`
-                : selHalfEnd
-                  ? `${isRowStart ? r : 0}px 0 0 ${isRowStart ? r : 0}px`
-                  : `${isRowStart ? r : 0}px ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px ${isRowStart ? r : 0}px`
+                  // Half-strips extending from selected circles toward the range
+                  const selStartExtDown = isSelStart && nextDate && selStart && effectiveSelEnd
+                    && dayOnly(nextDate) > selStart && dayOnly(nextDate) <= effectiveSelEnd
+                  const selEndExtUp   = isSelEnd && prevDate && selStart && effectiveSelEnd
+                    && dayOnly(prevDate) >= selStart && dayOnly(prevDate) < effectiveSelEnd
 
-              return (
-                <div
-                  key={di}
-                  style={{ position: 'relative', height: 28, cursor: isHol ? 'default' : 'pointer' }}
-                  onClick={() => onDayClick(d, req)}
-                  onMouseEnter={() => onDayEnter(d)}
-                  onMouseLeave={onDayLeave}
-                >
-                  {/* Vacation period background */}
-                  {vacBg && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 2, bottom: 2,
-                      left: isVacStart ? 2 : 0,
-                      right: isVacEnd ? 2 : 0,
-                      background: vacBg,
-                      borderRadius: vacBorderRadius,
-                    }} />
-                  )}
+                  const bg = vacBg || selBg
+                  const stripUp   = vacStripUp   || selStripUp
+                  const stripDown = vacStripDown || selStripDown
 
-                  {/* Selection range strip */}
-                  {showSelStrip && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 0, bottom: 0,
-                      left: selStripLeft,
-                      right: selStripRight,
-                      background: '#F2F3F7',
-                      borderRadius: selStripBr,
-                    }} />
-                  )}
+                  const br = [
+                    stripUp   ? 0 : R,
+                    stripUp   ? 0 : R,
+                    stripDown ? 0 : R,
+                    stripDown ? 0 : R,
+                  ].map(v => `${v}px`).join(' ')
 
-                  {/* Selected circle */}
-                  {isSelected && (
-                    <div style={{
-                      position: 'absolute',
-                      width: 28, height: 28,
-                      top: 0, left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: '#1D2023',
-                      borderRadius: r,
-                      zIndex: 1,
-                    }} />
-                  )}
+                  return (
+                    <div
+                      key={rowIdx}
+                      style={{ position: 'relative', padding: 4, cursor: isHol ? 'default' : 'pointer' }}
+                      onClick={() => onDayClick(d, req)}
+                      onMouseEnter={() => onDayEnter(d)}
+                      onMouseLeave={onDayLeave}
+                    >
+                      {/* Vacation / in-range background strip */}
+                      {bg && (
+                        <div style={{
+                          position: 'absolute',
+                          left: 0, right: 0,
+                          top:    stripUp   ? -1 : 0,
+                          bottom: stripDown ? -1 : 0,
+                          background: bg,
+                          borderRadius: br,
+                          zIndex: 0,
+                        }} />
+                      )}
 
-                  {/* Day number */}
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 400, lineHeight: '18px',
-                    color: isSelected ? '#FAFAFA' : isToday ? '#0066FF' : isHol ? '#F95721' : '#1D2023',
-                    fontFamily: "'MTSCompact', sans-serif",
-                    zIndex: 2,
-                  }}>
-                    {date.getDate()}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        ))}
+                      {/* Half-strip from selStart downward */}
+                      {selStartExtDown && (
+                        <div style={{
+                          position: 'absolute',
+                          left: 0, right: 0,
+                          top: '50%', bottom: -1,
+                          background: '#EBF0FF',
+                          zIndex: 0,
+                        }} />
+                      )}
+
+                      {/* Half-strip from selEnd upward */}
+                      {selEndExtUp && (
+                        <div style={{
+                          position: 'absolute',
+                          left: 0, right: 0,
+                          top: -1, bottom: '50%',
+                          background: '#EBF0FF',
+                          zIndex: 0,
+                        }} />
+                      )}
+
+                      {/* Selected circle */}
+                      {isSelected && (
+                        <div style={{
+                          position: 'absolute',
+                          width: 28, height: 28,
+                          top: '50%', left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          background: '#1D2023',
+                          borderRadius: R,
+                          zIndex: 1,
+                        }} />
+                      )}
+
+                      {/* Day number */}
+                      <div style={{
+                        position: 'relative',
+                        height: 28,
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        color: isSelected ? '#FAFAFA' : isToday ? '#0066FF' : isHol ? '#F95721' : '#1D2023',
+                        fontSize: 12,
+                        fontFamily: "'MTSCompact', sans-serif",
+                        fontWeight: 400,
+                        lineHeight: '16px',
+                        zIndex: 2,
+                      }}>
+                        {date.getDate()}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* Empty cells to equalise column height */}
+                {Array.from({ length: nullCount }, (_, i) => (
+                  <div key={`n${i}`} style={{ height: 36, position: 'relative' }} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -211,31 +260,25 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
 export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest }) {
   const today = dayOnly(new Date())
   const [selStart, setSelStart] = useState(null)
-  const [selEnd, setSelEnd] = useState(null)
-  const [hover, setHover] = useState(null)
+  const [selEnd,   setSelEnd]   = useState(null)
+  const [hover,    setHover]    = useState(null)
 
   const effectiveSelEnd = selEnd
-    || (selStart && hover && hover.getTime() !== selStart.getTime() && hover > selStart ? hover : null)
+    || (selStart && hover && hover > selStart ? hover : null)
 
   function handleDayClick(d, req) {
     if (req) {
-      setSelStart(null)
-      setSelEnd(null)
-      setHover(null)
+      setSelStart(null); setSelEnd(null); setHover(null)
       onRequestClick?.(req)
       return
     }
     if (isHoliday(d)) return
     if (!selStart || selEnd) {
-      setSelStart(d)
-      setSelEnd(null)
-      setHover(null)
+      setSelStart(d); setSelEnd(null); setHover(null)
     } else {
       let s = selStart, e = d
       if (e < s) [s, e] = [e, s]
-      setSelStart(s)
-      setSelEnd(e)
-      setHover(null)
+      setSelStart(s); setSelEnd(e); setHover(null)
       onNewRequest?.(s, e)
     }
   }
@@ -244,11 +287,9 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
     if (selStart && !selEnd && !isHoliday(d)) setHover(d)
   }
 
-  const months = Array.from({ length: 12 }, (_, i) => i)
-
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px 32px' }}>
-      {months.map(m => (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px 40px' }}>
+      {Array.from({ length: 12 }, (_, m) => (
         <YearMonthGrid
           key={m}
           year={year}
