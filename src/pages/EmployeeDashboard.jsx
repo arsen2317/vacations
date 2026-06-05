@@ -53,8 +53,6 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 24 }}>
-      <CampaignBanner onGoToPlanning={onGoToPlanning} />
-
       <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', paddingTop: 8 }}>
 
         {/* Left panel */}
@@ -63,7 +61,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           {/* Year chips */}
           <div style={{ display: 'flex', gap: 8 }}>
             <Chip active={year === 2026} onClick={() => setYear(2026)}>2026</Chip>
-            <Chip active={year === 2027} onClick={() => setYear(2027)}>2027</Chip>
+            <Chip active={year === 2027} onClick={() => setYear(2027)}>2027 – планирование</Chip>
           </div>
 
           {/* Balance card */}
