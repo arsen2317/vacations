@@ -396,7 +396,7 @@ function RejectModal({ request, onClose, onConfirm }) {
           <button onClick={onClose} style={{ ...BTN_STYLE, flex: 1, height: 44, background: '#F2F3F7', color: '#1D2023', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
             Отмена
           </button>
-          <button onClick={confirm} style={{ ...BTN_STYLE, flex: 2, height: 44, background: '#F95721', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
+          <button onClick={confirm} style={{ ...BTN_STYLE, flex: 2, height: 44, background: '#F2F3F7', color: '#E30611', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
             Отклонить
           </button>
         </div>
