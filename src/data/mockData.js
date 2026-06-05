@@ -27,7 +27,7 @@ export const MY_REQUESTS = [
   {
     id: 101,
     type: 'planned',
-    typeLabel: 'Плановый',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Плановый',
     startDate: new Date(2026, 2, 9),   // 9 марта
     endDate:   new Date(2026, 2, 22),  // 22 марта
@@ -40,7 +40,7 @@ export const MY_REQUESTS = [
   {
     id: 102,
     type: 'planned',
-    typeLabel: 'Плановый',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Плановый',
     startDate: new Date(2026, 7, 3),   // 3 августа
     endDate:   new Date(2026, 7, 12),  // 12 августа
@@ -53,7 +53,7 @@ export const MY_REQUESTS = [
   {
     id: 103,
     type: 'planned',
-    typeLabel: 'Плановый',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Плановый',
     startDate: new Date(2026, 10, 2),  // 2 ноября
     endDate:   new Date(2026, 10, 5),  // 5 ноября
@@ -67,7 +67,7 @@ export const MY_REQUESTS = [
   {
     id: 201,
     type: 'unplanned',
-    typeLabel: 'Внеплановый',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Внеплановый',
     startDate: new Date(2026, 5, 15),  // 15 июня
     endDate:   new Date(2026, 5, 19),  // 19 июня
@@ -79,7 +79,7 @@ export const MY_REQUESTS = [
   {
     id: 202,
     type: 'unplanned',
-    typeLabel: 'Внеплановый',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Внеплановый',
     startDate: new Date(2026, 3, 20),  // 20 апреля
     endDate:   new Date(2026, 3, 24),  // 24 апреля

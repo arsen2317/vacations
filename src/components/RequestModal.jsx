@@ -241,7 +241,7 @@ export default function RequestModal({ request, onClose, onAction }) {
             </>
           ) : (
             <>
-              <InfoCell label="Тип отпуска" value={request.typeLabel || (isPlanned ? 'Плановый' : 'Внеплановый')} />
+              <InfoCell label="Тип отпуска" value={request.typeLabel || 'Ежегодный основной оплачиваемый'} />
               <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
               <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
               {isPlanned && status === 'approved' && (

@@ -472,7 +472,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
                 endDate: new Date(seg.endDate + 'T00:00:00'),
                 status: planStatus,
                 type: 'planned',
-                typeLabel: 'Плановый',
+                typeLabel: 'Ежегодный основной оплачиваемый',
                 isPlanned: true,
                 approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
               })}
@@ -494,7 +494,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               endDate: new Date(s.endDate + 'T00:00:00'),
               status: planStatus,
               type: 'planned',
-              typeLabel: 'Плановый',
+              typeLabel: 'Ежегодный основной оплачиваемый',
               isPlanned: true,
               approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
             }))}
