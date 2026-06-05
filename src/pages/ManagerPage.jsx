@@ -1,62 +1,82 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { COLORS, BTN_STYLE, Chip, SearchIcon } from '../ds/index'
+import { BTN_STYLE, Chip, SearchIcon, SelectField } from '../ds/index'
+import StatusBadge from '../components/StatusBadge'
 
-const MONTH_NAMES = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-]
+// ── Constants ─────────────────────────────────────────────────────────────────
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+const MONTHS_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
 
-const YEAR_OPTIONS = [
-  { id: CAMPAIGN.year - 1, name: String(CAMPAIGN.year - 1) },
-  { id: CAMPAIGN.year,     name: String(CAMPAIGN.year) },
-]
+const PAGE_SIZE   = 10
+const PERSON_W    = 256
+const ROW_H       = 48
+const COL_SHADOW  = 'inset -1px 0 0 #E2E5EB'
+const DIVIDER     = '1px solid #E2E5EB'
 
-const SEG_BAR = {
-  pending_clean:   '#C7E1FF',
-  pending_overlap: '#FAE89E',
-  approved:        '#BEF4BD',
-  reviewing:       '#E3CCFF',
-  draft:           '#F2F3F7',
-  rejected:        '#FCD4C9',
+const BAR_STATUS_COLOR = {
+  pending:   '#C7E1FF',
+  approved:  '#BEF4BD',
+  rejected:  '#FCD4C9',
+  reviewing: '#E3CCFF',
+  draft:     '#F2F3F7',
+}
+const BAR_OVERLAP_COLOR = '#FAE89E'
+
+const STATUS_LABEL = {
+  pending:   'на согласовании',
+  approved:  'согласован',
+  rejected:  'отклонён',
+  reviewing: 'ознакомление',
+  draft:     'черновик',
 }
 
-const STATUS_STYLE = {
-  pending:   { bg: '#C7E1FF', color: '#005CBD', label: 'На согласовании' },
-  approved:  { bg: '#BEF4BD', color: '#007502', label: 'Согласовано' },
-  rejected:  { bg: '#FCD4C9', color: '#AD3400', label: 'Отклонено' },
-  reviewing: { bg: '#E3CCFF', color: '#7936C9', label: 'Ознакомление' },
-  draft:     { bg: '#F2F3F7', color: '#626C77', label: 'Черновик' },
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function diMonth(y, m)  { return new Date(y, m + 1, 0).getDate() }
+function diYear(y)      { return new Date(y, 1, 29).getMonth() === 1 ? 366 : 365 }
+
+function yearBarPos(startStr, endStr, year) {
+  const total = diYear(year)
+  const ys = new Date(year, 0, 1).getTime()
+  const ye = new Date(year, 11, 31).getTime()
+  const s  = new Date(startStr + 'T00:00:00').getTime()
+  const e  = new Date(endStr   + 'T00:00:00').getTime()
+  const cs = Math.max(s, ys), ce = Math.min(e, ye)
+  if (cs > ye || ce < ys) return null
+  const offset   = (cs - ys) / 86400000
+  const duration = (ce - cs) / 86400000 + 1
+  return { left: `${(offset / total) * 100}%`, width: `${(duration / total) * 100}%` }
 }
 
-const PAGE_SIZE = 10
-const PERSON_COL_W = 256
+function getMonthSepPcts(year) {
+  const total = diYear(year)
+  let acc = 0
+  return Array.from({ length: 11 }, (_, m) => {
+    acc += diMonth(year, m)
+    return acc / total * 100
+  })
+}
 
-
-function fmtDateShort(dateStr) {
-  const [y, m, d] = dateStr.split('-')
+function fmtDateShort(str) {
+  const [y, m, d] = str.split('-')
   return `${d}.${m}.${y}`
 }
 
-function fmtPeriod(startDate, endDate) {
-  return `${fmtDateShort(startDate)} – ${fmtDateShort(endDate)}`
+function fmtPeriod(s, e) { return `${fmtDateShort(s)} – ${fmtDateShort(e)}` }
+
+function fmtDateRu(str) {
+  const d = new Date(str + 'T00:00:00')
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()} г.`
 }
 
-function daysInMonth(year, month) { return new Date(year, month + 1, 0).getDate() }
-
-function getBarProps(segStart, segEnd, rangeStart, rangeEnd, rangeDays) {
-  const s = new Date(segStart + 'T00:00:00')
-  const e = new Date(segEnd + 'T00:00:00')
-  const cs = s < rangeStart ? rangeStart : s
-  const ce = e > rangeEnd ? rangeEnd : e
-  if (cs > rangeEnd || ce < rangeStart) return null
-  const offset = Math.round((cs - rangeStart) / 86400000)
-  const duration = Math.round((ce - cs) / 86400000) + 1
-  return {
-    left: `${(offset / rangeDays) * 100}%`,
-    width: `${(duration / rangeDays) * 100}%`,
+function fmtRangeRu(s, e) {
+  const sd = new Date(s + 'T00:00:00'), ed = new Date(e + 'T00:00:00')
+  if (sd.getFullYear() === ed.getFullYear()) {
+    if (sd.getMonth() === ed.getMonth())
+      return `${sd.getDate()} – ${ed.getDate()} ${MONTHS_SHORT[ed.getMonth()]} ${ed.getFullYear()} г.`
+    return `${sd.getDate()} ${MONTHS_SHORT[sd.getMonth()]} – ${ed.getDate()} ${MONTHS_SHORT[ed.getMonth()]} ${ed.getFullYear()} г.`
   }
+  return `${fmtDateRu(s)} – ${fmtDateRu(e)}`
 }
 
 function shortName(fullName) {
@@ -66,56 +86,327 @@ function shortName(fullName) {
 }
 
 function pluralDays(n) {
-  const abs = Math.abs(n)
-  const mod10 = abs % 10
-  const mod100 = abs % 100
+  const mod10 = n % 10, mod100 = n % 100
   if (mod100 >= 11 && mod100 <= 14) return `${n} дней`
   if (mod10 === 1) return `${n} день`
   if (mod10 >= 2 && mod10 <= 4) return `${n} дня`
   return `${n} дней`
 }
 
-function StatusBadge({ status }) {
-  const s = STATUS_STYLE[status] ?? STATUS_STYLE.draft
+function downloadCSV(requests) {
+  const rows = requests.map(r => [r.name, r.team, r.position, fmtPeriod(r.startDate, r.endDate), STATUS_LABEL[r.status] ?? r.status])
+  const csv = [['Сотрудник','Подразделение','Должность','Период','Статус'], ...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = `team-report-${CAMPAIGN.year}.csv`; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+function ManagerTooltip({ tooltip }) {
+  if (!tooltip) return null
+  const hasOverlap = tooltip.overlaps?.length > 0
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', padding: '4px 10px',
-      background: s.bg, color: s.color, borderRadius: 8,
-      fontSize: 14, fontWeight: 500, lineHeight: '20px',
-      whiteSpace: 'nowrap', fontFamily: "'MTSCompact', sans-serif",
+    <div style={{
+      position: 'fixed', left: tooltip.x + 12, top: tooltip.y - 8,
+      zIndex: 9999, background: '#1D2023', borderRadius: 12,
+      padding: '10px 14px', pointerEvents: 'none', minWidth: 160, maxWidth: 280,
     }}>
-      {s.label}
-    </span>
+      <div style={{ fontSize: 13, color: '#FAFAFA', fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, marginBottom: 4 }}>
+        {fmtDateRu(tooltip.startDate)} — {fmtDateRu(tooltip.endDate)}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: BAR_STATUS_COLOR[tooltip.status] ?? '#BCC3D0' }} />
+        <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
+          {STATUS_LABEL[tooltip.status] ?? tooltip.status}
+        </span>
+      </div>
+      {hasOverlap && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: BAR_OVERLAP_COLOR }} />
+          <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
+            пересекается: {tooltip.overlaps.join(', ')}
+          </span>
+        </div>
+      )}
+      <div style={{ position: 'absolute', left: -6, top: 14, width: 0, height: 0, borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderRight: '6px solid #1D2023' }} />
+    </div>
   )
 }
 
-function Overlay({ onClose, children }) {
+// ── Year grid ─────────────────────────────────────────────────────────────────
+function ManagerPersonCell({ person }) {
+  const initials = person.name.trim().split(' ').slice(0, 2).map(w => w[0]).join('')
+  return (
+    <div style={{
+      width: PERSON_W, flexShrink: 0, height: ROW_H,
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '0 16px', boxShadow: COL_SHADOW, boxSizing: 'border-box',
+    }}>
+      <div style={{
+        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+        background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 11, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
+      }}>
+        {initials}
+      </div>
+      <span style={{
+        flex: 1, fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
+        color: '#1D2023', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {shortName(person.name)}
+      </span>
+    </div>
+  )
+}
+
+function ManagerYearGrid({ year, people, overlapIds, onBarClick, onBarEnter, onBarMove, onBarLeave }) {
+  const total    = diYear(year)
+  const sepPcts  = useMemo(() => getMonthSepPcts(year), [year])
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <div style={{ minWidth: 860 }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', height: 40, background: '#F2F3F7' }}>
+          <div style={{ width: PERSON_W, flexShrink: 0, padding: '0 16px', boxShadow: COL_SHADOW, display: 'flex', alignItems: 'center', boxSizing: 'border-box' }}>
+            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>Сотрудник</span>
+          </div>
+          <div style={{ flex: 1, display: 'flex' }}>
+            {Array.from({ length: 12 }, (_, m) => (
+              <div key={m} style={{
+                flex: diMonth(year, m), padding: '0 12px',
+                boxShadow: m < 11 ? COL_SHADOW : 'none',
+                display: 'flex', alignItems: 'center', overflow: 'hidden',
+              }}>
+                <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", whiteSpace: 'nowrap' }}>
+                  {MONTH_NAMES[m]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rows */}
+        {people.length === 0 ? (
+          <div style={{ padding: '48px 0', textAlign: 'center', color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>
+            Нет заявок для отображения
+          </div>
+        ) : people.map((person, pi) => (
+          <div key={person.name} style={{ display: 'flex', borderBottom: pi < people.length - 1 ? DIVIDER : 'none' }}>
+            <ManagerPersonCell person={person} />
+            <div style={{ flex: 1, position: 'relative', height: ROW_H }}>
+              {sepPcts.map((pct, i) => (
+                <div key={i} style={{ position: 'absolute', top: 0, bottom: 0, left: `${pct}%`, width: 1, background: '#E2E5EB', pointerEvents: 'none' }} />
+              ))}
+              {person.requests.map(req => {
+                const pos = yearBarPos(req.startDate, req.endDate, year)
+                if (!pos) return null
+                const isOverlap = overlapIds.has(req.id)
+                const color = isOverlap && req.status !== 'approved' ? BAR_OVERLAP_COLOR : (BAR_STATUS_COLOR[req.status] ?? '#F2F3F7')
+                return (
+                  <div
+                    key={req.id}
+                    onClick={() => onBarClick?.(req)}
+                    onMouseEnter={e => onBarEnter?.(e, req, isOverlap)}
+                    onMouseMove={e => onBarMove?.(e)}
+                    onMouseLeave={() => onBarLeave?.()}
+                    style={{
+                      position: 'absolute', top: 0, height: '100%',
+                      ...pos, background: color, cursor: 'pointer',
+                    }}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Request view modal (manager) ──────────────────────────────────────────────
+function RequestViewModal({ request, onClose, onApprove, onOpenReject }) {
+  if (!request) return null
+  const canApprove = request.status === 'pending'
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}
     >
-      <div onClick={e => e.stopPropagation()}>{children}</div>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}
+      >
+        {/* Header */}
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
+              Заявка на плановый отпуск
+            </div>
+            <button
+              onClick={onClose}
+              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
+              </svg>
+            </button>
+          </div>
+          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
+            № {request.reqNum}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="modal-scroll" style={{ paddingLeft: 20, paddingRight: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: 12 }}>
+            <StatusBadge status={request.status} />
+          </div>
+
+          {/* Employee row */}
+          <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: 16, flexShrink: 0,
+              background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
+            }}>
+              {request.name.trim().split(' ').slice(0, 2).map(w => w[0]).join('')}
+            </div>
+            <div style={{ flex: '1 1 0' }}>
+              <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{request.name}</div>
+              <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{request.position}</div>
+            </div>
+          </div>
+
+          <InfoCell label="Подразделение" value={request.team} />
+          <InfoCell label="Период" value={fmtRangeRu(request.startDate, request.endDate)} />
+          <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+
+          {/* Actions */}
+          {canApprove && (
+            <div style={{ paddingTop: 12, paddingBottom: 20, display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => { onApprove(request.id); onClose() }}
+                style={{ flex: 1, height: 44, background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#FFFFFF' }}
+              >
+                СОГЛАСОВАТЬ
+              </button>
+              <button
+                onClick={() => { onOpenReject(request); onClose() }}
+                style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
+              >
+                ОТКЛОНИТЬ
+              </button>
+            </div>
+          )}
+          {!canApprove && <div style={{ paddingBottom: 20 }} />}
+        </div>
+      </div>
     </div>
   )
 }
 
-function ActionsMenu({ rowId, status, open, onToggle, onApprove, onReject }) {
+function InfoCell({ label, value }) {
+  if (!value) return null
+  return (
+    <div style={{ paddingTop: 10, paddingBottom: 10 }}>
+      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{label}</div>
+      <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{value}</div>
+    </div>
+  )
+}
+
+// ── Reject reason modal ────────────────────────────────────────────────────────
+function RejectModal({ request, onClose, onConfirm }) {
+  const [comment, setComment] = useState('')
+  const [error, setError]     = useState('')
+
+  function confirm() {
+    if (!comment.trim()) { setError('Укажите причину отклонения'); return }
+    onConfirm(request.id, comment)
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1010, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: '#fff', borderRadius: 32, padding: 32, width: 440, display: 'flex', flexDirection: 'column', gap: 20, fontFamily: "'MTSCompact', sans-serif" }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
+              Отклонить заявку
+            </div>
+            <div style={{ fontSize: 14, color: '#626C77', marginTop: 4 }}>
+              {request.name} · {fmtPeriod(request.startDate, request.endDate)}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: '#F2F3F7', border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, flexShrink: 0 }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
+            </svg>
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ fontSize: 14, color: '#626C77' }}>
+            Причина отклонения <span style={{ color: '#E30611' }}>*</span>
+          </label>
+          <textarea
+            value={comment}
+            onChange={e => { setComment(e.target.value); setError('') }}
+            placeholder="Введите комментарий"
+            className="mts-textarea"
+            style={{
+              width: '100%', height: 96, boxSizing: 'border-box',
+              background: '#F2F3F7', border: 'none',
+              outline: `1px ${error ? '#E30611' : 'rgba(188,195,208,0.50)'} solid`,
+              outlineOffset: '-1px', borderRadius: 16,
+              padding: '10px 12px', fontSize: 15, lineHeight: '22px',
+              color: '#1D2023', fontFamily: "'MTSCompact', sans-serif", resize: 'none',
+            }}
+          />
+          {error && <span style={{ fontSize: 12, color: '#E30611' }}>{error}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={onClose} style={{ ...BTN_STYLE, flex: 1, height: 44, background: '#F2F3F7', color: '#1D2023', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
+            Отмена
+          </button>
+          <button onClick={confirm} style={{ ...BTN_STYLE, flex: 2, height: 44, background: '#F95721', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
+            Отклонить
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Actions dropdown ──────────────────────────────────────────────────────────
+function ActionsDropdown({ request, onApprove, onReject }) {
+  const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
   useEffect(() => {
     if (!open) return
-    function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) onToggle(null)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open, onToggle])
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  if (request.status !== 'pending') return null
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <button
-        onClick={e => { e.stopPropagation(); onToggle(open ? null : rowId) }}
+        onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
         style={{
           border: 'none', background: '#F2F3F7', cursor: 'pointer',
           padding: 4, borderRadius: 12,
@@ -124,219 +415,199 @@ function ActionsMenu({ rowId, status, open, onToggle, onApprove, onReject }) {
         }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="4" viewBox="0 0 18 4" fill="none">
-          <path d="M0.0180118 1.53841C0.0612773 0.957075 0.08291 0.666409 0.37466 0.37466C0.666409 0.08291 0.957075 0.0612773 1.53841 0.0180118C1.6891 0.00679629 1.84455 0 2 0C2.15545 0 2.3109 0.00679629 2.46159 0.0180118C3.04293 0.0612773 3.33359 0.08291 3.62534 0.37466C3.91709 0.666409 3.93872 0.957075 3.98199 1.53841C3.9932 1.6891 4 1.84455 4 2C4 2.15545 3.9932 2.3109 3.98199 2.46159C3.93872 3.04293 3.91709 3.33359 3.62534 3.62534C3.33359 3.91709 3.04293 3.93872 2.46159 3.98199C2.3109 3.9932 2.15545 4 1.53841 3.98199C0.957075 3.93872 0.666409 3.91709 0.37466 3.62534C0.08291 3.33359 0.0612773 3.04293 0.0180118 2.46159C0.00679629 2.3109 0 2.15545 0 2C0 1.84455 0.00679629 1.6891 0.0180118 1.53841Z" fill="#1D2023"/>
-          <path d="M7.01801 1.53841C7.06128 0.957075 7.08291 0.666409 7.37466 0.37466C7.66641 0.08291 7.95707 0.0612773 8.53841 0.0180118C8.6891 0.00679629 8.84455 0 9 0C9.15545 0 9.3109 0.00679629 9.46159 0.0180118C10.0429 0.0612773 10.3336 0.08291 10.6253 0.37466C10.9171 0.666409 10.9387 0.957075 10.982 1.53841C10.9932 1.6891 11 1.84455 11 2C11 2.15545 10.9932 2.3109 10.982 2.46159C10.9387 3.04293 10.9171 3.33359 10.6253 3.62534C10.3336 3.91709 10.0429 3.93872 9.46159 3.98199C9.3109 3.9932 9.15545 4 9 4C8.84455 4 8.6891 3.9932 8.53841 3.98199C7.95707 3.93872 7.66641 3.91709 7.37466 3.62534C7.08291 3.33359 7.06128 3.04293 7.01801 2.46159C7.0068 2.3109 7 2.15545 7 2C7 1.84455 7.0068 1.6891 7.01801 1.53841Z" fill="#1D2023"/>
-          <path d="M14.3747 0.37466C14.0829 0.666409 14.0613 0.957075 14.018 1.53841C14.0068 1.6891 14 1.84455 14 2C14 2.15545 14.0068 2.3109 14.018 2.46159C14.0613 3.04293 14.0829 3.33359 14.3747 3.62534C14.6664 3.91709 14.9571 3.93872 15.5384 3.98199C15.6891 3.9932 15.8446 4 16 4C16.1554 4 16.3109 3.9932 16.4616 3.98199C17.0429 3.93872 17.3336 3.91709 17.6253 3.62534C17.9171 3.33359 17.9387 3.04293 17.982 2.46159C17.9932 2.3109 18 2.15545 18 2C18 1.84455 17.9932 1.6891 17.982 1.53841C17.9387 0.957075 17.9171 0.666409 17.6253 0.37466C17.3336 0.08291 17.0429 0.0612773 16.4616 0.0180118C16.3109 0.00679629 16.1554 0 16 0C15.8446 0 15.6891 0.00679629 15.5384 0.0180118C14.9571 0.0612773 14.6664 0.08291 14.3747 0.37466Z" fill="#1D2023"/>
+          <circle cx="2" cy="2" r="2" fill="#1D2023"/>
+          <circle cx="9" cy="2" r="2" fill="#1D2023"/>
+          <circle cx="16" cy="2" r="2" fill="#1D2023"/>
         </svg>
       </button>
       {open && (
-        <div style={{
-          position: 'absolute', right: 0, bottom: 'calc(100% + 4px)',
-          background: '#fff', borderRadius: 16,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-          border: `1px solid ${COLORS.stroke}`,
-          overflow: 'hidden', zIndex: 200, minWidth: 160,
-        }}>
-          {status === 'pending' ? (
-            <>
-              <div
-                onClick={e => { e.stopPropagation(); onApprove() }}
-                style={{ padding: '12px 16px', fontSize: 14, color: '#007502', cursor: 'pointer', fontFamily: "'MTSCompact',sans-serif" }}
-                onMouseEnter={e => e.currentTarget.style.background = COLORS.bg}
-                onMouseLeave={e => e.currentTarget.style.background = ''}
-              >Согласовать</div>
-              <div
-                onClick={e => { e.stopPropagation(); onReject() }}
-                style={{ padding: '12px 16px', fontSize: 14, color: '#AD3400', cursor: 'pointer', fontFamily: "'MTSCompact',sans-serif" }}
-                onMouseEnter={e => e.currentTarget.style.background = COLORS.bg}
-                onMouseLeave={e => e.currentTarget.style.background = ''}
-              >Отклонить</div>
-            </>
-          ) : (
-            <div style={{ padding: '12px 16px', fontSize: 14, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif" }}>
-              Нет доступных действий
-            </div>
-          )}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: 'absolute', top: 'calc(100% + 4px)', right: 0,
+            background: '#fff', borderRadius: 12,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+            border: '1px solid #E8EDF2',
+            overflow: 'hidden', zIndex: 200, minWidth: 160,
+          }}
+        >
+          <div
+            onClick={() => { onApprove(request.id); setOpen(false) }}
+            style={{ padding: '14px 16px', fontSize: 17, lineHeight: '24px', color: '#007502', cursor: 'pointer', fontFamily: "'MTSCompact', sans-serif" }}
+            onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
+            onMouseLeave={e => e.currentTarget.style.background = ''}
+          >
+            Согласовать
+          </div>
+          <div
+            onClick={() => { onReject(request); setOpen(false) }}
+            style={{ padding: '14px 16px', fontSize: 17, lineHeight: '24px', color: '#AD3400', cursor: 'pointer', fontFamily: "'MTSCompact', sans-serif" }}
+            onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
+            onMouseLeave={e => e.currentTarget.style.background = ''}
+          >
+            Отклонить
+          </div>
         </div>
       )}
     </div>
   )
 }
 
+// ── Pagination ────────────────────────────────────────────────────────────────
 function Pagination({ page, total, onPage }) {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   if (totalPages <= 1) return null
-
   const pages = []
   for (let i = 1; i <= totalPages; i++) pages.push(i)
   const visible = pages.filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-  const items = []
-  let prev = null
+  const items = []; let prev = null
   for (const p of visible) {
     if (prev !== null && p - prev > 1) items.push(`dots${prev}`)
-    items.push(p)
-    prev = p
+    items.push(p); prev = p
   }
-
-  const btnBase = (active, disabled) => ({
+  const btn = (active, disabled) => ({
     height: 44, minWidth: 44, borderRadius: 16, border: 'none',
     background: active ? '#F2F3F7' : 'transparent',
-    color: disabled ? COLORS.hint : COLORS.text,
-    fontSize: active ? 20 : 17,
-    fontFamily: "'MTSCompact', sans-serif",
-    fontWeight: active ? 500 : 400,
-    cursor: disabled ? 'default' : 'pointer',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    padding: '0 8px',
+    color: disabled ? '#BCC3D0' : '#1D2023',
+    fontSize: active ? 20 : 17, fontFamily: "'MTSCompact', sans-serif",
+    fontWeight: active ? 500 : 400, cursor: disabled ? 'default' : 'pointer',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px',
   })
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 4 }}>
-      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btnBase(false, page === 1), fontSize: 20 }}>‹</button>
+      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btn(false, page === 1), fontSize: 20 }}>‹</button>
       {items.map(item =>
         typeof item === 'string'
-          ? <span key={item} style={{ color: COLORS.secondary, padding: '0 4px', fontSize: 17 }}>...</span>
-          : <button key={item} onClick={() => onPage(item)} style={btnBase(item === page, false)}>{item}</button>
+          ? <span key={item} style={{ color: '#626C77', padding: '0 4px', fontSize: 17 }}>...</span>
+          : <button key={item} onClick={() => onPage(item)} style={btn(item === page, false)}>{item}</button>
       )}
-      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btnBase(false, page === totalPages), fontSize: 20 }}>›</button>
+      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btn(false, page === totalPages), fontSize: 20 }}>›</button>
     </div>
   )
 }
 
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function ManagerPage() {
-  const { subordinates, setSubordinates, campaign, incomingRequests, setIncomingRequests } = useApp()
-  const [view, setView]           = useState('table')
-  const [search, setSearch]       = useState('')
-  const [page, setPage]           = useState(1)
-  const [actionsOpen, setActionsOpen] = useState(null)
-  const [rejectTarget, setRejectTarget] = useState(null)
-  const [rejectComment, setRejectComment] = useState('')
-  const [rejectError, setRejectError]   = useState('')
+  const { subordinates, campaign, incomingRequests, setIncomingRequests } = useApp()
 
-  // Gantt state
-  const [ganttYear, setGanttYear]   = useState(CAMPAIGN.year - 1)
-  const [viewStart, setViewStart]   = useState(0)
+  const [view,            setView]            = useState('table')
+  const [search,          setSearch]          = useState('')
+  const [deptFilter,      setDeptFilter]      = useState('all')
+  const [page,            setPage]            = useState(1)
+  const [gridYear,        setGridYear]        = useState(CAMPAIGN.year)
+  const [selectedRequest, setSelectedRequest] = useState(null)
+  const [rejectTarget,    setRejectTarget]    = useState(null)
+  const [tooltip,         setTooltip]         = useState(null)
 
-  const visibleMonths = useMemo(() => Array.from({ length: 6 }, (_, i) => viewStart + i), [viewStart])
-  const rangeStart    = useMemo(() => new Date(ganttYear, viewStart, 1), [ganttYear, viewStart])
-  const rangeEnd      = useMemo(() => new Date(ganttYear, viewStart + 6, 0), [ganttYear, viewStart])
-  const rangeDays     = useMemo(() => Math.round((rangeEnd - rangeStart) / 86400000) + 1, [rangeStart, rangeEnd])
-  const totalMoDays   = useMemo(() => visibleMonths.reduce((s, m) => s + daysInMonth(ganttYear, m), 0), [ganttYear, visibleMonths])
+  // Department options (dynamic from data)
+  const deptOptions = useMemo(() => {
+    const teams = [...new Set(incomingRequests.map(r => r.team))]
+    return [
+      { id: 'all', name: 'Все подразделения' },
+      ...teams.map(t => ({ id: t, name: t })),
+    ]
+  }, [incomingRequests])
 
-  const allRequests = incomingRequests
-
+  // Filtered requests
   const filteredRequests = useMemo(() => {
-    if (!search.trim()) return allRequests
-    const q = search.toLowerCase()
-    return allRequests.filter(r =>
-      r.name.toLowerCase().includes(q) || r.team.toLowerCase().includes(q) || r.position.toLowerCase().includes(q)
-    )
-  }, [allRequests, search])
+    const q = search.toLowerCase().trim()
+    return incomingRequests.filter(r => {
+      const matchDept   = deptFilter === 'all' || r.team === deptFilter
+      const matchSearch = !q || r.name.toLowerCase().includes(q) || r.team.toLowerCase().includes(q) || r.position.toLowerCase().includes(q)
+      return matchDept && matchSearch
+    })
+  }, [incomingRequests, search, deptFilter])
 
+  // Stats from ALL requests (not filtered)
+  const totalCount    = incomingRequests.length
+  const pendingCount  = incomingRequests.filter(r => r.status === 'pending').length
+  const approvedCount = incomingRequests.filter(r => r.status === 'approved').length
+  const reviewingCount = incomingRequests.filter(r => r.status === 'reviewing').length
+
+  // Table pagination
   const pagedRequests = filteredRequests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  const totalCount    = allRequests.length
-  const pendingCount  = allRequests.filter(r => r.status === 'pending').length
-  const approvedCount = allRequests.filter(r => r.status === 'approved').length
-  const reviewingCount = allRequests.filter(r => r.status === 'reviewing').length
+  // Grid: group filtered requests by person (exclude rejected for display)
+  const gridPeople = useMemo(() => {
+    const byName = {}
+    for (const req of filteredRequests) {
+      if (req.status === 'rejected') continue
+      if (!byName[req.name]) byName[req.name] = { name: req.name, position: req.position, team: req.team, requests: [] }
+      byName[req.name].requests.push(req)
+    }
+    return Object.values(byName)
+  }, [filteredRequests])
 
-  // Overlap detection for gantt
-  const overlapSet = useMemo(() => {
-    const pending = []
-    for (const sub of subordinates) {
-      if (sub.planStatus !== 'pending') continue
-      for (const seg of (sub.segments ?? [])) {
-        pending.push({ subId: sub.id, startDate: seg.startDate, endDate: seg.endDate })
+  // All overlapping request IDs (any two employees, non-rejected)
+  const overlapIds = useMemo(() => {
+    const active = filteredRequests.filter(r => r.status !== 'rejected')
+    const ids = new Set()
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        if (active[i].name === active[j].name) continue
+        const aS = new Date(active[i].startDate + 'T00:00:00')
+        const aE = new Date(active[i].endDate   + 'T00:00:00')
+        const bS = new Date(active[j].startDate + 'T00:00:00')
+        const bE = new Date(active[j].endDate   + 'T00:00:00')
+        if (aS <= bE && aE >= bS) { ids.add(active[i].id); ids.add(active[j].id) }
       }
     }
-    const overlapping = new Set()
-    for (let i = 0; i < pending.length; i++) {
-      for (let j = i + 1; j < pending.length; j++) {
-        const a = pending[i], b = pending[j]
-        if (a.subId === b.subId) continue
-        const aS = new Date(a.startDate + 'T00:00:00'), aE = new Date(a.endDate + 'T00:00:00')
-        const bS = new Date(b.startDate + 'T00:00:00'), bE = new Date(b.endDate + 'T00:00:00')
+    return ids
+  }, [filteredRequests])
+
+  // Overlap names map: reqId → [name1, name2, ...]
+  const overlapNamesMap = useMemo(() => {
+    const active = filteredRequests.filter(r => r.status !== 'rejected')
+    const map = {}
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        if (active[i].name === active[j].name) continue
+        const aS = new Date(active[i].startDate + 'T00:00:00')
+        const aE = new Date(active[i].endDate   + 'T00:00:00')
+        const bS = new Date(active[j].startDate + 'T00:00:00')
+        const bE = new Date(active[j].endDate   + 'T00:00:00')
         if (aS <= bE && aE >= bS) {
-          overlapping.add(`${a.subId}_${a.startDate}_${a.endDate}`)
-          overlapping.add(`${b.subId}_${b.startDate}_${b.endDate}`)
+          if (!map[active[i].id]) map[active[i].id] = []
+          if (!map[active[j].id]) map[active[j].id] = []
+          const ni = shortName(active[j].name), nj = shortName(active[i].name)
+          if (!map[active[i].id].includes(ni)) map[active[i].id].push(ni)
+          if (!map[active[j].id].includes(nj)) map[active[j].id].push(nj)
         }
       }
     }
-    return overlapping
-  }, [subordinates])
+    return map
+  }, [filteredRequests])
 
-  const ganttPeople = useMemo(() => {
-    const q = search.toLowerCase()
-    return subordinates
-      .filter(sub => !q || sub.name.toLowerCase().includes(q) || (sub.team ?? '').toLowerCase().includes(q))
-      .map(sub => {
-        const segs = (sub.segments ?? []).filter(seg => parseInt(seg.startDate.split('-')[0]) === ganttYear)
-        return { ...sub, segs }
-      })
-  }, [subordinates, search, ganttYear])
-
-  function handleApprove(rowId) {
-    setIncomingRequests(prev => prev.map(r => r.id === rowId ? { ...r, status: 'approved' } : r))
-    setActionsOpen(null)
+  function handleApprove(id) {
+    setIncomingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r))
   }
 
-  function openReject(req) {
-    setRejectTarget(req)
-    setRejectComment('')
-    setRejectError('')
-    setActionsOpen(null)
-  }
-
-  function confirmReject() {
-    if (!rejectComment.trim()) { setRejectError('Укажите причину отклонения'); return }
-    setIncomingRequests(prev => prev.map(r => r.id === rejectTarget.id ? { ...r, status: 'rejected' } : r))
+  function handleReject(id, comment) {
+    setIncomingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected', rejectionComment: comment } : r))
     setRejectTarget(null)
   }
 
-  function downloadReport() {
-    const rows = allRequests.map(r => [r.name, r.team, r.position, fmtPeriod(r.startDate, r.endDate), STATUS_STYLE[r.status]?.label ?? r.status])
-    const csv = [['Сотрудник', 'Подразделение', 'Должность', 'Период', 'Статус'], ...rows]
-      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
-      .join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `team-report-${campaign.year}.csv`; a.click()
-    URL.revokeObjectURL(url)
+  const TH = {
+    padding: '12px 16px', fontSize: 13, fontWeight: 400, color: '#626C77',
+    textAlign: 'left', fontFamily: "'MTSCompact', sans-serif",
+    background: '#F2F3F7', borderBottom: DIVIDER, whiteSpace: 'nowrap',
   }
-
-  const TH_BASE = {
-    padding: '12px 16px',
-    fontSize: 13,
-    fontWeight: 400,
-    color: COLORS.secondary,
-    textAlign: 'left',
-    fontFamily: "'MTS Sans', sans-serif",
-    background: COLORS.bg,
-    borderBottom: `1px solid ${COLORS.stroke}`,
-    whiteSpace: 'nowrap',
-  }
-
-  const TD_BASE = {
-    padding: '16px',
-    fontSize: 14,
-    color: COLORS.text,
-    fontFamily: "'MTSCompact', sans-serif",
-    verticalAlign: 'middle',
+  const TD = {
+    padding: '16px', fontSize: 14, color: '#1D2023',
+    fontFamily: "'MTSCompact', sans-serif", verticalAlign: 'middle',
   }
 
   return (
     <div style={{ paddingTop: 32, paddingBottom: 48, fontFamily: "'MTSCompact', sans-serif" }}>
 
-      {/* Campaign stats */}
+      {/* ── Campaign stats ── */}
       <div style={{ paddingBottom: 20, display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-        {/* Title row */}
         <div style={{ paddingBottom: 12, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 12 }}>
           <div style={{ flex: '1 1 0', color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
             Статистика по кампании {campaign.year}
           </div>
           <button
-            onClick={downloadReport}
+            onClick={() => downloadCSV(incomingRequests)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -347,53 +618,74 @@ export default function ManagerPage() {
             </span>
           </button>
         </div>
-
-        {/* Stats row */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
           {[
-            { label: 'Подано заявок',    value: totalCount },
-            { label: 'На согласовании',  value: pendingCount },
-            { label: 'Согласованы',      value: approvedCount },
-            { label: 'На ознакомлении',  value: reviewingCount },
+            { label: 'Подано заявок',   value: totalCount },
+            { label: 'На согласовании', value: pendingCount },
+            { label: 'Согласованы',     value: approvedCount },
+            { label: 'На ознакомлении', value: reviewingCount },
           ].map(({ label, value }) => (
             <div key={label} style={{ flex: '1 1 0', height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-              <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                {label}
-              </div>
-              <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-                {value}
-              </div>
+              <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>{label}</div>
+              <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '28px' }}>{value}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Section heading */}
+      {/* ── Section heading ── */}
       <h2 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
         Входящие заявки
       </h2>
 
-      {/* Controls row */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
-        {/* View toggle */}
+      {/* ── Toolbar ── */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <Chip active={view === 'table'} onClick={() => setView('table')}>Таблица</Chip>
           <Chip active={view === 'chart'} onClick={() => setView('chart')}>График</Chip>
         </div>
-        {/* Search */}
-        <div style={{
-          flex: 1, height: 44, background: COLORS.bg, borderRadius: 16,
-          outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
-          display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8,
-        }}>
-          <SearchIcon />
-          <input
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Поиск по сотрудникам"
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 14, color: COLORS.text, fontFamily: "'MTSCompact', sans-serif" }}
+
+        {/* Search — same width as ColleaguesPage */}
+        <div style={{ flex: '0 0 280px', position: 'relative' }}>
+          <div style={{
+            height: 44, paddingLeft: 12, paddingRight: 12,
+            background: '#F2F3F7', borderRadius: 12,
+            display: 'flex', alignItems: 'center', gap: 8,
+            outline: '1px rgba(188,195,208,0.5) solid', outlineOffset: '-1px',
+          }}>
+            <SearchIcon color="#8C9BAB" />
+            <input
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              placeholder="Поиск по сотрудникам"
+              style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", color: '#1D2023' }}
+            />
+          </div>
+        </div>
+
+        {/* Department filter */}
+        <div style={{ width: 240 }}>
+          <SelectField
+            value={deptFilter}
+            options={deptOptions}
+            onChange={v => { setDeptFilter(v); setPage(1) }}
           />
         </div>
+
+        {/* Year selector for grid */}
+        {view === 'chart' && (
+          <div style={{ width: 120 }}>
+            <SelectField
+              value={String(gridYear)}
+              options={[
+                { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
+                { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
+                { id: String(CAMPAIGN.year + 1), name: String(CAMPAIGN.year + 1) },
+              ]}
+              onChange={v => setGridYear(Number(v))}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── TABLE VIEW ── */}
@@ -403,56 +695,54 @@ export default function ManagerPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
                 <col style={{ width: 120 }} />
-                <col style={{ width: 320 }} />
+                <col style={{ width: 280 }} />
                 <col />
-                <col style={{ width: 200 }} />
-                <col style={{ width: 157 }} />
-                <col style={{ width: 94 }} />
+                <col style={{ width: 180 }} />
+                <col style={{ width: 180 }} />
+                <col style={{ width: 80 }} />
               </colgroup>
               <thead>
                 <tr>
-                  <th style={TH_BASE}>№ заявки</th>
-                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Сотрудник</th>
-                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Подразделение</th>
-                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Период отпуска</th>
-                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset' }}>Статус</th>
-                  <th style={{ ...TH_BASE, boxShadow: '-1px 0px 0px #E2E5EB inset', textAlign: 'center' }}>Действия</th>
+                  <th style={TH}>№ заявки</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Сотрудник</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Подразделение</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Период отпуска</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Статус</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset', textAlign: 'center' }}>Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {pagedRequests.length === 0 ? (
-                  <tr><td colSpan={6} style={{ ...TD_BASE, textAlign: 'center', color: COLORS.secondary, padding: 32 }}>Нет заявок</td></tr>
+                  <tr><td colSpan={6} style={{ ...TD, textAlign: 'center', color: '#626C77', padding: 32 }}>Нет заявок</td></tr>
                 ) : pagedRequests.map((req, i) => {
                   const isLast = i === pagedRequests.length - 1
-                  const rowBorder = isLast ? 'none' : `1px solid ${COLORS.stroke}`
+                  const rowBorder = isLast ? 'none' : DIVIDER
                   return (
-                    <tr key={req.id}
+                    <tr
+                      key={req.id}
+                      onClick={() => setSelectedRequest(req)}
+                      style={{ cursor: 'pointer' }}
                       onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
                       onMouseLeave={e => e.currentTarget.style.background = ''}
                     >
-                      <td style={{ ...TD_BASE, borderBottom: rowBorder, color: COLORS.secondary }}>
-                        {req.reqNum}
+                      <td style={{ ...TD, borderBottom: rowBorder, color: '#626C77' }}>{req.reqNum}</td>
+                      <td style={{ ...TD, borderBottom: rowBorder }}>
+                        <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px' }}>{req.name}</div>
+                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{req.position}</div>
                       </td>
-                      <td style={{ ...TD_BASE, borderBottom: rowBorder }}>
-                        <div style={{ fontSize: 14, color: COLORS.text, lineHeight: '20px' }}>{req.name}</div>
-                        <div style={{ fontSize: 12, color: COLORS.secondary, lineHeight: '16px', marginTop: 2 }}>{req.position}</div>
+                      <td style={{ ...TD, borderBottom: rowBorder }}>{req.team}</td>
+                      <td style={{ ...TD, borderBottom: rowBorder }}>
+                        <div style={{ fontSize: 14, lineHeight: '20px' }}>{fmtPeriod(req.startDate, req.endDate)}</div>
+                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{pluralDays(req.days)}</div>
                       </td>
-                      <td style={{ ...TD_BASE, borderBottom: rowBorder, color: COLORS.text }}>{req.team}</td>
-                      <td style={{ ...TD_BASE, borderBottom: rowBorder }}>
-                        <div style={{ fontSize: 14, color: COLORS.text, lineHeight: '20px' }}>{fmtPeriod(req.startDate, req.endDate)}</div>
-                        <div style={{ fontSize: 12, color: COLORS.secondary, lineHeight: '16px', marginTop: 2 }}>{pluralDays(req.days)}</div>
-                      </td>
-                      <td style={{ ...TD_BASE, borderBottom: rowBorder }}>
+                      <td style={{ ...TD, borderBottom: rowBorder }}>
                         <StatusBadge status={req.status} />
                       </td>
-                      <td style={{ ...TD_BASE, borderBottom: rowBorder, textAlign: 'center' }}>
-                        <ActionsMenu
-                          rowId={req.id}
-                          status={req.status}
-                          open={actionsOpen === req.id}
-                          onToggle={setActionsOpen}
-                          onApprove={() => handleApprove(req.id)}
-                          onReject={() => openReject(req)}
+                      <td style={{ ...TD, borderBottom: rowBorder, textAlign: 'center' }}>
+                        <ActionsDropdown
+                          request={req}
+                          onApprove={handleApprove}
+                          onReject={r => setRejectTarget(r)}
                         />
                       </td>
                     </tr>
@@ -465,184 +755,61 @@ export default function ManagerPage() {
         </>
       )}
 
-      {/* ── CHART (GANTT) VIEW ── */}
+      {/* ── CHART (YEAR GRID) VIEW ── */}
       {view === 'chart' && (
-        <div style={{
-          background: '#fff', borderRadius: 24, padding: 24,
-          outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px',
-        }}>
-          {/* Gantt controls */}
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              {YEAR_OPTIONS.map(opt => (
-                <Chip key={opt.id} active={ganttYear === opt.id} onClick={() => { setGanttYear(opt.id); setViewStart(0) }}>
-                  {opt.name}
-                </Chip>
-              ))}
-            </div>
-            {[{ dir: -1, path: 'M7 1L1 7L7 13' }, { dir: 1, path: 'M1 1L7 7L1 13' }].map(({ dir, path }) => {
-              const next = viewStart + dir
-              const disabled = next < 0 || next > 6
-              return (
-                <button key={dir} onClick={() => !disabled && setViewStart(next)} style={{
-                  width: 40, height: 40, background: COLORS.bg, border: 'none', borderRadius: 12,
-                  cursor: disabled ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  opacity: disabled ? 0.3 : 1, flexShrink: 0,
-                }}>
-                  <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-                    <path d={path} stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )
-            })}
-          </div>
-
+        <>
           {/* Legend */}
           <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
             {[
-              { color: SEG_BAR.pending_clean,   label: 'на согласовании, нет пересечений' },
-              { color: SEG_BAR.pending_overlap,  label: 'на согласовании, есть пересечения' },
-              { color: SEG_BAR.approved,         label: 'согласован' },
+              { color: BAR_STATUS_COLOR.pending,  label: 'на согласовании' },
+              { color: BAR_OVERLAP_COLOR,          label: 'пересечения' },
+              { color: BAR_STATUS_COLOR.approved,  label: 'согласован' },
+              { color: BAR_STATUS_COLOR.reviewing, label: 'ознакомление' },
             ].map(({ color, label }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: "'MTSCompact',sans-serif" }}>{label}</span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                <span style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{label}</span>
               </div>
             ))}
           </div>
 
-          {/* Month header */}
-          <div style={{ display: 'flex', height: 40 }}>
-            <div style={{
-              width: PERSON_COL_W, flexShrink: 0, paddingLeft: 16,
-              background: COLORS.bg, boxShadow: '-1px 0 0 #E2E5EB inset',
-              display: 'flex', alignItems: 'center',
-            }}>
-              <span style={{ color: COLORS.secondary, fontSize: 14, fontFamily: "'MTSCompact',sans-serif" }}>Сотрудник</span>
-            </div>
-            <div style={{ flex: 1, display: 'flex' }}>
-              {visibleMonths.map(m => (
-                <div key={m} style={{
-                  width: `${(daysInMonth(ganttYear, m) / totalMoDays) * 100}%`,
-                  background: COLORS.bg, boxShadow: '-1px 0 0 #E2E5EB inset',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: COLORS.secondary, fontSize: 14, fontFamily: "'MTSCompact',sans-serif",
-                }}>
-                  {MONTH_NAMES[m]}
-                </div>
-              ))}
-            </div>
+          <div style={{ background: '#fff', border: DIVIDER, borderTop: 'none', overflow: 'hidden' }}>
+            <ManagerTooltip tooltip={tooltip} />
+            <ManagerYearGrid
+              year={gridYear}
+              people={gridPeople}
+              overlapIds={overlapIds}
+              onBarClick={req => setSelectedRequest(req)}
+              onBarEnter={(e, req, isOverlap) => setTooltip({
+                startDate: req.startDate,
+                endDate: req.endDate,
+                status: req.status,
+                overlaps: overlapNamesMap[req.id] ?? [],
+                x: e.clientX, y: e.clientY,
+              })}
+              onBarMove={e => setTooltip(p => p ? { ...p, x: e.clientX, y: e.clientY } : p)}
+              onBarLeave={() => setTooltip(null)}
+            />
           </div>
-
-          {/* Employee rows */}
-          {ganttPeople.length === 0 ? (
-            <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.secondary, fontSize: 14 }}>Нет сотрудников</div>
-          ) : ganttPeople.map((sub, idx) => (
-            <div key={sub.id}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{
-                  width: PERSON_COL_W, flexShrink: 0,
-                  paddingLeft: 16, paddingRight: 16, paddingTop: 12, paddingBottom: 12,
-                  boxShadow: '-1px 0 0 #E2E5EB inset',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 16, overflow: 'hidden', flexShrink: 0, background: COLORS.bg, position: 'relative' }}>
-                    {sub.avatar
-                      ? <img src={sub.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: COLORS.secondary }}>
-                          {sub.name.split(' ').slice(0, 2).map(w => w[0]).join('')}
-                        </div>
-                    }
-                    <div style={{ position: 'absolute', inset: 0, borderRadius: 16, border: '1px rgba(188,195,208,0.50) solid', pointerEvents: 'none' }} />
-                  </div>
-                  <span style={{ fontSize: 14, color: COLORS.text, fontFamily: "'MTSCompact',sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {shortName(sub.name)}
-                  </span>
-                </div>
-                <div style={{ flex: 1, position: 'relative', height: 68 }}>
-                  {sub.segs.map((seg, bi) => {
-                    const bp = getBarProps(seg.startDate, seg.endDate, rangeStart, rangeEnd, rangeDays)
-                    if (!bp) return null
-                    const key = `${sub.id}_${seg.startDate}_${seg.endDate}`
-                    const isOverlap = overlapSet.has(key)
-                    const barColor = sub.planStatus === 'approved'
-                      ? SEG_BAR.approved
-                      : sub.planStatus === 'pending'
-                        ? (isOverlap ? SEG_BAR.pending_overlap : SEG_BAR.pending_clean)
-                        : (SEG_BAR[sub.planStatus] ?? SEG_BAR.draft)
-                    return (
-                      <div key={bi} style={{
-                        position: 'absolute', top: 0, bottom: 0,
-                        background: barColor, borderRadius: 0, ...bp,
-                      }} />
-                    )
-                  })}
-                </div>
-              </div>
-              {idx < ganttPeople.length - 1 && (
-                <div style={{ height: 1, background: 'rgba(188,195,208,0.50)' }} />
-              )}
-            </div>
-          ))}
-        </div>
+        </>
       )}
 
-      {/* Reject modal */}
+      {/* ── Modals ── */}
+      {selectedRequest && (
+        <RequestViewModal
+          request={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          onApprove={id => { handleApprove(id); setSelectedRequest(null) }}
+          onOpenReject={req => { setRejectTarget(req); setSelectedRequest(null) }}
+        />
+      )}
+
       {rejectTarget && (
-        <Overlay onClose={() => setRejectTarget(null)}>
-          <div style={{
-            background: '#fff', borderRadius: 32, padding: 32, width: 440,
-            boxShadow: '0px 12px 20px rgba(0,0,0,0.14)',
-            display: 'flex', flexDirection: 'column', gap: 20,
-            fontFamily: "'MTSCompact', sans-serif",
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: 20, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSWide',sans-serif", lineHeight: '28px' }}>
-                  Отклонить заявку
-                </div>
-                <div style={{ fontSize: 14, color: COLORS.secondary, marginTop: 4 }}>
-                  {rejectTarget.name} · {fmtPeriod(rejectTarget.startDate, rejectTarget.endDate)}
-                </div>
-              </div>
-              <button onClick={() => setRejectTarget(null)} style={{ background: COLORS.bg, border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-                </svg>
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontSize: 14, color: COLORS.secondary }}>
-                Причина отклонения <span style={{ color: '#E30611' }}>*</span>
-              </label>
-              <textarea
-                value={rejectComment}
-                onChange={e => { setRejectComment(e.target.value); setRejectError('') }}
-                placeholder="Введите комментарий"
-                style={{
-                  width: '100%', height: 96, boxSizing: 'border-box',
-                  background: COLORS.bg, border: 'none',
-                  outline: `1px ${rejectError ? '#E30611' : 'rgba(188,195,208,0.50)'} solid`,
-                  outlineOffset: '-1px', borderRadius: 16,
-                  padding: '10px 12px', fontSize: 15, lineHeight: '22px',
-                  color: COLORS.text, fontFamily: "'MTSCompact', sans-serif", resize: 'none',
-                }}
-              />
-              {rejectError && <span style={{ fontSize: 12, color: '#E30611' }}>{rejectError}</span>}
-            </div>
-
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={() => setRejectTarget(null)} style={{ ...BTN_STYLE, flex: 1, height: 44, background: COLORS.bg, color: COLORS.text, border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-                Отмена
-              </button>
-              <button onClick={confirmReject} style={{ ...BTN_STYLE, flex: 2, height: 44, background: '#F95721', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-                Отклонить
-              </button>
-            </div>
-          </div>
-        </Overlay>
+        <RejectModal
+          request={rejectTarget}
+          onClose={() => setRejectTarget(null)}
+          onConfirm={handleReject}
+        />
       )}
     </div>
   )
