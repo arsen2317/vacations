@@ -127,11 +127,11 @@ function Checkbox({ checked, onChange, label }) {
   )
 }
 
-export default function NewRequestModal({ onClose, onSubmitted }) {
+export default function NewRequestModal({ onClose, onSubmitted, initialStart = null, initialEnd = null }) {
   const { requests, setRequests, balance, setBalance } = useApp()
   const [type, setType] = useState('')
-  const [startDate, setStartDate] = useState(null)
-  const [endDate, setEndDate] = useState(null)
+  const [startDate, setStartDate] = useState(initialStart)
+  const [endDate, setEndDate] = useState(initialEnd)
   const [showCalendar, setShowCalendar] = useState(false)
   const [calendarRect, setCalendarRect] = useState(null)
   const periodRef = useRef(null)
