@@ -311,7 +311,7 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
 }
 
 // ── Main page ────────────────────────────────────────────────────────────────
-const CURRENT_YEAR = 2026
+const CURRENT_YEAR = 2027
 const INITIAL_IDS = COLLEAGUES.map(c => c.id)
 
 export default function ColleaguesPage() {
