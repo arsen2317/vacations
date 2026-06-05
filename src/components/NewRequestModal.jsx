@@ -368,21 +368,22 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                 <button
                   onClick={() => setPickingExtra(true)}
                   style={{
+                    paddingTop: 10, paddingBottom: 10,
                     display: 'flex', alignItems: 'center', gap: 12,
                     background: 'none', border: 'none', cursor: 'pointer',
                     padding: 0, textAlign: 'left',
                   }}
                 >
                   <div style={{
-                    width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
-                    background: '#F2F3F7', border: '2px dashed #BCC3D0',
+                    width: 52, height: 52, borderRadius: 16, flexShrink: 0,
+                    background: '#F2F3F7',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M7 15V9H1C0.447715 9 0 8.55228 0 8C0 7.44772 0.447715 7 1 7H7V1C7 0.447715 7.44772 0 8 0C8.55228 0 9 0.447715 9 1V7H15C15.5523 7 16 7.44772 16 8C16 8.55228 15.5523 9 15 9H9V15C9 15.5523 8.55228 16 8 16C7.44772 16 7 15.5523 7 15Z" fill="#007CFF"/>
+                      <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
                     </svg>
                   </div>
-                  <span style={{ fontSize: 17, lineHeight: '24px', color: '#007CFF', fontFamily: "'MTSCompact', sans-serif" }}>
+                  <span style={{ fontSize: 17, lineHeight: '24px', color: '#0070E5', fontFamily: "'MTSCompact', sans-serif" }}>
                     Добавьте дополнительного согласующего
                   </span>
                 </button>
