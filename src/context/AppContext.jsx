@@ -20,7 +20,6 @@ export function AppProvider({ children }) {
   const [balance, setBalance] = useState({
     main: CURRENT_USER.balanceDays,
     extra: CURRENT_USER.balanceExtra,
-    accumulated: CURRENT_USER.balanceAccumulated,
   })
 
   return (

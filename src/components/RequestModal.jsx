@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import StatusBadge from './StatusBadge'
-import { Banner, CalendarRange, BTN_STYLE } from '../ds/index'
-import { useApp } from '../context/AppContext'
-import { countVacationDays } from '../utils/dateUtils'
+import { CalendarRange, BTN_STYLE } from '../ds/index'
 
 const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
+
+function fmtDateRu(date) {
+  if (!date) return '—'
+  const d = date instanceof Date ? date : new Date(date)
+  return `${d.getDate()} ${MONTHS_RU[d.getMonth()]} ${d.getFullYear()} г.`
+}
 
 function fmtRange(start, end) {
   if (!start || !end) return '—'
@@ -15,8 +19,7 @@ function fmtRange(start, end) {
       return `${s.getDate()} – ${e.getDate()} ${MONTHS_RU[e.getMonth()]} ${e.getFullYear()} г.`
     return `${s.getDate()} ${MONTHS_RU[s.getMonth()]} – ${e.getDate()} ${MONTHS_RU[e.getMonth()]} ${e.getFullYear()} г.`
   }
-  const fmtD = d => `${d.getDate()} ${MONTHS_RU[d.getMonth()]} ${d.getFullYear()} г.`
-  return `${fmtD(s)} – ${fmtD(e)}`
+  return `${fmtDateRu(s)} – ${fmtDateRu(e)}`
 }
 
 function pluralDays(n) {
@@ -27,62 +30,52 @@ function pluralDays(n) {
   return `${n} дней`
 }
 
-// "Дмитрий Соколов" → "Соколов Д.", "Иван Петрович Сидоров" → "Сидоров И.П."
-function formatNameShort(name) {
-  if (!name) return '—'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0]
-  // Assume "Имя Фамилия" or "Имя Отчество Фамилия"
-  const surname = parts[parts.length - 1]
-  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join('')
-  return `${surname} ${initials}`
-}
-
-function daysUntil(date) {
-  if (!date) return Infinity
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const d = date instanceof Date ? date : new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-}
-
-function InfoCell({ item }) {
-  if (!item) return null
+function InfoPair({ left, right }) {
   return (
-    <div style={{ flex: '1 1 0', paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center' }}>
-      <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          {item.label}
+    <div style={{ alignSelf: 'stretch', display: 'flex', gap: 16 }}>
+      {[left, right].map((item, i) => (
+        <div key={i} style={{ flex: '1 1 0', paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center' }}>
+          <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              {item?.label ?? ''}
+            </div>
+            <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+              {item?.value ?? '—'}
+            </div>
+          </div>
         </div>
-        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-          {item.value ?? '—'}
-        </div>
+      ))}
+    </div>
+  )
+}
+
+function SectionHeader({ label }) {
+  return (
+    <div style={{ alignSelf: 'stretch', paddingTop: 20, paddingBottom: 8, paddingRight: 20, display: 'flex' }}>
+      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTS Text', sans-serif", fontWeight: 500, textTransform: 'uppercase', lineHeight: '20px' }}>
+        {label}
       </div>
     </div>
   )
 }
 
-function InfoPair({ left, right }) {
+function PersonRow({ name, role }) {
+  if (!name) return null
+  const initials = name.trim().split(' ').slice(0, 2).map(w => w[0]).join('')
   return (
-    <div style={{ alignSelf: 'stretch', display: 'flex', gap: 16 }}>
-      <InfoCell item={left} />
-      {right && <InfoCell item={right} />}
-    </div>
-  )
-}
-
-function GreyCard({ label, value }) {
-  return (
-    <div style={{ alignSelf: 'stretch', background: '#F2F3F7', borderRadius: 16 }}>
-      <div style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 16, paddingRight: 40, display: 'flex', alignItems: 'flex-start' }}>
-        <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            {label}
-          </div>
-          <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-            {value}
-          </div>
+    <div style={{ alignSelf: 'stretch', paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <div style={{ width: 52, height: 52, borderRadius: 16, overflow: 'hidden', background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>
+          {initials}
+        </div>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: 16, border: '1px rgba(188,195,208,0.50) solid', pointerEvents: 'none' }} />
+      </div>
+      <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+          {name}
+        </div>
+        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+          {role}
         </div>
       </div>
     </div>
@@ -93,9 +86,14 @@ function NegativeBtn({ label, onClick }) {
   return (
     <button
       onClick={onClick}
-      style={{ flex: '1 1 0', height: 44, padding: 10, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
+      style={{
+        flex: '1 1 0', height: 44, padding: 10,
+        background: '#F2F3F7', border: 'none', borderRadius: 16,
+        cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center',
+        overflow: 'hidden',
+      }}
     >
-      <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4 }}>
+      <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
         <div style={{ textAlign: 'center', color: '#D8400C', fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700, textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>
           {label}
         </div>
@@ -108,9 +106,14 @@ function SecondaryBtn({ label, onClick }) {
   return (
     <button
       onClick={onClick}
-      style={{ flex: '1 1 0', height: 44, padding: 10, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
+      style={{
+        flex: '1 1 0', height: 44, padding: 10,
+        background: '#F2F3F7', border: 'none', borderRadius: 16,
+        cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center',
+        overflow: 'hidden',
+      }}
     >
-      <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4 }}>
+      <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
         <div style={{ textAlign: 'center', color: '#1D2023', fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700, textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>
           {label}
         </div>
@@ -119,62 +122,32 @@ function SecondaryBtn({ label, onClick }) {
   )
 }
 
-export default function RequestModal({ request, onClose, onReschedule, onAction }) {
-  const { setRequests } = useApp()
+export default function RequestModal({ request, onClose, onReschedule }) {
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showRescheduleCalendar, setShowRescheduleCalendar] = useState(false)
-  const [rescheduleError, setRescheduleError] = useState(null)
 
   if (!request) return null
 
   const status = request.status
-  const isPlanned = request.type === 'planned'
-  const rescheduleLeft = (request.rescheduleLimit ?? 2) - (request.rescheduleCount ?? 0)
-  const startDaysLeft = daysUntil(request.startDate)
-  const isPast = startDaysLeft < 0
-  const tooCloseToReschedule = !isPast && startDaysLeft <= 10
-
-  // Action logic
-  const canWithdraw = !isPlanned && status === 'pending'
-  const canCancel   = !isPlanned && status === 'approved'
-  const canReschedule = isPlanned && status === 'approved' && rescheduleLeft > 0 && !tooCloseToReschedule && !isPast
-  const showRescheduleInfo = isPlanned && status === 'approved' && tooCloseToReschedule && !isPast
-
-  const title = isPlanned ? 'Заявка на плановый отпуск' : 'Заявка на внеплановый отпуск'
-  const typeValue = request.planCategory || (isPlanned ? 'Плановый' : 'Основной оплачиваемый')
-  const substituteValue = request.substitute || 'Не указан'
-  const rawApproverName = request.approver?.name ?? null
-  const rawExtraName = request.extraApprover
-    ? (typeof request.extraApprover === 'string' ? request.extraApprover : request.extraApprover.name)
-    : null
-  const approverValue = rawApproverName ? formatNameShort(rawApproverName) : '—'
-  const extraApproverValue = rawExtraName ? formatNameShort(rawExtraName) : 'Не указан'
+  const canReschedule =
+    request.type === 'planned' &&
+    (status === 'approved' || status === 'pending') &&
+    (request.rescheduleCount ?? 0) < (request.rescheduleLimit ?? 2)
+  const canCancel = status === 'approved' || status === 'pending'
 
   function handleClose() {
+    setShowCancelConfirm(false)
     setShowRescheduleCalendar(false)
-    setRescheduleError(null)
     onClose()
   }
 
-  function handleWithdraw() {
-    setRequests(prev => prev.filter(r => r.id !== request.id))
-    onAction?.('Заявка отозвана')
-  }
-
-  function handleCancelVacation() {
-    setRequests(prev => prev.filter(r => r.id !== request.id))
-    onAction?.('Отпуск отменён')
-  }
-
   function handleRescheduleApply(start, end) {
-    const selectedDays = countVacationDays(start, end)
-    if (selectedDays !== request.days) {
-      setRescheduleError(`Нужно выбрать ровно ${pluralDays(request.days)} — сейчас выбрано ${pluralDays(selectedDays)}`)
-      return
-    }
-    setRescheduleError(null)
     onReschedule?.(start, end)
-    onAction?.('Заявка на перенос направлена на согласование')
+    onClose()
   }
+
+  const rescheduleLeft = (request.rescheduleLimit ?? 2) - (request.rescheduleCount ?? 0)
+  const typeValue = request.planCategory || (request.type === 'planned' ? 'Плановый' : 'Внеплановый')
 
   // ── Reschedule calendar view ──
   if (showRescheduleCalendar) {
@@ -189,13 +162,8 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
               Перенести плановый отпуск
             </div>
             <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-              Количество дней нового периода должно совпадать с текущим — {pluralDays(request.days)}
+              Количество дней нового периода отпуска должно совпадать с текущим
             </div>
-            {rescheduleError && (
-              <div style={{ marginTop: 8, fontSize: 13, color: '#E30611', fontFamily: "'MTSCompact', sans-serif" }}>
-                {rescheduleError}
-              </div>
-            )}
           </div>
           <CalendarRange
             applyLabel="Отправить на согласование"
@@ -203,6 +171,41 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
             onApply={handleRescheduleApply}
             onClose={() => setShowRescheduleCalendar(false)}
           />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Cancel confirm view ──
+  if (showCancelConfirm) {
+    return (
+      <div
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        onClick={() => setShowCancelConfirm(false)}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{ background: '#fff', borderRadius: 32, padding: 32, width: 440, boxShadow: '0px 8px 16px rgba(0,0,0,0.08), 0px 4px 24px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', gap: 20 }}
+        >
+          <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTS Wide', sans-serif", lineHeight: '24px' }}>
+            Отозвать заявку?
+          </div>
+          <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
+            Заявка будет отозвана. Это действие нельзя отменить.
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <SecondaryBtn label="Назад" onClick={() => setShowCancelConfirm(false)} />
+            <button
+              onClick={handleClose}
+              style={{ flex: 2, height: 44, padding: 10, background: '#F95721', border: 'none', borderRadius: 16, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            >
+              <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4 }}>
+                <div style={{ color: '#fff', fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700, textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>
+                  Подтвердить
+                </div>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -226,11 +229,11 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
         }}
       >
         {/* Header */}
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+        <div style={{ alignSelf: 'stretch', padding: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ flex: '1 1 0', paddingTop: 4, paddingBottom: 4 }}>
-              <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTS Wide', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                {title}
+            <div style={{ flex: '1 1 0', paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
+              <div style={{ flex: '1 1 0', color: '#1D2023', fontSize: 20, fontFamily: "'MTS Wide', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+                {request.typeFullName || request.typeLabel}
               </div>
             </div>
             <button
@@ -239,7 +242,7 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
             >
               <div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M0.292893 10.2929C-0.0976311 10.6834 -0.0976311 11.3166 0.292893 11.7071C0.683418 12.0976 1.31658 12.0976 1.70711 11.7071L5.99993 7.41429L10.2929 11.7073C10.6834 12.0978 11.3166 12.0978 11.7071 11.7073C12.0976 11.3167 12.0976 10.6836 11.7071 10.293L7.41414 6.00007L11.7071 1.70711C12.0976 1.31658 12.0976 0.683417 11.7071 0.292893C11.3166 -0.0976313 10.6834 -0.0976309 10.2929 0.292894L5.99992 4.58586L1.70711 0.293045C1.31658 -0.0974801 0.683419 -0.0974798 0.292895 0.293044C-0.0976297 0.683569 -0.0976293 1.31673 0.292895 1.70726L4.58571 6.00007L0.292893 10.2929Z" fill="#626C77"/>
+                  <path d="M1 1L11 11M11 1L1 11" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
               </div>
             </button>
@@ -252,66 +255,69 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
         </div>
 
         {/* Content */}
-        <div className="modal-scroll" style={{ paddingLeft: 20, paddingRight: 20, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+        <div style={{ alignSelf: 'stretch', paddingLeft: 20, paddingRight: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Status badge */}
           <div>
             <StatusBadge status={status} />
           </div>
 
           {/* Info pairs */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column' }}>
             <InfoPair
               left={{ label: 'Тип отпуска', value: typeValue }}
               right={{ label: 'Период', value: fmtRange(request.startDate, request.endDate) }}
             />
             <InfoPair
               left={{ label: 'Количество дней отпуска', value: pluralDays(request.days) }}
-              right={{ label: 'Заместитель', value: substituteValue }}
+              right={{ label: 'Доступно переносов', value: request.type === 'planned' ? `${rescheduleLeft} из ${request.rescheduleLimit ?? 2}` : '–' }}
             />
-            <InfoPair
-              left={{ label: 'Согласующий', value: approverValue }}
-              right={{ label: 'Дополнительный согласующий', value: extraApproverValue }}
-            />
-            {isPlanned && status === 'approved' && (
-              <InfoPair
-                left={{ label: 'Осталось переносов', value: String(rescheduleLeft) }}
-                right={null}
-              />
+
+            {/* Rejection comment */}
+            {status === 'rejected' && request.rejectionComment && (
+              <div style={{ paddingTop: 8, paddingBottom: 8 }}>
+                <div style={{ padding: '12px 16px', background: '#FFF3F0', borderRadius: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: '#AD3400', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: "'MTSCompact', sans-serif" }}>
+                    Причина отклонения
+                  </div>
+                  <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px', fontFamily: "'MTSCompact', sans-serif" }}>
+                    {request.rejectionComment}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Approver */}
+            {request.approver && (
+              <>
+                <SectionHeader label="Согласующий" />
+                <PersonRow name={request.approver.name} role={request.approver.role} />
+              </>
+            )}
+
+            {/* Extra approver */}
+            {request.extraApprover && (
+              <>
+                <SectionHeader label="Дополнительный согласующий" />
+                <PersonRow name={request.extraApprover.name} role={request.extraApprover.role} />
+              </>
             )}
           </div>
 
-          {/* Rejection comment */}
-          {status === 'rejected' && request.rejectionComment && (
-            <GreyCard label="Причина отклонения" value={request.rejectionComment} />
+          {/* Bottom buttons */}
+          {(canCancel || canReschedule) && (
+            <div style={{ paddingTop: 12, paddingBottom: 20, display: 'flex', gap: 10 }}>
+              {canReschedule && (
+                <SecondaryBtn label="Перенести отпуск" onClick={() => setShowRescheduleCalendar(true)} />
+              )}
+              {canCancel && (
+                <NegativeBtn label="Отозвать заявку" onClick={() => setShowCancelConfirm(true)} />
+              )}
+            </div>
           )}
 
-          {/* Comment */}
-          {request.comment && (
-            <GreyCard label="Комментарий" value={request.comment} />
-          )}
-
-          {/* Too close to reschedule banner */}
-          {showRescheduleInfo && (
-            <Banner
-              title="Перенос недоступен"
-              subtitle={`До начала отпуска осталось ${startDaysLeft} ${startDaysLeft === 1 ? 'день' : startDaysLeft >= 2 && startDaysLeft <= 4 ? 'дня' : 'дней'} — менее 10 дней`}
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div style={{ paddingTop: 32, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, flexShrink: 0, display: 'flex', gap: 10 }}>
-          {canWithdraw && (
-            <NegativeBtn label="Отозвать заявку" onClick={handleWithdraw} />
-          )}
-          {canCancel && (
-            <NegativeBtn label="Отменить отпуск" onClick={handleCancelVacation} />
-          )}
-          {canReschedule && (
-            <SecondaryBtn label="Перенести отпуск" onClick={() => setShowRescheduleCalendar(true)} />
-          )}
-          {!canWithdraw && !canCancel && !canReschedule && !showRescheduleInfo && (
-            <div style={{ flex: 1 }} />
+          {/* No actions state */}
+          {!canCancel && !canReschedule && (
+            <div style={{ paddingBottom: 20 }} />
           )}
         </div>
       </div>

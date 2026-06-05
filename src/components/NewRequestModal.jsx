@@ -6,50 +6,32 @@ import { BTN_STYLE, PersonAvatar, SelectField, CalendarRange } from '../ds/index
 
 const REQUEST_TYPES = [
   { id: 'annual',       name: 'Ежегодный оплачиваемый',              deductsBalance: true  },
-  { id: 'unpaid',       name: 'Без сохранения зарплаты',             deductsBalance: false },
-  { id: 'study_paid',   name: 'Учебный оплачиваемый',                deductsBalance: false },
-  { id: 'study_unpaid', name: 'Учебный без сохранения зарплаты',     deductsBalance: false },
+  { id: 'unpaid',       name: 'Без сохранения зарплаты',             desc: 'Не списывается из баланса', deductsBalance: false },
+  { id: 'study_paid',   name: 'Учебный оплачиваемый',                desc: 'Не списывается из баланса', deductsBalance: false },
+  { id: 'study_unpaid', name: 'Учебный без сохранения зарплаты',     desc: 'Не списывается из баланса', deductsBalance: false },
 ]
 
 const TYPE_LABEL_MAP = {
-  annual:       'Внеплановый',
-  unpaid:       'Внеплановый',
-  study_paid:   'Внеплановый',
-  study_unpaid: 'Внеплановый',
+  annual:       'Внеплановый — ежегодный оплачиваемый',
+  unpaid:       'Внеплановый — без сохранения зарплаты',
+  study_paid:   'Внеплановый — учебный оплачиваемый',
+  study_unpaid: 'Внеплановый — учебный без сохранения зарплаты',
 }
 
 const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель', avatar: '/avatars/egor.webp' }
 const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.id), name: c.name, avatar: c.avatar }))
-
-// "Дмитрий Соколов" → "Соколов Дмитрий", "Иван Петрович Сидоров" → "Сидоров Иван Петрович"
-function formatSurnameFirst(name) {
-  if (!name) return name
-  const parts = name.trim().split(/\s+/)
-  if (parts.length <= 1) return name
-  return `${parts[parts.length - 1]} ${parts.slice(0, -1).join(' ')}`
-}
-
-// "Дмитрий Соколов" → "Соколов Д."
-function formatNameShort(name) {
-  if (!name) return '—'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0]
-  const surname = parts[parts.length - 1]
-  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join('')
-  return `${surname} ${initials}`
-}
 
 function fmt(d) {
   if (!d) return ''
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
 }
 
-function PeriodField({ start, end, error, onClick, previewDays }) {
+function PeriodField({ start, end, error, onClick }) {
   const hasValue = !!start
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-        Период отпуска
+        Период
       </div>
       <div
         onClick={onClick}
@@ -82,16 +64,11 @@ function PeriodField({ start, end, error, onClick, previewDays }) {
         </div>
       </div>
       {error && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{error}</span>}
-      {!error && previewDays !== null && (
-        <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
-          Выбрано {pluralDays(previewDays)} отпуска
-        </span>
-      )}
     </div>
   )
 }
 
-function TextAreaField({ label, value, onChange, hint }) {
+function TextAreaField({ label, value, onChange, optional, description }) {
   const [focused, setFocused] = useState(false)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -123,28 +100,30 @@ function TextAreaField({ label, value, onChange, hint }) {
           display: 'block',
         }}
       />
-      {hint && (
+      {(description || optional) && (
         <div style={{ color: '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '16px' }}>
-          {hint}
+          {description || 'Необязательно'}
         </div>
       )}
     </div>
   )
 }
 
-function SectionLabel({ children }) {
+function Checkbox({ checked, onChange, label }) {
   return (
-    <span style={{
-      fontSize: 14,
-      fontFamily: "'MTSCompact', sans-serif",
-      fontWeight: 500,
-      lineHeight: '20px',
-      color: '#626C77',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em',
-    }}>
-      {children}
-    </span>
+    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+      <div
+        onClick={() => onChange(!checked)}
+        style={{ width: 20, height: 20, borderRadius: 5, flexShrink: 0, border: `2px solid ${checked ? '#0066FF' : '#BCC3D0'}`, background: checked ? '#0066FF' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+      >
+        {checked && (
+          <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+            <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+      <span style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{label}</span>
+    </label>
   )
 }
 
@@ -160,8 +139,8 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const [changeApprover, setChangeApprover] = useState(false)
   const [approverOverride, setApproverOverride] = useState('')
   const [substitute, setSubstitute] = useState('')
+  const [addExtraApprover, setAddExtraApprover] = useState(false)
   const [extraApprover, setExtraApprover] = useState('')
-  const [pickingExtra, setPickingExtra] = useState(false)
   const [errors, setErrors] = useState({})
   const selectedType = REQUEST_TYPES.find(t => t.id === type)
 
@@ -175,23 +154,9 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     }
   }, [startDate, endDate])
 
-  const intersectingColleagues = useMemo(() => {
-    if (!startDate) return []
-    const s = startDate.getTime()
-    const e = (endDate || startDate).getTime()
-    return COLLEAGUES.filter(c => !c.me).filter(c =>
-      c.segments?.some(seg => {
-        if (seg.status === 'draft') return false
-        const segS = new Date(seg.startDate + 'T00:00:00').getTime()
-        const segE = new Date(seg.endDate + 'T00:00:00').getTime()
-        return s <= segE && e >= segS
-      })
-    )
-  }, [startDate, endDate])
-
   function validate() {
     const errs = {}
-    if (!type) errs.type = 'Выберите вид отпуска'
+    if (!type) errs.type = 'Выберите тип отпуска'
     if (!startDate) {
       errs.dates = 'Укажите период'
     } else if (selectedType?.deductsBalance && previewDays !== null && previewDays > balance.main) {
@@ -206,17 +171,17 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     const newReq = {
       id: Date.now(),
       type: 'unplanned',
-      typeLabel: 'Внеплановый',
+      typeLabel: TYPE_LABEL_MAP[type],
       startDate,
       endDate: endDate || startDate,
       days: previewDays,
       status: 'pending',
       approver: { name: approverName, role: 'Руководитель' },
       comment: comment || undefined,
-      extraApprover: extraApprover ? formatSurnameFirst(APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name) : undefined,
+      extraApprover: (addExtraApprover && extraApprover) ? extraApprover : undefined,
     }
     setRequests(prev => [newReq, ...prev])
-    if (selectedType?.deductsBalance) {
+    if (selectedType.deductsBalance) {
       setBalance(prev => ({ ...prev, main: Math.max(0, prev.main - previewDays) }))
     }
     onSubmitted ? onSubmitted() : onClose()
@@ -226,105 +191,82 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const approverName = approverColleague?.name ?? DEFAULT_APPROVER.name
   const approverAvatar = approverColleague?.avatar ?? DEFAULT_APPROVER.avatar
 
-  const extraApproverColleague = extraApprover ? APPROVER_OPTIONS.find(o => o.id === extraApprover) : null
+  const Overlay = ({ children, onClick }) => (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClick}>
+      <div onClick={e => e.stopPropagation()}>{children}</div>
+    </div>
+  )
 
   return (
     <>
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        onClick={onClose}
-      >
+      <Overlay onClick={onClose}>
         <div
-          onClick={e => e.stopPropagation()}
+          className="modal-scroll"
           style={{ width: 560, maxHeight: '90vh', background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'MTSCompact', sans-serif" }}
         >
           {/* Header */}
-          <div style={{ padding: '28px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0, gap: 12 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>
-                Заявка на внеплановый отпуск
-              </div>
-              <div style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', color: '#626C77' }}>
-                Накоплено {balance.accumulated ?? balance.main} {pluralDays(balance.accumulated ?? balance.main)} основного оплачиваемого отпуска
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              style={{ width: 32, height: 32, flexShrink: 0, border: 'none', background: '#F2F3F7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, padding: 0 }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M0.292893 10.2929C-0.0976311 10.6834 -0.0976311 11.3166 0.292893 11.7071C0.683418 12.0976 1.31658 12.0976 1.70711 11.7071L5.99993 7.41429L10.2929 11.7073C10.6834 12.0978 11.3166 12.0978 11.7071 11.7073C12.0976 11.3167 12.0976 10.6836 11.7071 10.293L7.41414 6.00007L11.7071 1.70711C12.0976 1.31658 12.0976 0.683417 11.7071 0.292893C11.3166 -0.0976313 10.6834 -0.0976309 10.2929 0.292894L5.99992 4.58586L1.70711 0.293045C1.31658 -0.0974801 0.683419 -0.0974798 0.292895 0.293044C-0.0976297 0.683569 -0.0976293 1.31673 0.292895 1.70726L4.58571 6.00007L0.292893 10.2929Z" fill="#626C77"/>
-              </svg>
-            </button>
+          <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>Заявка на внеплановый отпуск</div>
+            <button onClick={onClose} style={{ width: 32, height: 32, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8C9BAB', fontSize: 18, borderRadius: 8, padding: 0, lineHeight: 1 }}>✕</button>
           </div>
 
           {/* Body */}
-          <div className="modal-scroll" style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
+          <div className="modal-scroll" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
 
-            {/* Период отпуска */}
-            <div ref={periodRef}>
-              <PeriodField
-                start={startDate}
-                end={endDate}
-                error={errors.dates}
-                previewDays={previewDays}
-                onClick={() => {
-                  setCalendarRect(periodRef.current?.getBoundingClientRect())
-                  setShowCalendar(true)
-                }}
-              />
-            </div>
-
-            {/* Intersection warning */}
-            {intersectingColleagues.length > 0 && (
-              <div style={{ width: '100%', padding: 12, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'flex-start', gap: 8, boxSizing: 'border-box' }}>
-                <div style={{ flexShrink: 0, marginTop: 1 }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M4.68597 19.314C3.3731 18.0012 3.27575 16.6932 3.08105 14.0772C3.03058 13.399 3 12.6995 3 12C3 11.3005 3.03058 10.601 3.08105 9.92282C3.27575 7.30684 3.3731 5.99884 4.68597 4.68597C5.99884 3.37309 7.30684 3.27575 9.92282 3.08105C10.601 3.03058 11.3005 3 12 3C12.6995 3 13.399 3.03058 14.0772 3.08105C16.6932 3.27575 18.0012 3.37309 19.314 4.68597C20.6269 5.99884 20.7243 7.30684 20.9189 9.92282C20.9694 10.601 21 11.3005 21 12C21 12.6995 20.9694 13.399 20.9189 14.0772C20.7243 16.6932 20.6269 18.0012 19.314 19.314C18.0012 20.6269 16.6932 20.7243 14.0772 20.9189C13.399 20.9694 12.6995 21 12 21C11.3005 21 10.601 20.9694 9.92282 20.9189C7.30684 20.7243 5.99884 20.6269 4.68597 19.314ZM12 13C12.5523 13 13 12.5523 13 12L13 8.00244C13 7.45015 12.5523 7.00244 12 7.00244C11.4477 7.00244 11 7.45016 11 8.00244L11 12C11 12.5523 11.4477 13 12 13ZM13.2477 16.0011C13.2477 15.3114 12.6886 14.7523 11.9989 14.7523C11.3091 14.7523 10.75 15.3114 10.75 16.0011C10.75 16.6909 11.3091 17.25 11.9989 17.25C12.6886 17.25 13.2477 16.6909 13.2477 16.0011Z" fill="#FAC031"/>
-                  </svg>
-                </div>
-                <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <div style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                    Пересечение с отпуском {intersectingColleagues.map(c => c.name).join(', ')}
-                  </div>
-                  <div style={{ color: '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '16px' }}>
-                    Подробнее — во вкладке «Планы коллег»
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Вид отпуска */}
+            {/* Тип отпуска */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <SelectField
-                label="Вид отпуска"
+                label="Тип отпуска"
                 value={type}
                 options={REQUEST_TYPES}
-                placeholder="Выберите вид отпуска"
+                placeholder="Выберите тип отпуска"
                 onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
               />
               {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
+              {selectedType && (
+                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
+                  {selectedType.id === 'annual'
+                    ? `За счёт накопленного ежегодного основного оплачиваемого отпуска: ${balance.main} дней`
+                    : selectedType.desc}
+                </span>
+              )}
+            </div>
+
+            {/* Период */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div ref={periodRef}>
+                <PeriodField
+                  start={startDate} end={endDate}
+                  error={errors.dates}
+                  onClick={() => {
+                    setCalendarRect(periodRef.current?.getBoundingClientRect())
+                    setShowCalendar(true)
+                  }}
+                />
+              </div>
+              {!errors.dates && previewDays !== null && (
+                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
+                  {pluralDays(previewDays)} отпуска (праздники не считаются)
+                </span>
+              )}
             </div>
 
             {/* Заместитель */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <SelectField
-                label="Заместитель"
-                value={substitute}
-                options={APPROVER_OPTIONS}
-                placeholder="Добавьте заместителя"
-                onChange={setSubstitute}
-                searchable
-              />
-              <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>Необязательное поле</span>
-            </div>
+            <SelectField
+              label="Заместитель"
+              value={substitute}
+              options={APPROVER_OPTIONS}
+              placeholder="Добавьте заместителя"
+              onChange={setSubstitute}
+              searchable
+            />
 
             {/* Комментарий */}
-            <TextAreaField label="Комментарий" value={comment} onChange={setComment} hint="До 255 символов" />
+            <TextAreaField label="Комментарий" value={comment} onChange={setComment} description="До 255 символов" />
 
             {/* Согласующий */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <SectionLabel>Согласующий</SectionLabel>
+              <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>Согласующий</span>
               {changeApprover ? (
                 <SelectField
                   value={approverOverride}
@@ -336,16 +278,13 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <PersonAvatar src={approverAvatar} size={52} />
+                    <PersonAvatar src={approverAvatar} />
                     <div>
-                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{formatNameShort(approverName)}</div>
-                      <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{DEFAULT_APPROVER.role}</div>
+                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{approverName}</div>
+                      <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77' }}>{DEFAULT_APPROVER.role}</div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setChangeApprover(true)}
-                    style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                  >
+                  <button onClick={() => setChangeApprover(true)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
                       <path fillRule="evenodd" clipRule="evenodd" d="M13.4788 0.00746568C12.8251 0.0598684 12.4177 0.412273 11.6029 1.11708C10.2959 2.24773 8.44909 3.88863 6.94648 5.39079C5.44386 6.89294 3.80245 8.73915 2.67146 10.0458C2.36674 10.3978 2.12788 10.6738 1.95063 10.9264C1.62569 11.3329 1.3956 12.0901 1.04235 13.2527L0.514634 14.9895C0.0352647 16.5671 -0.20442 17.356 0.219899 17.7802C0.644215 18.2044 1.43328 17.9647 3.01141 17.4855L4.74876 16.958C5.98041 16.584 6.75726 16.3481 7.14413 15.9914C7.37696 15.8205 7.633 15.599 7.95112 15.3238C9.25816 14.1932 11.1049 12.5523 12.6076 11.0501C14.1102 9.54797 15.7516 7.70176 16.8826 6.39512C17.5876 5.58061 17.9401 5.17335 17.9925 4.5198C18.045 3.86626 17.8198 3.50177 17.3694 2.77279C17.1126 2.35721 16.8011 1.93356 16.4335 1.56604C16.0658 1.19852 15.6421 0.887124 15.2264 0.630439C14.4972 0.180188 14.1326 -0.044937 13.4788 0.00746568ZM3.52706 12.1618C3.52875 12.1586 3.53037 12.1553 3.53037 12.1553L3.55327 12.1267L3.58928 12.0753C3.69511 11.9245 3.85677 11.7342 4.18498 11.3551C5.30704 10.0587 6.91096 8.25596 8.36174 6.80562C8.92296 6.24458 9.53693 5.66063 10.1539 5.09052L12.9079 7.84366C12.3376 8.46047 11.7535 9.07425 11.1923 9.63529C9.7415 11.0856 7.93817 12.6891 6.64145 13.8108C6.30277 14.1038 6.11386 14.2653 5.95974 14.3784L5.86948 14.4447L5.83526 14.4762C5.80512 14.4918 5.7214 14.5337 5.55359 14.5973C5.23461 14.7182 4.80697 14.8491 4.16704 15.0435L2.42973 15.571L2.95744 13.8342C3.14021 13.2327 3.26737 12.8169 3.3848 12.4988C3.46465 12.2825 3.51381 12.1875 3.52706 12.1618ZM14.2529 6.35858C14.6566 5.90447 15.0343 5.47262 15.3691 5.08586C15.5507 4.87603 15.6844 4.72134 15.7954 4.58529C15.8863 4.474 15.9421 4.39913 15.9773 4.34739C15.9645 4.32261 15.9473 4.29098 15.9246 4.2511C15.8623 4.14167 15.7843 4.01494 15.6665 3.82424C15.4664 3.50036 15.2472 3.20983 15.0182 2.98087C14.7892 2.75192 14.4986 2.53283 14.1746 2.33278C13.9838 2.21499 13.8571 2.13703 13.7476 2.07474C13.7077 2.05205 13.6761 2.03491 13.6513 2.02203C13.5995 2.0573 13.5246 2.11309 13.4133 2.2039C13.2772 2.31493 13.1225 2.44857 12.9126 2.63014C12.5257 2.96481 12.0937 3.34236 11.6395 3.74593L14.2529 6.35858Z" fill="#8D969F"/>
                     </svg>
@@ -355,77 +294,47 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
             </div>
 
             {/* Дополнительный согласующий */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <SectionLabel>Дополнительный согласующий</SectionLabel>
-              {extraApproverColleague ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <PersonAvatar src={extraApproverColleague.avatar} size={52} />
-                    <div>
-                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{formatSurnameFirst(extraApproverColleague.name)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <Checkbox checked={addExtraApprover} onChange={v => { setAddExtraApprover(v); if (!v) setExtraApprover('') }} label="Добавить дополнительного согласующего" />
+              {addExtraApprover && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>Дополнительный согласующий</span>
+                  {extraApprover ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <PersonAvatar src={APPROVER_OPTIONS.find(o => o.id === extraApprover)?.avatar} />
+                        <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>
+                          {APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name}
+                        </div>
+                      </div>
+                      <button onClick={() => setExtraApprover('')} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M0.292893 10.2929C-0.0976311 10.6834 -0.0976311 11.3166 0.292893 11.7071C0.683418 12.0976 1.31658 12.0976 1.70711 11.7071L5.99993 7.41429L10.2929 11.7073C10.6834 12.0978 11.3166 12.0978 11.7071 11.7073C12.0976 11.3167 12.0976 10.6836 11.7071 10.293L7.41414 6.00007L11.7071 1.70711C12.0976 1.31658 12.0976 0.683417 11.7071 0.292893C11.3166 -0.0976313 10.6834 -0.0976309 10.2929 0.292894L5.99992 4.58586L1.70711 0.293045C1.31658 -0.0974801 0.683419 -0.0974798 0.292895 0.293044C-0.0976297 0.683569 -0.0976293 1.31673 0.292895 1.70726L4.58571 6.00007L0.292893 10.2929Z" fill="#8D969F"/>
+                        </svg>
+                      </button>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => setExtraApprover('')}
-                    style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M0.292893 10.2929C-0.0976311 10.6834 -0.0976311 11.3166 0.292893 11.7071C0.683418 12.0976 1.31658 12.0976 1.70711 11.7071L5.99993 7.41429L10.2929 11.7073C10.6834 12.0978 11.3166 12.0978 11.7071 11.7073C12.0976 11.3167 12.0976 10.6836 11.7071 10.293L7.41414 6.00007L11.7071 1.70711C12.0976 1.31658 12.0976 0.683417 11.7071 0.292893C11.3166 -0.0976313 10.6834 -0.0976309 10.2929 0.292894L5.99992 4.58586L1.70711 0.293045C1.31658 -0.0974801 0.683419 -0.0974798 0.292895 0.293044C-0.0976297 0.683569 -0.0976293 1.31673 0.292895 1.70726L4.58571 6.00007L0.292893 10.2929Z" fill="#8D969F"/>
-                    </svg>
-                  </button>
+                  ) : (
+                    <SelectField
+                      value={extraApprover}
+                      options={APPROVER_OPTIONS}
+                      placeholder="Выберите согласующего"
+                      onChange={setExtraApprover}
+                      searchable
+                    />
+                  )}
                 </div>
-              ) : pickingExtra ? (
-                <SelectField
-                  value={extraApprover}
-                  options={APPROVER_OPTIONS}
-                  placeholder="Выберите согласующего"
-                  onChange={v => { setExtraApprover(v); setPickingExtra(false) }}
-                  searchable
-                />
-              ) : (
-                <button
-                  onClick={() => setPickingExtra(true)}
-                  style={{
-                    paddingTop: 10, paddingBottom: 10,
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    padding: 0, textAlign: 'left',
-                  }}
-                >
-                  <div style={{
-                    width: 52, height: 52, borderRadius: 16, flexShrink: 0,
-                    background: '#F2F3F7',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
-                    </svg>
-                  </div>
-                  <span style={{ fontSize: 17, lineHeight: '24px', color: '#0070E5', fontFamily: "'MTSCompact', sans-serif" }}>
-                    Добавьте дополнительного согласующего
-                  </span>
-                </button>
               )}
             </div>
           </div>
 
           {/* Footer */}
-          <div style={{ paddingTop: 32, paddingBottom: 20, paddingLeft: 20, paddingRight: 20, flexShrink: 0, display: 'flex', gap: 12 }}>
-            <button
-              onClick={handleSubmit}
-              style={{ flex: 1, height: 52, background: '#0066FF', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}
-            >
-              СОЗДАТЬ ЗАЯВКУ
-            </button>
-            <button
-              onClick={onClose}
-              style={{ flex: 1, height: 52, background: '#F2F3F7', color: '#1D2023', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}
-            >
-              ОТМЕНА
+          <div style={{ padding: '8px 28px 28px', flexShrink: 0 }}>
+            <button onClick={handleSubmit} style={{ width: '100%', height: 52, background: '#0066FF', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}>
+              ОТПРАВИТЬ НА СОГЛАСОВАНИЕ
             </button>
           </div>
         </div>
-      </div>
+      </Overlay>
 
       {/* Calendar dropdown */}
       {showCalendar && calendarRect && (
