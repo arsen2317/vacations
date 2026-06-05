@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
-import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH, ChevronUp, ChevronDown } from '../ds/index'
+import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 
@@ -164,7 +164,6 @@ function ColleagueRow({ col, onRemove }) {
 
 // Left panel for 2027: planning view
 function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, onOpenPlanModal, trackedColleagues, onRemoveColleague, onSegmentClick }) {
-  const [collapseOverlap, setCollapseOverlap] = useState(false)
   const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
   const hasLongSegment  = segments.some(s => s.days >= 14)
   const canSubmit       = distributedDays >= MIN_PLAN_DAYS && hasLongSegment
@@ -306,16 +305,11 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
 
       {/* Пересечения section */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <button
-          onClick={() => setCollapseOverlap(v => !v)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, paddingTop: 36, paddingBottom: 12, display: 'flex', alignItems: 'center', gap: 4, textAlign: 'left' }}
-        >
+        <div style={{ paddingTop: 36, paddingBottom: 12 }}>
           <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
             Пересечения
           </span>
-          {collapseOverlap ? <ChevronDown /> : <ChevronUp />}
-        </button>
+        </div>
 
         {/* Legend */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
@@ -325,30 +319,26 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
           </span>
         </div>
 
-        {!collapseOverlap && (
-          <>
-            {/* Add colleague row */}
-            <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
-                </svg>
-              </div>
-              <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-                Добавить сотрудника
-              </span>
-            </div>
+        {/* Add colleague row */}
+        <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
+            </svg>
+          </div>
+          <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+            Добавить сотрудника
+          </span>
+        </div>
 
-            {/* Colleagues list */}
-            {trackedColleagues.map(col => (
-              <ColleagueRow
-                key={col.id}
-                col={col}
-                onRemove={() => onRemoveColleague(col.id)}
-              />
-            ))}
-          </>
-        )}
+        {/* Colleagues list */}
+        {trackedColleagues.map(col => (
+          <ColleagueRow
+            key={col.id}
+            col={col}
+            onRemove={() => onRemoveColleague(col.id)}
+          />
+        ))}
       </div>
     </div>
   )
