@@ -16,11 +16,6 @@ export const CAMPAIGN = {
   totalDays: 28,
 }
 
-export const UPCOMING_VACATION = {
-  startDate: new Date(2026, 6, 14),
-  endDate: new Date(2026, 6, 27),
-  status: 'approved',
-}
 
 export const MY_REQUESTS = [
   // Плановые — 28 дней суммарно, согласованы

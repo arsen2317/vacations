@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
-import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
+import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH, ChevronUp, ChevronDown } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 
@@ -314,12 +314,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
           <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
             Пересечения
           </span>
-          <svg
-            width="12" height="7" viewBox="0 0 12 7" fill="none"
-            style={{ flexShrink: 0, transition: 'transform 0.2s', transform: collapseOverlap ? 'rotate(0deg)' : 'rotate(180deg)' }}
-          >
-            <path d="M1 6L6 1L11 6" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          {collapseOverlap ? <ChevronDown /> : <ChevronUp />}
         </button>
 
         {/* Legend */}

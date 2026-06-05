@@ -134,11 +134,19 @@ function ColleaguesTooltip({ tooltip }) {
         {tooltip.fmtStart} — {tooltip.fmtEnd}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: hasOverlap ? '#FAC031' : BAR[tooltip.status] ?? BAR.approved }} />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: BAR[tooltip.status] ?? BAR.approved }} />
         <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
-          {hasOverlap ? `пересекается с отпуском: ${tooltip.overlaps.join(', ')}` : STATUS_LABEL[tooltip.status] ?? tooltip.status}
+          {STATUS_LABEL[tooltip.status] ?? tooltip.status}
         </span>
       </div>
+      {hasOverlap && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#FAC031' }} />
+          <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
+            пересекается: {tooltip.overlaps.join(', ')}
+          </span>
+        </div>
+      )}
       <div style={{ position: 'absolute', left: -6, top: 14, width: 0, height: 0, borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderRight: '6px solid #1D2023' }} />
     </div>
   )
