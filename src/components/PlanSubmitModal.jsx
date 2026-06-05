@@ -99,10 +99,10 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {segments.map(seg => (
                 <div key={seg.id} style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+                  <div style={{ width: '100%', color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word' }}>
                     {seg.days} {pluralDays(seg.days)} отпуска
                   </div>
-                  <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+                  <div style={{ width: '100%', color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
                     {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
                   </div>
                 </div>
