@@ -124,7 +124,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
                     color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
                     fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word',
                   }}>
-                    {req.typeLabel}
+                    {req.days} {pluralDays(req.days)} · {req.typeLabel}
                   </div>
                 </div>
                 <StatusBadge type={req.status} />
