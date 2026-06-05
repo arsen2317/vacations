@@ -6,7 +6,15 @@ import { Chip, SearchIcon } from '../ds/index'
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 const WD = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
+
+const STATUS_LABEL = {
+  approved:  'Согласован',
+  pending:   'На согласовании',
+  reviewing: 'Ознакомление',
+  draft:     'Черновик',
+}
 
 const BAR = {
   approved: '#BEF4BD',
@@ -33,6 +41,12 @@ function shortName(name) {
   const p = name.trim().split(/\s+/)
   if (p.length < 2) return p[0]
   return `${p[p.length - 1]} ${p.slice(0, -1).map(w => w[0].toUpperCase() + '.').join('')}`
+}
+
+// "2026-03-09" → "9 марта"
+function fmtDate(iso) {
+  const d = new Date(iso + 'T00:00:00')
+  return `${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`
 }
 
 function yearBarPos(seg, year) {
@@ -102,8 +116,54 @@ function PersonCell({ person, onRemove }) {
   )
 }
 
+// ── Tooltip ──────────────────────────────────────────────────────────────────
+function ColleaguesTooltip({ tooltip }) {
+  if (!tooltip) return null
+  const hasOverlap = tooltip.overlaps.length > 0
+  return (
+    <div style={{
+      position: 'fixed',
+      left: tooltip.x + 12,
+      top: tooltip.y - 8,
+      zIndex: 9999,
+      background: '#1D2023',
+      borderRadius: 12,
+      padding: '10px 14px',
+      pointerEvents: 'none',
+      minWidth: 160,
+      maxWidth: 260,
+    }}>
+      {/* Date range */}
+      <div style={{ fontSize: 13, color: '#FAFAFA', fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, marginBottom: 4 }}>
+        {tooltip.fmtStart} — {tooltip.fmtEnd}
+      </div>
+      {/* Status row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{
+          width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+          background: hasOverlap ? '#FAC031' : BAR[tooltip.status] ?? BAR.approved,
+        }} />
+        <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
+          {hasOverlap
+            ? `пересекается с отпуском: ${tooltip.overlaps.join(', ')}`
+            : STATUS_LABEL[tooltip.status] ?? tooltip.status
+          }
+        </span>
+      </div>
+      {/* Arrow */}
+      <div style={{
+        position: 'absolute', left: -6, top: 14,
+        width: 0, height: 0,
+        borderTop: '5px solid transparent',
+        borderBottom: '5px solid transparent',
+        borderRight: '6px solid #1D2023',
+      }} />
+    </div>
+  )
+}
+
 // ── Year grid ────────────────────────────────────────────────────────────────
-function YearGrid({ year, people, barColor, onRemove }) {
+function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onBarLeave }) {
   const total = diYear(year)
   // Pre-compute month separator positions (% from left)
   const separators = useMemo(() => {
@@ -149,12 +209,16 @@ function YearGrid({ year, people, barColor, onRemove }) {
                 const pos = yearBarPos(seg, year)
                 if (!pos) return null
                 return (
-                  <div key={i} style={{
-                    position: 'absolute', top: BAR_TOP, height: BAR_H,
-                    left: pos.left, width: pos.width,
-                    background: barColor(seg, person.me),
-                    borderRadius: 6,
-                  }} />
+                  <div key={i}
+                    onMouseEnter={e => onBarEnter?.(e, seg, person)}
+                    onMouseMove={e => onBarMove?.(e)}
+                    onMouseLeave={() => onBarLeave?.()}
+                    style={{
+                      position: 'absolute', top: BAR_TOP, height: BAR_H,
+                      left: pos.left, width: pos.width,
+                      background: barColor(seg, person.me),
+                      borderRadius: 6, cursor: 'default',
+                    }} />
                 )
               })}
             </div>
@@ -166,7 +230,7 @@ function YearGrid({ year, people, barColor, onRemove }) {
 }
 
 // ── Month grid ───────────────────────────────────────────────────────────────
-function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext }) {
+function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, onBarEnter, onBarMove, onBarLeave }) {
   const totalDays = diMonth(year, month)
   const days = Array.from({ length: totalDays }, (_, i) => {
     const dow = (new Date(year, month, i + 1).getDay() + 6) % 7
@@ -228,12 +292,16 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext }) 
                 const pos = monthBarPos(seg, year, month)
                 if (!pos) return null
                 return (
-                  <div key={i} style={{
-                    position: 'absolute', top: BAR_TOP, height: BAR_H,
-                    left: pos.left, width: pos.width,
-                    background: barColor(seg, person.me),
-                    borderRadius: 6,
-                  }} />
+                  <div key={i}
+                    onMouseEnter={e => onBarEnter?.(e, seg, person)}
+                    onMouseMove={e => onBarMove?.(e)}
+                    onMouseLeave={() => onBarLeave?.()}
+                    style={{
+                      position: 'absolute', top: BAR_TOP, height: BAR_H,
+                      left: pos.left, width: pos.width,
+                      background: barColor(seg, person.me),
+                      borderRadius: 6, cursor: 'default',
+                    }} />
                 )
               })}
             </div>
@@ -257,6 +325,7 @@ export default function ColleaguesPage() {
   const [searchQ,    setSearchQ]    = useState('')
   const [showDrop,   setShowDrop]   = useState(false)
   const [listIds,    setListIds]    = useState(INITIAL_IDS)
+  const [tooltip,    setTooltip]    = useState(null)
 
   const searchRef = useRef(null)
 
@@ -332,8 +401,42 @@ export default function ColleaguesPage() {
   }, [people])
 
   function barColor(seg, isMe) {
-    if (isMe && overlapKeys.has(`${seg.startDate}|${seg.endDate}`)) return BAR.overlap
+    const isOverlappable = seg.status === 'draft' || seg.status === 'pending'
+    if (isMe && isOverlappable && overlapKeys.has(`${seg.startDate}|${seg.endDate}`)) return BAR.overlap
     return BAR[seg.status] ?? BAR.approved
+  }
+
+  function handleBarEnter(e, seg, person) {
+    const isOverlappable = seg.status === 'draft' || seg.status === 'pending'
+    let overlaps = []
+    if (isOverlappable) {
+      const ms = new Date(seg.startDate + 'T00:00:00').getTime()
+      const me = new Date(seg.endDate   + 'T00:00:00').getTime()
+      overlaps = people
+        .filter(p => p.id !== person.id)
+        .flatMap(p => p.segments.filter(os => {
+          const oss = new Date(os.startDate + 'T00:00:00').getTime()
+          const ose = new Date(os.endDate   + 'T00:00:00').getTime()
+          return ms <= ose && me >= oss
+        }).map(() => shortName(p.name)))
+      overlaps = [...new Set(overlaps)]
+    }
+    setTooltip({
+      fmtStart: fmtDate(seg.startDate),
+      fmtEnd:   fmtDate(seg.endDate),
+      status:   seg.status,
+      overlaps,
+      x: e.clientX,
+      y: e.clientY,
+    })
+  }
+
+  function handleBarMove(e) {
+    setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : prev)
+  }
+
+  function handleBarLeave() {
+    setTooltip(null)
   }
 
   function addPerson(emp) {
@@ -357,6 +460,7 @@ export default function ColleaguesPage() {
 
   return (
     <div style={{ paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <ColleaguesTooltip tooltip={tooltip} />
 
       {/* ── Toolbar ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -471,6 +575,9 @@ export default function ColleaguesPage() {
             people={people}
             barColor={barColor}
             onRemove={removePerson}
+            onBarEnter={handleBarEnter}
+            onBarMove={handleBarMove}
+            onBarLeave={handleBarLeave}
           />
         ) : (
           <MonthGrid
@@ -481,6 +588,9 @@ export default function ColleaguesPage() {
             onRemove={removePerson}
             onPrev={prevMonth}
             onNext={nextMonth}
+            onBarEnter={handleBarEnter}
+            onBarMove={handleBarMove}
+            onBarLeave={handleBarLeave}
           />
         )}
         {people.length === 0 && (
