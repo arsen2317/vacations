@@ -56,7 +56,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 8 }}>
 
         {/* Left panel */}
-        <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingRight: 32 }}>
+        <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', paddingRight: 32 }}>
 
           {/* Year chips */}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -64,8 +64,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             <Chip active={year === 2027} onClick={() => setYear(2027)}>2027 – планирование</Chip>
           </div>
 
-          {/* Balance */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Balance — 24px from chips, 16px gap between основной и доп */}
+          <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
                 Основной отпуск
@@ -86,10 +86,10 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             )}
           </div>
 
-          {/* Vacation list section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Vacation list — 16px below balance; h3 marginTop 36, marginBottom 12 */}
+          <div style={{ marginTop: 16 }}>
             <h3 style={{
-              margin: 0,
+              margin: '36px 0 12px',
               color: '#1D2023',
               fontFeatureSettings: "'liga' off, 'clig' off",
               fontFamily: "'MTSWide', sans-serif",
@@ -107,7 +107,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               subtitleLink={{ label: 'по ссылке', href: '#' }}
             />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {yearRequests.length === 0 ? (
                 <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", padding: '8px 0' }}>
                   Нет&nbsp;заявок за&nbsp;{year} год
