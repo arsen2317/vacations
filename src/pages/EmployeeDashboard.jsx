@@ -253,7 +253,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
                         {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
                       </div>
                       <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                        {seg.days} {pluralDays(seg.days)}
+                        {seg.days} {pluralDays(seg.days)} · Плановый отпуск
                       </div>
                     </div>
                   </>
@@ -267,7 +267,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
                         {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
                       </div>
                       <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                        {seg.days} {pluralDays(seg.days)}
+                        {seg.days} {pluralDays(seg.days)} · Плановый отпуск
                       </div>
                     </div>
                     <StatusBadge type={planStatus} />
