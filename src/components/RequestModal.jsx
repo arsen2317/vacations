@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import StatusBadge from './StatusBadge'
 import { Banner, CalendarRange, BTN_STYLE } from '../ds/index'
+import { useApp } from '../context/AppContext'
+import { countVacationDays } from '../utils/dateUtils'
 
 const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 
@@ -101,7 +103,9 @@ function SecondaryBtn({ label, onClick }) {
 }
 
 export default function RequestModal({ request, onClose, onReschedule, onAction }) {
+  const { setRequests } = useApp()
   const [showRescheduleCalendar, setShowRescheduleCalendar] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState(null)
 
   if (!request) return null
 
@@ -109,13 +113,14 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
   const isPlanned = request.type === 'planned'
   const rescheduleLeft = (request.rescheduleLimit ?? 2) - (request.rescheduleCount ?? 0)
   const startDaysLeft = daysUntil(request.startDate)
-  const tooCloseToReschedule = startDaysLeft <= 10
+  const isPast = startDaysLeft < 0
+  const tooCloseToReschedule = !isPast && startDaysLeft <= 10
 
   // Action logic
   const canWithdraw = !isPlanned && status === 'pending'
   const canCancel   = !isPlanned && status === 'approved'
-  const canReschedule = isPlanned && status === 'approved' && rescheduleLeft > 0 && !tooCloseToReschedule
-  const showRescheduleInfo = isPlanned && status === 'approved' && tooCloseToReschedule
+  const canReschedule = isPlanned && status === 'approved' && rescheduleLeft > 0 && !tooCloseToReschedule && !isPast
+  const showRescheduleInfo = isPlanned && status === 'approved' && tooCloseToReschedule && !isPast
 
   const title = isPlanned ? 'Заявка на плановый отпуск' : 'Заявка на внеплановый отпуск'
   const typeValue = request.planCategory || (isPlanned ? 'Плановый' : 'Основной оплачиваемый')
@@ -126,18 +131,27 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
 
   function handleClose() {
     setShowRescheduleCalendar(false)
+    setRescheduleError(null)
     onClose()
   }
 
   function handleWithdraw() {
+    setRequests(prev => prev.filter(r => r.id !== request.id))
     onAction?.('Заявка отозвана')
   }
 
   function handleCancelVacation() {
+    setRequests(prev => prev.filter(r => r.id !== request.id))
     onAction?.('Отпуск отменён')
   }
 
   function handleRescheduleApply(start, end) {
+    const selectedDays = countVacationDays(start, end)
+    if (selectedDays !== request.days) {
+      setRescheduleError(`Нужно выбрать ровно ${pluralDays(request.days)} — сейчас выбрано ${pluralDays(selectedDays)}`)
+      return
+    }
+    setRescheduleError(null)
     onReschedule?.(start, end)
     onAction?.('Заявка на перенос направлена на согласование')
   }
@@ -155,8 +169,13 @@ export default function RequestModal({ request, onClose, onReschedule, onAction 
               Перенести плановый отпуск
             </div>
             <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-              Количество дней нового периода должно совпадать с текущим
+              Количество дней нового периода должно совпадать с текущим — {pluralDays(request.days)}
             </div>
+            {rescheduleError && (
+              <div style={{ marginTop: 8, fontSize: 13, color: '#E30611', fontFamily: "'MTSCompact', sans-serif" }}>
+                {rescheduleError}
+              </div>
+            )}
           </div>
           <CalendarRange
             applyLabel="Отправить на согласование"

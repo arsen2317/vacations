@@ -113,6 +113,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               if (!date) return <div key={di} style={{ width: CELL, height: ROW_H }} />
 
               const d = dayOnly(date)
+              const isPast = d < today && !sameDay(d, today)
               const isNonWorking = isWeekendOrHoliday(d)
               const isToday = sameDay(d, today)
               const req = getRequestForDay(d, requests)
@@ -145,14 +146,15 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               let textColor = isToday ? '#0066FF' : isNonWorking ? '#F95721' : '#1D2023'
               if (isSelected) textColor = '#FAFAFA'
               else if (vacStyle && !inAnyHighlight) textColor = vacStyle.color
+              if (isPast) textColor = '#BCC3D0'
               const fontWeight = (isSelected || (vacStyle && !inAnyHighlight)) ? 500 : 400
 
               return (
                 <div
                   key={di}
-                  style={{ position: 'relative', width: CELL, height: ROW_H, cursor: 'pointer' }}
-                  onClick={() => onDayClick(d, req)}
-                  onMouseEnter={() => onDayEnter(d)}
+                  style={{ position: 'relative', width: CELL, height: ROW_H, cursor: isPast ? 'default' : 'pointer' }}
+                  onClick={() => { if (!isPast) onDayClick(d, req) }}
+                  onMouseEnter={() => { if (!isPast) onDayEnter(d) }}
                   onMouseLeave={onDayLeave}
                 >
                   {/* Selection range strip — bottom 1px left empty for gap */}
