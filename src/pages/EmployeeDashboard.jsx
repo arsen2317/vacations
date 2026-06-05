@@ -5,15 +5,12 @@ import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import { COLORS, Banner, Chip, StatusBadge, YearCalendar } from '../ds/index'
 
-const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
 function formatDateRange(startDate, endDate) {
   const s = new Date(startDate)
   const e = new Date(endDate)
-  if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
-    return `${s.getDate()}–${e.getDate()} ${MONTH_SHORT[s.getMonth()]}`
-  }
-  return `${s.getDate()} ${MONTH_SHORT[s.getMonth()]} — ${e.getDate()} ${MONTH_SHORT[e.getMonth()]}`
+  return `${s.getDate()} ${MONTH_GEN[s.getMonth()]} – ${e.getDate()} ${MONTH_GEN[e.getMonth()]}`
 }
 
 function pluralDays(n) {
@@ -106,13 +103,13 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
 
             <Banner
               type="info"
-              title="Для создания заявки выберите период в календаре справа"
+              title="Для создания заявки выберите период в&nbsp;календаре справа"
             />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {yearRequests.length === 0 ? (
                 <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", padding: '8px 0' }}>
-                  Нет заявок за {year} год
+                  Нет&nbsp;заявок за&nbsp;{year} год
                 </div>
               ) : (
                 yearRequests.map(req => (
@@ -120,25 +117,26 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
                     key={req.id}
                     onClick={() => setSelectedRequest(req)}
                     style={{
+                      paddingTop: 10, paddingBottom: 10, paddingLeft: 0, paddingRight: 0,
                       display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '12px 16px', background: '#F2F3F7',
-                      borderRadius: 16, border: 'none', cursor: 'pointer',
-                      textAlign: 'left', width: '100%',
+                      background: 'none', border: 'none', borderBottom: '1px solid #F2F3F7',
+                      cursor: 'pointer', textAlign: 'left', width: '100%',
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
                       <div style={{
-                        fontSize: 15, fontWeight: 500, color: '#1D2023',
-                        fontFamily: "'MTSCompact', sans-serif", lineHeight: '22px',
+                        alignSelf: 'stretch',
+                        color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif",
+                        fontWeight: 500, lineHeight: '24px', wordWrap: 'break-word',
                       }}>
                         {formatDateRange(req.startDate, req.endDate)}
                       </div>
                       <div style={{
-                        fontSize: 13, color: '#626C77',
-                        fontFamily: "'MTSCompact', sans-serif", lineHeight: '18px',
-                        marginTop: 2,
+                        alignSelf: 'stretch',
+                        color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
+                        fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word',
                       }}>
-                        {req.days} {pluralDays(req.days)} · {req.typeLabel}
+                        {req.typeLabel}
                       </div>
                     </div>
                     <StatusBadge type={req.status} />
