@@ -10,10 +10,10 @@ const MONTHS_GEN = ['января','февраля','марта','апреля',
 const WD = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 
 const STATUS_LABEL = {
-  approved:  'Согласован',
-  pending:   'На согласовании',
-  reviewing: 'Ознакомление',
-  draft:     'Черновик',
+  approved:  'согласован',
+  pending:   'на согласовании',
+  reviewing: 'ознакомление',
+  draft:     'черновик',
 }
 
 const BAR = {
