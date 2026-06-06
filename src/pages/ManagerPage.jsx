@@ -675,7 +675,6 @@ export default function ManagerPage() {
             options={[
               { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
               { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
-              { id: String(CAMPAIGN.year + 1), name: String(CAMPAIGN.year + 1) },
             ]}
             onChange={v => setGridYear(Number(v))}
           />
@@ -685,7 +684,7 @@ export default function ManagerPage() {
         {gridYear === CAMPAIGN.year && (
           <button
             onClick={() => downloadCSV(incomingRequests)}
-            style={{ height: 44, paddingLeft: 20, paddingRight: 20, borderRadius: 16, border: 'none', background: '#F2F3F7', color: '#1D2023', fontSize: 12, fontFamily: "'MTSWide', sans-serif", fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', cursor: 'pointer', flexShrink: 0 }}
+            style={{ height: 44, paddingLeft: 20, paddingRight: 20, borderRadius: 16, border: 'none', background: '#F2F3F7', color: '#1D2023', fontSize: 12, fontFamily: "'MTSWide', sans-serif", fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', cursor: 'pointer', flexShrink: 0, marginLeft: 'auto' }}
           >
             Скачать отчёт
           </button>
