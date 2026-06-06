@@ -137,7 +137,7 @@ function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
           <div style={{ paddingLeft: 24, paddingRight: 24, ...SECTION_LABEL }}>избранные</div>
           <div style={{ paddingTop: 8, paddingLeft: 24, paddingRight: 16, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {FAVORITES.map(({ label, icon }) => (
-              <div key={label} onClick={() => { if (label === 'работа и отдых') { onNavigate?.('work'); onClose?.() } }} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <div key={label} onClick={() => { if (label === 'работа и отдых') { onNavigate?.('work') } }} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 {icon}
                 <span style={NAV_ITEM_TEXT}>{label}</span>
               </div>
