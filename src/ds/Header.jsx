@@ -191,7 +191,7 @@ function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
   );
 }
 
-export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose }) {
+export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, activeTab }) {
   const isDocked = useIsDocked();
   const sidebarShown = sidebarOpen;
 
@@ -223,11 +223,17 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
                 <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>главная</span>
                 <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
-                <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
-              </div>
-              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>
+              {activeTab === 'work' ? (
+                <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                    <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
+                    <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
+                  </div>
+                  <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>
+                </>
+              )}
             </div>
 
             <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}>

@@ -8,6 +8,7 @@ import ColleaguesPage from './pages/ColleaguesPage'
 import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
 import { COLORS, Header, useIsDocked } from './ds/index'
+import WorkAndRestPage from './pages/WorkAndRestPage'
 
 function AppInner() {
   const { role, setRole, activeTab, setActiveTab } = useApp()
@@ -39,31 +40,37 @@ function AppInner() {
         sidebarOpen={sidebarOpen}
         onSidebarToggle={() => setSidebarOpen(v => !v)}
         onSidebarClose={() => setSidebarOpen(false)}
+        activeTab={activeTab}
       />
 
-      <div style={{ background: '#fff' }}>
-        <div style={sidebarShown
-          ? { marginLeft: 280, padding: '0 88px' }
-          : { maxWidth: 1440, margin: '0 auto', padding: '0 88px' }
-        }>
-          <h1 style={{
-            margin: '36px 0 0',
-            fontSize: 32,
-            fontWeight: 500,
-            color: COLORS.text,
-            lineHeight: '36px',
-            fontFamily: "'MTSWide', sans-serif",
-          }}>
-            Отпуск
-          </h1>
-          <div style={{ paddingTop: 12 }}>
-            <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {activeTab !== 'work' && (
+        <div style={{ background: '#fff' }}>
+          <div style={sidebarShown
+            ? { marginLeft: 280, padding: '0 88px' }
+            : { maxWidth: 1440, margin: '0 auto', padding: '0 88px' }
+          }>
+            <h1 style={{
+              margin: '36px 0 0',
+              fontSize: 32,
+              fontWeight: 500,
+              color: COLORS.text,
+              lineHeight: '36px',
+              fontFamily: "'MTSWide', sans-serif",
+            }}>
+              Отпуск
+            </h1>
+            <div style={{ paddingTop: 12 }}>
+              <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div style={{ background: '#fff' }}>
         <div style={contentStyle}>
+        {activeTab === 'work' && (
+          <WorkAndRestPage onGoTo={setActiveTab} />
+        )}
         {activeTab === 'home' && (
           <EmployeeDashboard
             onGoToPlanning={() => setActiveTab('planning')}

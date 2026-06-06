@@ -8,7 +8,7 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [role, setRole] = useState(CURRENT_USER.role)
-  const [activeTab, setActiveTab] = useState('home')
+  const [activeTab, setActiveTab] = useState('work')
   const [campaign, setCampaign] = useState(CAMPAIGN)
   const [segments, setSegments] = useState(INITIAL_SEGMENTS)
   const [draftSaved, setDraftSaved] = useState(false)
