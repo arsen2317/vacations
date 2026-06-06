@@ -634,44 +634,6 @@ export default function ManagerPage() {
   return (
     <div style={{ paddingTop: 32, paddingBottom: 48, fontFamily: "'MTSCompact', sans-serif" }}>
 
-      {/* ── Campaign stats ── */}
-      <div style={{ paddingBottom: 20, display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-        <div style={{ paddingBottom: 12, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: 12 }}>
-          <div style={{ flex: '1 1 0', color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            Статистика по кампании {campaign.year}
-          </div>
-          <button
-            onClick={() => downloadCSV(incomingRequests)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1v9M8 10l-3-3M8 10l3-3M2 12h12" stroke="#0070E5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-              Скачать отчет
-            </span>
-          </button>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-          {[
-            { label: 'Подано заявок',   value: totalCount },
-            { label: 'На согласовании', value: pendingCount },
-            { label: 'Согласованы',     value: approvedCount },
-            { label: 'На ознакомлении', value: reviewingCount },
-          ].map(({ label, value }) => (
-            <div key={label} style={{ flex: '1 1 0', height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-              <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>{label}</div>
-              <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '28px' }}>{value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Section heading ── */}
-      <h2 style={{ margin: '0 0 16px', fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
-        Входящие заявки
-      </h2>
-
       {/* ── Toolbar ── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -706,19 +668,27 @@ export default function ManagerPage() {
           />
         </div>
 
-        {/* Year selector for grid */}
-        {view === 'chart' && (
-          <div style={{ width: 120 }}>
-            <SelectField
-              value={String(gridYear)}
-              options={[
-                { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
-                { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
-                { id: String(CAMPAIGN.year + 1), name: String(CAMPAIGN.year + 1) },
-              ]}
-              onChange={v => setGridYear(Number(v))}
-            />
-          </div>
+        {/* Year selector */}
+        <div style={{ width: 120 }}>
+          <SelectField
+            value={String(gridYear)}
+            options={[
+              { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
+              { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
+              { id: String(CAMPAIGN.year + 1), name: String(CAMPAIGN.year + 1) },
+            ]}
+            onChange={v => setGridYear(Number(v))}
+          />
+        </div>
+
+        {/* Download report — only for campaign year */}
+        {gridYear === CAMPAIGN.year && (
+          <button
+            onClick={() => downloadCSV(incomingRequests)}
+            style={{ height: 44, paddingLeft: 20, paddingRight: 20, borderRadius: 16, border: 'none', background: '#F2F3F7', color: '#1D2023', fontSize: 12, fontFamily: "'MTSWide', sans-serif", fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', cursor: 'pointer', flexShrink: 0 }}
+          >
+            Скачать отчёт
+          </button>
         )}
       </div>
 
