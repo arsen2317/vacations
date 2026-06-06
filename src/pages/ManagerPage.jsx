@@ -442,27 +442,41 @@ function ActionsDropdown({ request, onApprove, onReject }) {
           onClick={e => e.stopPropagation()}
           style={{
             position: 'absolute', top: 'calc(100% + 4px)', right: 0,
-            background: '#fff', borderRadius: 12,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
-            border: '1px solid #E8EDF2',
-            overflow: 'hidden', zIndex: 200, minWidth: 160,
+            width: 200, padding: 6, background: 'white',
+            boxShadow: '0px 12px 20px rgba(0,0,0,0.14), 0px 4px 24px rgba(0,0,0,0.12)',
+            borderRadius: 16, display: 'inline-flex', flexDirection: 'column',
+            justifyContent: 'flex-start', alignItems: 'flex-start', gap: 8, zIndex: 200,
           }}
         >
-          <div
-            onClick={() => { onApprove(request.id); setOpen(false) }}
-            style={{ padding: '14px 16px', fontSize: 17, lineHeight: '24px', color: '#007502', cursor: 'pointer', fontFamily: "'MTSCompact', sans-serif" }}
-            onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
-            onMouseLeave={e => e.currentTarget.style.background = ''}
-          >
-            Согласовать
-          </div>
-          <div
-            onClick={() => { onReject(request); setOpen(false) }}
-            style={{ padding: '14px 16px', fontSize: 17, lineHeight: '24px', color: '#AD3400', cursor: 'pointer', fontFamily: "'MTSCompact', sans-serif" }}
-            onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
-            onMouseLeave={e => e.currentTarget.style.background = ''}
-          >
-            Отклонить
+          <div style={{ alignSelf: 'stretch', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', display: 'flex' }}>
+            <div
+              onClick={() => { onApprove(request.id); setOpen(false) }}
+              style={{
+                alignSelf: 'stretch', paddingLeft: 6, paddingRight: 6, paddingTop: 10, paddingBottom: 10,
+                background: 'white', borderRadius: 12, justifyContent: 'flex-start', alignItems: 'center',
+                gap: 8, display: 'inline-flex', cursor: 'pointer',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
+              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+            >
+              <div style={{ flex: '1 1 0', color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
+                Согласовать
+              </div>
+            </div>
+            <div
+              onClick={() => { onReject(request); setOpen(false) }}
+              style={{
+                alignSelf: 'stretch', paddingLeft: 6, paddingRight: 6, paddingTop: 10, paddingBottom: 10,
+                background: 'white', borderRadius: 12, justifyContent: 'flex-start', alignItems: 'center',
+                gap: 8, display: 'inline-flex', cursor: 'pointer',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
+              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+            >
+              <div style={{ flex: '1 1 0', color: '#D8400C', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
+                Отклонить
+              </div>
+            </div>
           </div>
         </div>
       )}
