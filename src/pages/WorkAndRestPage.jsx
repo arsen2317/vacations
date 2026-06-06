@@ -78,31 +78,34 @@ function VacationCard({ onGoTo }) {
     <div style={cardStyle}>
       <CardHeader title="Отпуск" linkText="Всё об отпуске" />
       <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <InfoBlock
-          label="Доступно дней"
-          value={`${balance.main + balance.extra} дней`}
-          secondary={balance.extra > 0 ? `из них ${balance.extra} дня доп. отпуска` : null}
-        />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={labelStyle}>Ближайший отпуск</span>
-          {nextVacation ? (
-            <>
-              <span style={valueStyle}>{formatDate(nextVacation.startDate)} – {formatDate(nextVacation.endDate)}</span>
-              <span style={secondaryValueStyle}>{nextVacation.days} {nextVacation.days === 1 ? 'день' : nextVacation.days < 5 ? 'дня' : 'дней'}</span>
-            </>
-          ) : (
-            <span style={grayValueStyle}>Нет запланированных отпусков</span>
-          )}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            <InfoBlock
+              label="Доступно дней"
+              value={`${balance.main + balance.extra} дней`}
+              secondary={balance.extra > 0 ? `из них ${balance.extra} дня доп. отпуска` : null}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={labelStyle}>Ближайший отпуск</span>
+              {nextVacation ? (
+                <>
+                  <span style={valueStyle}>{formatDate(nextVacation.startDate)} – {formatDate(nextVacation.endDate)}</span>
+                  <span style={secondaryValueStyle}>{nextVacation.days} {nextVacation.days === 1 ? 'день' : nextVacation.days < 5 ? 'дня' : 'дней'}</span>
+                </>
+              ) : (
+                <span style={grayValueStyle}>Нет запланированных отпусков</span>
+              )}
+            </div>
+          </div>
+          <img src="/vacation.png" alt="" style={{ width: 200, height: 'auto', flexShrink: 0 }} />
         </div>
-        <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', paddingTop: 4 }}>
+        <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
           Чтобы оформить отпуск вне графика, создайте заявку на внеплановый отпуск. Перенести запланированный отпуск можно в разделе Планы на отпуск
         </span>
-        <div style={{ paddingTop: 0 }}>
-          <WarningBanner
-            title="Подтвердите свои планы на отпуск на следующий год"
-            subtitle="Это нужно сделать до 25 декабря 2026"
-          />
-        </div>
+        <WarningBanner
+          title="Подтвердите свои планы на отпуск на следующий год"
+          subtitle="Это нужно сделать до 25 декабря 2026"
+        />
       </div>
       <CardButtons
         primaryLabel="ЗАЯВКИ НА ОТПУСК"
@@ -119,8 +122,13 @@ function WorkScheduleCard() {
     <div style={cardStyle}>
       <CardHeader title="График работы" linkText="Подробнее" />
       <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <InfoBlock label="Текущий график" value="08:30 – 17:30" />
-        <InfoBlock label="Действует до" value="30 мая 2026" />
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            <InfoBlock label="Текущий график" value="08:30 – 17:30" />
+            <InfoBlock label="Действует до" value="30 мая 2026" />
+          </div>
+          <img src="/schedule.png" alt="" style={{ width: 200, height: 'auto', flexShrink: 0 }} />
+        </div>
         <WarningBanner
           title="Текущий график скоро закончится и сменится на стандартный"
           subtitle="Создайте новую заявку, если хотите выбрать удобный график работы"
@@ -157,8 +165,13 @@ function WorkFormatCard() {
     <div style={cardStyle}>
       <CardHeader title="Формат работы" linkText="Подробнее" />
       <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <InfoBlock label="Формат работы" value="гибрид" />
-        <InfoBlock label="Время работы в офисе" value="не менее 30%" />
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            <InfoBlock label="Формат работы" value="гибрид" />
+            <InfoBlock label="Время работы в офисе" value="не менее 30%" />
+          </div>
+          <img src="/remote-work.png" alt="" style={{ width: 200, height: 'auto', flexShrink: 0 }} />
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSText', sans-serif", fontWeight: 500, lineHeight: '20px', textTransform: 'uppercase', letterSpacing: 0.5 }}>МОЙ ФОРМАТ РАБОТЫ ДО 30 СЕНТЯБРЯ 2026</span>
@@ -197,11 +210,14 @@ function BusinessTripsCard() {
     <div style={cardStyle}>
       <CardHeader title="Командировки" linkText="Подробнее" />
       <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 12, paddingBottom: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={secondaryValueStyle}>По России, зарубежные, со сложным маршрутом</span>
-          <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            Если до начала командировки осталось менее 5 рабочих дней, потребуется дополнительное согласование с председателем правления
-          </span>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={secondaryValueStyle}>По России, зарубежные, со сложным маршрутом</span>
+            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              Если до начала командировки осталось менее 5 рабочих дней, потребуется дополнительное согласование с председателем правления
+            </span>
+          </div>
+          <img src="/business-trip.png" alt="" style={{ width: 200, height: 'auto', flexShrink: 0 }} />
         </div>
         <WarningBanner
           title="Заполните отчёт до 21 июня 2026"

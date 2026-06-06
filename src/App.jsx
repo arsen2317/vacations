@@ -40,6 +40,7 @@ function AppInner() {
         sidebarOpen={sidebarOpen}
         onSidebarToggle={() => setSidebarOpen(v => !v)}
         onSidebarClose={() => setSidebarOpen(false)}
+        onNavigate={setActiveTab}
         activeTab={activeTab}
       />
 

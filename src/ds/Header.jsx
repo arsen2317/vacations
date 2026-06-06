@@ -83,7 +83,7 @@ const ROLES = [
   { value: 'hr_admin', label: 'HR-админ' },
 ];
 
-function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
+function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
   return (
     <>
       {!isDocked && (
@@ -137,7 +137,7 @@ function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
           <div style={{ paddingLeft: 24, paddingRight: 24, ...SECTION_LABEL }}>избранные</div>
           <div style={{ paddingTop: 8, paddingLeft: 24, paddingRight: 16, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {FAVORITES.map(({ label, icon }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <div key={label} onClick={() => { if (label === 'работа и отдых') { onNavigate?.('work'); onClose?.() } }} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 {icon}
                 <span style={NAV_ITEM_TEXT}>{label}</span>
               </div>
@@ -191,13 +191,13 @@ function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
   );
 }
 
-export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, activeTab }) {
+export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, onNavigate, activeTab }) {
   const isDocked = useIsDocked();
   const sidebarShown = sidebarOpen;
 
   return (
     <>
-      <Sidebar open={sidebarShown} isDocked={isDocked} onClose={onSidebarClose} role={role} onRoleChange={onRoleChange} />
+      <Sidebar open={sidebarShown} isDocked={isDocked} onClose={onSidebarClose} onNavigate={onNavigate} role={role} onRoleChange={onRoleChange} />
 
       <div style={{ position: 'sticky', top: 0, zIndex: 100, width: '100%' }}>
         <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
