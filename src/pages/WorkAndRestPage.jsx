@@ -113,7 +113,7 @@ function WarningBanner({ title, subtitle }) {
 function CardButtons({ primaryLabel, secondaryLabel, onPrimary, onSecondary }) {
   const btnBase = { height: 44, borderRadius: 16, cursor: 'pointer', border: 'none', fontFamily: "'MTSWide', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', flex: '1 1 0' }
   return (
-    <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 20, paddingBottom: 12, display: 'flex', gap: 10 }}>
+    <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 20, paddingBottom: 12, display: 'flex', gap: 10, width: '100%', boxSizing: 'border-box' }}>
       <button onClick={onPrimary} style={{ ...btnBase, background: '#0066FF', color: '#fff' }}>{primaryLabel}</button>
       <button onClick={onSecondary} style={{ ...btnBase, background: '#F2F3F7', color: '#1D2023' }}>{secondaryLabel}</button>
     </div>
@@ -240,7 +240,7 @@ function WorkFormatCard() {
             {DAY_PILLS.map(({ day, type }) => {
               const s = PILL_STYLES[type]
               return (
-                <div key={day} style={{ width: 72, height: 104, borderRadius: 12, background: s.bg, paddingTop: 8, paddingBottom: 8, paddingLeft: 4, paddingRight: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                <div key={day} style={{ flex: 1, height: 104, borderRadius: 12, background: s.bg, paddingTop: 8, paddingBottom: 8, paddingLeft: 4, paddingRight: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', boxSizing: 'border-box' }}>
                   <span style={{ color: s.text, fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>{day}</span>
                   {PILL_ICONS[type]}
                   <span style={{ color: s.text, fontSize: 12, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '16px' }}>{s.label}</span>
@@ -268,7 +268,7 @@ function BusinessTripsCard() {
   return (
     <div style={cardStyle}>
       <CardHeader title="Командировки" linkText="Подробнее" />
-      <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 12, paddingBottom: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 32 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={secondaryValueStyle}>По России, зарубежные, со сложным маршрутом</span>
