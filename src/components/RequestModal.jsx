@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useApp } from '../context/AppContext'
+import { countVacationDays } from '../utils/dateUtils'
 import StatusBadge from './StatusBadge'
 import { CalendarRange, BTN_STYLE } from '../ds/index'
 
@@ -30,295 +32,299 @@ function pluralDays(n) {
   return `${n} дней`
 }
 
-function InfoPair({ left, right }) {
+// "Дмитрий Соколов" → "Соколов Д."
+function formatNameShort(name) {
+  if (!name) return '—'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0]
+  const surname = parts[parts.length - 1]
+  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join('')
+  return `${surname} ${initials}`
+}
+
+function InfoCell({ label, value }) {
+  if (value == null) return null
   return (
-    <div style={{ alignSelf: 'stretch', display: 'flex', gap: 16 }}>
-      {[left, right].map((item, i) => (
-        <div key={i} style={{ flex: '1 1 0', paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center' }}>
-          <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              {item?.label ?? ''}
-            </div>
-            <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-              {item?.value ?? '—'}
-            </div>
-          </div>
-        </div>
-      ))}
+    <div style={{ paddingTop: 10, paddingBottom: 10 }}>
+      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{label}</div>
+      <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{value}</div>
     </div>
   )
 }
 
 function SectionHeader({ label }) {
   return (
-    <div style={{ alignSelf: 'stretch', paddingTop: 20, paddingBottom: 8, paddingRight: 20, display: 'flex' }}>
-      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTS Text', sans-serif", fontWeight: 500, textTransform: 'uppercase', lineHeight: '20px' }}>
+    <div style={{ paddingTop: 20, paddingBottom: 8 }}>
+      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, textTransform: 'uppercase', lineHeight: '20px' }}>
         {label}
       </div>
     </div>
   )
 }
 
-function PersonRow({ name, role }) {
+function PersonRow({ name, role, avatar }) {
   if (!name) return null
   const initials = name.trim().split(' ').slice(0, 2).map(w => w[0]).join('')
   return (
-    <div style={{ alignSelf: 'stretch', paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <div style={{ width: 52, height: 52, borderRadius: 16, overflow: 'hidden', background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>
-          {initials}
-        </div>
+        {avatar
+          ? <img src={avatar} alt="" style={{ width: 52, height: 52, borderRadius: 16, objectFit: 'cover', display: 'block' }} />
+          : <div style={{ width: 52, height: 52, borderRadius: 16, background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>
+              {initials}
+            </div>
+        }
         <div style={{ position: 'absolute', inset: 0, borderRadius: 16, border: '1px rgba(188,195,208,0.50) solid', pointerEvents: 'none' }} />
       </div>
-      <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-          {name}
-        </div>
-        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          {role}
-        </div>
+      <div style={{ flex: '1 1 0', overflow: 'hidden' }}>
+        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{formatNameShort(name)}</div>
+        {role && <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{role}</div>}
       </div>
     </div>
   )
 }
 
-function NegativeBtn({ label, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: '1 1 0', height: 44, padding: 10,
-        background: '#F2F3F7', border: 'none', borderRadius: 16,
-        cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
-        <div style={{ textAlign: 'center', color: '#D8400C', fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700, textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>
-          {label}
-        </div>
-      </div>
-    </button>
-  )
-}
-
-function SecondaryBtn({ label, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        flex: '1 1 0', height: 44, padding: 10,
-        background: '#F2F3F7', border: 'none', borderRadius: 16,
-        cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
-        <div style={{ textAlign: 'center', color: '#1D2023', fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700, textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>
-          {label}
-        </div>
-      </div>
-    </button>
-  )
-}
-
-export default function RequestModal({ request, onClose, onReschedule }) {
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [showRescheduleCalendar, setShowRescheduleCalendar] = useState(false)
+export default function RequestModal({ request, onClose, onAction }) {
+  const { setRequests } = useApp()
+  const [showReschedule, setShowReschedule] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState(null)
 
   if (!request) return null
 
+  const isReschedule = request.type === 'reschedule'
   const status = request.status
-  const canReschedule =
-    request.type === 'planned' &&
-    (status === 'approved' || status === 'pending') &&
-    (request.rescheduleCount ?? 0) < (request.rescheduleLimit ?? 2)
-  const canCancel = status === 'approved' || status === 'pending'
+  const isPlanned = request.type === 'planned' || request.isPlanned
 
-  function handleClose() {
-    setShowCancelConfirm(false)
-    setShowRescheduleCalendar(false)
-    onClose()
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const startDate = request.startDate instanceof Date ? request.startDate : new Date(request.startDate)
+  const startDaysLeft = Math.ceil((startDate - today) / 86400000)
+  const isPast = startDaysLeft < 0
+  const tooCloseToReschedule = !isPast && startDaysLeft <= 10
+  const rescheduleLeft = (request.rescheduleLimit ?? 2) - (request.rescheduleCount ?? 0)
+
+  const canWithdraw   = !isPlanned && !isReschedule && status === 'pending'
+  const canCancel     = !isPlanned && !isReschedule && status === 'approved'
+  const canReschedule = isPlanned && status === 'approved' && rescheduleLeft > 0 && !tooCloseToReschedule && !isPast
+  const canWithdrawReschedule = isReschedule && status === 'rescheduling'
+  const showRescheduleInfo = isPlanned && status === 'approved' && tooCloseToReschedule && !isPast
+  const hasActions = canWithdraw || canCancel || canReschedule || canWithdrawReschedule
+
+  function handleWithdraw() {
+    setRequests(prev => prev.filter(r => r.id !== request.id))
+    onAction?.('Заявка отозвана')
+  }
+
+  function handleCancelVacation() {
+    setRequests(prev => prev.filter(r => r.id !== request.id))
+    onAction?.('Отпуск отменён')
+  }
+
+  function handleWithdrawReschedule() {
+    setRequests(prev => {
+      const without = prev.filter(r => r.id !== request.id)
+      return [...without, request.originalRequest]
+    })
+    onAction?.('Заявка на перенос отозвана')
   }
 
   function handleRescheduleApply(start, end) {
-    onReschedule?.(start, end)
-    onClose()
+    const newDays = countVacationDays(start, end)
+    if (newDays !== request.days) {
+      setRescheduleError(`Количество дней нового периода должно совпадать с текущим — ${pluralDays(request.days)}`)
+      return
+    }
+    setRescheduleError(null)
+    setShowReschedule(false)
+
+    const rescheduleRequest = {
+      id: Date.now(),
+      type: 'reschedule',
+      typeLabel: 'Перенос планового отпуска',
+      status: 'rescheduling',
+      startDate: start,
+      endDate: end,
+      days: newDays,
+      originalRequest: { ...request },
+      approver: request.approver,
+      rescheduleCount: (request.rescheduleCount ?? 0) + 1,
+      rescheduleLimit: request.rescheduleLimit ?? 2,
+    }
+
+    setRequests(prev => [...prev.filter(r => r.id !== request.id), rescheduleRequest])
+    onAction?.('Заявка на перенос направлена')
   }
 
-  const rescheduleLeft = (request.rescheduleLimit ?? 2) - (request.rescheduleCount ?? 0)
-  const typeValue = request.planCategory || (request.type === 'planned' ? 'Плановый' : 'Внеплановый')
-
-  // ── Reschedule calendar view ──
-  if (showRescheduleCalendar) {
+  // Reschedule calendar view
+  if (showReschedule) {
     return (
       <div
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        onClick={() => setShowRescheduleCalendar(false)}
+        onClick={() => setShowReschedule(false)}
       >
         <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 24, padding: '24px 32px', width: 760, boxShadow: '0px 12px 20px rgba(0,0,0,0.14)' }}>
-            <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px', marginBottom: 4 }}>
+          <div style={{ background: '#fff', borderRadius: 24, padding: '24px 32px', width: 760 }}>
+            <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", marginBottom: 4 }}>
               Перенести плановый отпуск
             </div>
             <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-              Количество дней нового периода отпуска должно совпадать с текущим
+              Количество дней нового периода должно совпадать с текущим — {pluralDays(request.days)}
             </div>
+            {rescheduleError && (
+              <div style={{ marginTop: 8, fontSize: 13, color: '#E30611', fontFamily: "'MTSCompact', sans-serif" }}>
+                {rescheduleError}
+              </div>
+            )}
           </div>
           <CalendarRange
             applyLabel="Отправить на согласование"
-            initialViewMonth={request.startDate instanceof Date ? new Date(request.startDate.getFullYear(), request.startDate.getMonth(), 1) : undefined}
             onApply={handleRescheduleApply}
-            onClose={() => setShowRescheduleCalendar(false)}
+            onClose={() => setShowReschedule(false)}
           />
         </div>
       </div>
     )
   }
 
-  // ── Cancel confirm view ──
-  if (showCancelConfirm) {
-    return (
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        onClick={() => setShowCancelConfirm(false)}
-      >
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{ background: '#fff', borderRadius: 32, padding: 32, width: 440, boxShadow: '0px 8px 16px rgba(0,0,0,0.08), 0px 4px 24px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', gap: 20 }}
-        >
-          <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTS Wide', sans-serif", lineHeight: '24px' }}>
-            Отозвать заявку?
-          </div>
-          <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            Заявка будет отозвана. Это действие нельзя отменить.
-          </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <SecondaryBtn label="Назад" onClick={() => setShowCancelConfirm(false)} />
-            <button
-              onClick={handleClose}
-              style={{ flex: 2, height: 44, padding: 10, background: '#F95721', border: 'none', borderRadius: 16, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-            >
-              <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4 }}>
-                <div style={{ color: '#fff', fontSize: 12, fontFamily: "'MTS Wide', sans-serif", fontWeight: 700, textTransform: 'uppercase', lineHeight: '16px', letterSpacing: 0.60 }}>
-                  Подтвердить
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const approverName = typeof request.approver === 'string' ? request.approver : request.approver?.name
+  const approverRole = request.approver?.role ?? 'Руководитель'
+  const extraApproverName = typeof request.extraApprover === 'string' ? request.extraApprover : request.extraApprover?.name
 
-  // ── Main modal ──
+  const modalTitle = isReschedule
+    ? 'Заявка на перенос планового отпуска'
+    : isPlanned ? 'Плановый отпуск' : 'Внеплановый отпуск'
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={handleClose}
+      onClick={onClose}
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{
-          width: 480,
-          background: '#fff',
-          boxShadow: '0px 8px 16px rgba(0,0,0,0.08), 0px 4px 24px rgba(0,0,0,0.12)',
-          borderRadius: 32,
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-        }}
+        style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}
       >
         {/* Header */}
-        <div style={{ alignSelf: 'stretch', padding: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ flex: '1 1 0', paddingTop: 4, paddingBottom: 4, display: 'flex' }}>
-              <div style={{ flex: '1 1 0', color: '#1D2023', fontSize: 20, fontFamily: "'MTS Wide', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                {request.typeFullName || request.typeLabel}
-              </div>
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
+              {modalTitle}
             </div>
             <button
-              onClick={handleClose}
-              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0 }}
+              onClick={onClose}
+              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M1 1L11 11M11 1L1 11" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
+              </svg>
             </button>
           </div>
-          <div style={{ paddingRight: 40 }}>
-            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              № {request.id}
-            </div>
+          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
+            № {request.id}
           </div>
         </div>
 
-        {/* Content */}
-        <div style={{ alignSelf: 'stretch', paddingLeft: 20, paddingRight: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Status badge */}
-          <div>
+        {/* Body */}
+        <div className="modal-scroll" style={{ paddingLeft: 20, paddingRight: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+
+          <div style={{ marginBottom: 12 }}>
             <StatusBadge status={status} />
           </div>
 
-          {/* Info pairs */}
-          <div style={{ alignSelf: 'stretch', display: 'flex', flexDirection: 'column' }}>
-            <InfoPair
-              left={{ label: 'Тип отпуска', value: typeValue }}
-              right={{ label: 'Период', value: fmtRange(request.startDate, request.endDate) }}
-            />
-            <InfoPair
-              left={{ label: 'Количество дней отпуска', value: pluralDays(request.days) }}
-              right={{ label: 'Доступно переносов', value: request.type === 'planned' ? `${rescheduleLeft} из ${request.rescheduleLimit ?? 2}` : '–' }}
-            />
+          {isReschedule ? (
+            <>
+              <InfoCell label="Тип отпуска" value="Плановый" />
+              <InfoCell
+                label="Старый период"
+                value={fmtRange(request.originalRequest.startDate, request.originalRequest.endDate)}
+              />
+              <InfoCell label="Новый период" value={fmtRange(request.startDate, request.endDate)} />
+              <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+            </>
+          ) : (
+            <>
+              <InfoCell label="Тип отпуска" value={request.typeLabel || 'Ежегодный основной оплачиваемый'} />
+              <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
+              <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+              {isPlanned && status === 'approved' && (
+                <InfoCell label="Доступно переносов" value={`${rescheduleLeft} из ${request.rescheduleLimit ?? 2}`} />
+              )}
+            </>
+          )}
 
-            {/* Rejection comment */}
-            {status === 'rejected' && request.rejectionComment && (
-              <div style={{ paddingTop: 8, paddingBottom: 8 }}>
-                <div style={{ padding: '12px 16px', background: '#FFF3F0', borderRadius: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: '#AD3400', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: "'MTSCompact', sans-serif" }}>
-                    Причина отклонения
-                  </div>
-                  <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px', fontFamily: "'MTSCompact', sans-serif" }}>
-                    {request.rejectionComment}
-                  </div>
+          {/* Rejection comment */}
+          {status === 'rejected' && request.rejectionComment && (
+            <div style={{ paddingTop: 8, paddingBottom: 8 }}>
+              <div style={{ padding: '12px 16px', background: '#FFF3F0', borderRadius: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: '#AD3400', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: "'MTSCompact', sans-serif" }}>
+                  Причина отклонения
+                </div>
+                <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px', fontFamily: "'MTSCompact', sans-serif" }}>
+                  {request.rejectionComment}
                 </div>
               </div>
-            )}
-
-            {/* Approver */}
-            {request.approver && (
-              <>
-                <SectionHeader label="Согласующий" />
-                <PersonRow name={request.approver.name} role={request.approver.role} />
-              </>
-            )}
-
-            {/* Extra approver */}
-            {request.extraApprover && (
-              <>
-                <SectionHeader label="Дополнительный согласующий" />
-                <PersonRow name={request.extraApprover.name} role={request.extraApprover.role} />
-              </>
-            )}
-          </div>
-
-          {/* Bottom buttons */}
-          {(canCancel || canReschedule) && (
-            <div style={{ paddingTop: 12, paddingBottom: 20, display: 'flex', gap: 10 }}>
-              {canReschedule && (
-                <SecondaryBtn label="Перенести отпуск" onClick={() => setShowRescheduleCalendar(true)} />
-              )}
-              {canCancel && (
-                <NegativeBtn label="Отозвать заявку" onClick={() => setShowCancelConfirm(true)} />
-              )}
             </div>
           )}
 
-          {/* No actions state */}
-          {!canCancel && !canReschedule && (
-            <div style={{ paddingBottom: 20 }} />
+          {/* Reschedule info banner (≤10 days) */}
+          {showRescheduleInfo && (
+            <div style={{ padding: '12px 16px', background: '#F2F3F7', borderRadius: 16, marginTop: 8, fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
+              До начала отпуска осталось менее 10 дней — перенос недоступен
+            </div>
           )}
+
+          {/* Approver */}
+          {approverName && (
+            <>
+              <SectionHeader label="Согласующий" />
+              <PersonRow name={approverName} role={approverRole} />
+            </>
+          )}
+
+          {/* Extra approver */}
+          {extraApproverName && (
+            <>
+              <SectionHeader label="Дополнительный согласующий" />
+              <PersonRow name={extraApproverName} />
+            </>
+          )}
+
+          {/* Actions */}
+          {hasActions && (
+            <div style={{ paddingTop: 12, paddingBottom: 20, display: 'flex', gap: 10 }}>
+              {canReschedule && (
+                <button
+                  onClick={() => setShowReschedule(true)}
+                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#1D2023' }}
+                >
+                  ПЕРЕНЕСТИ ОТПУСК
+                </button>
+              )}
+              {canWithdraw && (
+                <button
+                  onClick={handleWithdraw}
+                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
+                >
+                  ОТОЗВАТЬ ЗАЯВКУ
+                </button>
+              )}
+              {canCancel && (
+                <button
+                  onClick={handleCancelVacation}
+                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
+                >
+                  ОТМЕНИТЬ ОТПУСК
+                </button>
+              )}
+              {canWithdrawReschedule && (
+                <button
+                  onClick={handleWithdrawReschedule}
+                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
+                >
+                  ОТОЗВАТЬ ЗАЯВКУ
+                </button>
+              )}
+            </div>
+          )}
+          {!hasActions && <div style={{ paddingBottom: 20 }} />}
         </div>
       </div>
     </div>

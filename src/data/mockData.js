@@ -22,87 +22,73 @@ export const UPCOMING_VACATION = {
 }
 
 export const MY_REQUESTS = [
+  // Плановые — 28 дней суммарно, согласованы
   {
-    id: 123456,
+    id: 101,
     type: 'planned',
-    typeLabel: 'Плановый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Плановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
+    startDate: new Date(2026, 2, 9),   // 9 марта
+    endDate:   new Date(2026, 2, 22),  // 22 марта
     days: 14,
+    status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
+  },
+  {
+    id: 102,
+    type: 'planned',
+    typeLabel: 'Ежегодный основной оплачиваемый',
+    planCategory: 'Плановый',
+    startDate: new Date(2026, 7, 3),   // 3 августа
+    endDate:   new Date(2026, 7, 12),  // 12 августа
+    days: 10,
+    status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
+  },
+  {
+    id: 103,
+    type: 'planned',
+    typeLabel: 'Ежегодный основной оплачиваемый',
+    planCategory: 'Плановый',
+    startDate: new Date(2026, 10, 2),  // 2 ноября
+    endDate:   new Date(2026, 10, 5),  // 5 ноября
+    days: 4,
+    status: 'approved',
+    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+    rescheduleCount: 0,
+    rescheduleLimit: 2,
+  },
+  // Внеплановый — на согласовании
+  {
+    id: 201,
+    type: 'unplanned',
+    typeLabel: 'Ежегодный основной оплачиваемый',
+    planCategory: 'Внеплановый',
+    startDate: new Date(2026, 5, 15),  // 15 июня
+    endDate:   new Date(2026, 5, 19),  // 19 июня
+    days: 5,
     status: 'pending',
     approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-    rescheduleCount: 0,
-    rescheduleLimit: 2,
   },
+  // Внеплановый — отклонён
   {
-    id: 234567,
-    type: 'planned',
-    typeLabel: 'Плановый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
-    planCategory: 'Плановый',
-    startDate: new Date(2026, 8, 1),
-    endDate: new Date(2026, 8, 14),
-    days: 14,
-    status: 'reviewing',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-    rescheduleCount: 0,
-    rescheduleLimit: 2,
-  },
-  {
-    id: 345678,
-    type: 'planned',
-    typeLabel: 'Плановый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
-    planCategory: 'Плановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
-    status: 'approved',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-    rescheduleCount: 1,
-    rescheduleLimit: 2,
-  },
-  {
-    id: 456789,
+    id: 202,
     type: 'unplanned',
-    typeLabel: 'Внеплановый — ежегодный оплачиваемый',
-    typeFullName: 'Ежегодный основной оплачиваемый отпуск',
+    typeLabel: 'Ежегодный основной оплачиваемый',
     planCategory: 'Внеплановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
+    startDate: new Date(2026, 3, 20),  // 20 апреля
+    endDate:   new Date(2026, 3, 24),  // 24 апреля
+    days: 5,
     status: 'rejected',
     rejectionComment: 'Период высокой нагрузки на команду',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-  },
-  {
-    id: 567890,
-    type: 'unplanned',
-    typeLabel: 'Внеплановый — без сохранения зарплаты',
-    typeFullName: 'Без сохранения заработной платы',
-    planCategory: 'Внеплановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
-    status: 'rejected',
-    rejectionComment: 'Период высокой нагрузки на команду',
-    approver: { name: 'Дмитрий Соколов', role: 'Руководитемь' },
-  },
-  {
-    id: 678901,
-    type: 'unplanned',
-    typeLabel: 'Внеплановый — учебный',
-    typeFullName: 'Учебный отпуск',
-    planCategory: 'Внеплановый',
-    startDate: new Date(2026, 6, 14),
-    endDate: new Date(2026, 6, 27),
-    days: 14,
-    status: 'approved',
     approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
   },
 ]
+
 
 export const STATUS_CONFIG = {
   draft:      { label: 'Черновик',          color: 'bg-gray-100 text-gray-600' },
@@ -162,6 +148,7 @@ export const COLLEAGUES = [
   {
     id: 1,
     name: 'Алексей Морозов',
+    patronymic: 'Викторович',
     avatar: '/avatars/mikhail.webp',
     me: true,
     team: 'Продуктовая разработка',
@@ -173,6 +160,7 @@ export const COLLEAGUES = [
   {
     id: 2,
     name: 'Дмитрий Соколов',
+    patronymic: 'Андреевич',
     avatar: '/avatars/egor.webp',
     team: 'Продуктовая разработка',
     segments: [
@@ -185,6 +173,7 @@ export const COLLEAGUES = [
   {
     id: 3,
     name: 'Мария Иванова',
+    patronymic: 'Сергеевна',
     avatar: '/avatars/maria.webp',
     team: 'Продуктовая разработка',
     segments: [
@@ -197,6 +186,7 @@ export const COLLEAGUES = [
   {
     id: 4,
     name: 'Анна Петрова',
+    patronymic: 'Дмитриевна',
     avatar: '/avatars/sofia.webp',
     team: 'Продуктовая разработка',
     segments: [
@@ -209,6 +199,7 @@ export const COLLEAGUES = [
   {
     id: 5,
     name: 'Игорь Смирнов',
+    patronymic: 'Владимирович',
     avatar: '/avatars/manokhin.webp',
     team: 'Дизайн',
     segments: [
@@ -221,6 +212,7 @@ export const COLLEAGUES = [
   {
     id: 6,
     name: 'Сергей Николаев',
+    patronymic: 'Павлович',
     avatar: '/avatars/konstantin.webp',
     team: 'Продуктовая разработка',
     segments: [
@@ -232,6 +224,7 @@ export const COLLEAGUES = [
   {
     id: 7,
     name: 'Елена Козлова',
+    patronymic: 'Игоревна',
     avatar: '/avatars/marina.webp',
     team: 'Продуктовая разработка',
     segments: [
@@ -246,7 +239,7 @@ export const COLLEAGUES = [
 export const SUBORDINATES = [
   {
     id: 3,
-    name: 'Мария Иванова',
+    name: 'Иванова Мария Сергеевна',
     avatar: '/avatars/maria.webp',
     position: 'Frontend-разработчик',
     team: 'Продуктовая разработка',
@@ -254,13 +247,14 @@ export const SUBORDINATES = [
     distributedDays: 28,
     totalDays: 28,
     segments: [
-      { startDate: '2026-08-04', endDate: '2026-08-17', days: 14 },
-      { startDate: '2026-11-10', endDate: '2026-11-23', days: 14 },
+      { startDate: '2026-08-04', endDate: '2026-08-17', days: 14, status: 'approved' },
+      { startDate: '2026-11-10', endDate: '2026-11-23', days: 14, status: 'approved' },
+      { startDate: '2027-03-10', endDate: '2027-03-23', days: 14, status: 'pending' },
     ],
   },
   {
     id: 4,
-    name: 'Анна Петрова',
+    name: 'Петрова Анна Дмитриевна',
     avatar: '/avatars/sofia.webp',
     position: 'Backend-разработчик',
     team: 'Продуктовая разработка',
@@ -268,39 +262,43 @@ export const SUBORDINATES = [
     distributedDays: 28,
     totalDays: 28,
     segments: [
-      { startDate: '2026-03-02', endDate: '2026-03-15', days: 14 },
-      { startDate: '2026-07-20', endDate: '2026-08-02', days: 14 },
+      { startDate: '2026-03-02', endDate: '2026-03-15', days: 14, status: 'approved' },
+      { startDate: '2026-07-20', endDate: '2026-08-02', days: 14, status: 'approved' },
+      { startDate: '2027-03-17', endDate: '2027-03-30', days: 14, status: 'pending' },
     ],
   },
   {
     id: 6,
-    name: 'Сергей Николаев',
+    name: 'Николаев Сергей Олегович',
     avatar: '/avatars/konstantin.webp',
     position: 'QA-инженер',
     team: 'Продуктовая разработка',
-    planStatus: 'draft',
-    distributedDays: 14,
+    planStatus: 'pending',
+    distributedDays: 28,
     totalDays: 28,
     segments: [
-      { startDate: '2026-06-15', endDate: '2026-06-28', days: 14 },
+      { startDate: '2026-06-15', endDate: '2026-06-28', days: 14, status: 'approved' },
+      { startDate: '2027-07-01', endDate: '2027-07-14', days: 14, status: 'pending' },
     ],
   },
   {
     id: 7,
-    name: 'Елена Козлова',
+    name: 'Козлова Елена Александровна',
+    avatar: '/avatars/marina.webp',
     position: 'Аналитик',
     team: 'Продуктовая разработка',
-    planStatus: 'approved',
+    planStatus: 'pending',
     distributedDays: 28,
     totalDays: 28,
     segments: [
-      { startDate: '2026-07-01', endDate: '2026-07-14', days: 14 },
-      { startDate: '2026-10-12', endDate: '2026-10-25', days: 14 },
+      { startDate: '2026-07-01', endDate: '2026-07-14', days: 14, status: 'approved' },
+      { startDate: '2026-10-12', endDate: '2026-10-25', days: 14, status: 'approved' },
+      { startDate: '2027-07-08', endDate: '2027-07-21', days: 14, status: 'pending' },
     ],
   },
   {
     id: 5,
-    name: 'Игорь Смирнов',
+    name: 'Смирнов Игорь Павлович',
     avatar: '/avatars/manokhin.webp',
     position: 'UI/UX-дизайнер',
     team: 'Дизайн',
@@ -308,13 +306,14 @@ export const SUBORDINATES = [
     distributedDays: 28,
     totalDays: 28,
     segments: [
-      { startDate: '2026-05-25', endDate: '2026-06-07', days: 14 },
-      { startDate: '2026-08-24', endDate: '2026-09-06', days: 14 },
+      { startDate: '2026-05-25', endDate: '2026-06-07', days: 14, status: 'approved' },
+      { startDate: '2026-08-24', endDate: '2026-09-06', days: 14, status: 'approved' },
+      { startDate: '2027-05-05', endDate: '2027-05-18', days: 14, status: 'approved' },
     ],
   },
   {
     id: 8,
-    name: 'Ольга Васильева',
+    name: 'Васильева Ольга Николаевна',
     avatar: '/avatars/olga.webp',
     position: 'Графический дизайнер',
     team: 'Дизайн',
@@ -322,10 +321,21 @@ export const SUBORDINATES = [
     distributedDays: 28,
     totalDays: 28,
     segments: [
-      { startDate: '2026-06-22', endDate: '2026-07-05', days: 14 },
-      { startDate: '2026-09-14', endDate: '2026-09-27', days: 14 },
+      { startDate: '2026-06-22', endDate: '2026-07-05', days: 14, status: 'approved' },
+      { startDate: '2026-09-14', endDate: '2026-09-27', days: 14, status: 'approved' },
+      { startDate: '2027-09-01', endDate: '2027-09-14', days: 14, status: 'pending' },
     ],
   },
+]
+
+export const INCOMING_REQUESTS = [
+  { id: 'r1', reqNum: '234501', name: 'Иванова Мария Сергеевна',     position: 'Frontend-разработчик', team: 'Продуктовая разработка', avatar: '/avatars/maria.webp',      startDate: '2027-03-10', endDate: '2027-03-23', days: 14, status: 'pending'  },
+  { id: 'r2', reqNum: '234502', name: 'Петрова Анна Дмитриевна',     position: 'Backend-разработчик',  team: 'Продуктовая разработка', avatar: '/avatars/sofia.webp',      startDate: '2027-03-17', endDate: '2027-03-30', days: 14, status: 'pending'  },
+  { id: 'r3', reqNum: '234503', name: 'Николаев Сергей Олегович',    position: 'QA-инженер',           team: 'Продуктовая разработка', avatar: '/avatars/konstantin.webp', startDate: '2027-07-01', endDate: '2027-07-14', days: 14, status: 'pending'  },
+  { id: 'r4', reqNum: '234504', name: 'Козлова Елена Александровна', position: 'Аналитик',             team: 'Продуктовая разработка', avatar: '/avatars/marina.webp',     startDate: '2027-07-08', endDate: '2027-07-21', days: 14, status: 'pending'  },
+  { id: 'r5', reqNum: '234505', name: 'Смирнов Игорь Павлович',      position: 'UI/UX-дизайнер',       team: 'Дизайн',                 avatar: '/avatars/manokhin.webp',   startDate: '2027-05-05', endDate: '2027-05-18', days: 14, status: 'approved' },
+  { id: 'r6', reqNum: '234506', name: 'Васильева Ольга Николаевна',  position: 'Графический дизайнер', team: 'Дизайн',                 avatar: '/avatars/olga.webp',       startDate: '2027-09-01', endDate: '2027-09-14', days: 14, status: 'pending'  },
+  { id: 'r7', reqNum: '234507', name: 'Иванова Мария Сергеевна',     position: 'Frontend-разработчик', team: 'Продуктовая разработка', avatar: '/avatars/maria.webp',      startDate: '2027-01-15', endDate: '2027-01-28', days: 14, status: 'rejected' },
 ]
 
 export const ALL_EMPLOYEES = [

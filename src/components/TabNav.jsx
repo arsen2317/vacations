@@ -2,24 +2,23 @@ import { Tabs } from '../ds/index'
 import { useApp } from '../context/AppContext'
 
 const BASE_TABS = [
-  { key: 'home',       label: 'Заявки на отпуск' },
-  { key: 'planning',   label: 'Планирование' },
-  { key: 'colleagues', label: 'Календарь отпуска' },
+  { key: 'home',       label: 'Мой отпуск' },
+  { key: 'colleagues', label: 'Планы коллег' },
 ]
 
 export default function TabNav({ activeTab, onTabChange }) {
-  const { role, subordinates } = useApp()
+  const { role, incomingRequests } = useApp()
 
-  const pendingCount = subordinates
-    ? subordinates.filter(s => s.planStatus === 'pending').length
+  const pendingCount = incomingRequests
+    ? incomingRequests.filter(r => r.status === 'pending').length
     : 0
 
   const tabs = [
     ...BASE_TABS,
     ...(role === 'manager' || role === 'hr_admin'
-      ? [{ key: 'team', label: 'Команда', count: pendingCount > 0 ? pendingCount : undefined }]
+      ? [{ key: 'team', label: 'Входящие заявки', count: pendingCount > 0 ? pendingCount : undefined }]
       : []),
-    ...(role === 'hr_admin' ? [{ key: 'hr', label: 'HR-панель' }] : []),
+    ...(role === 'hr_admin' ? [{ key: 'hr', label: 'HR – панель' }] : []),
   ]
 
   return (

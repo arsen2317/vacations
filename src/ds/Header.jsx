@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useIsDocked } from "./useIsDocked";
 
 const BASE = import.meta.env.BASE_URL;
@@ -83,7 +83,7 @@ const ROLES = [
   { value: 'hr_admin', label: 'HR-админ' },
 ];
 
-function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
+function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
   return (
     <>
       {!isDocked && (
@@ -137,7 +137,7 @@ function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
           <div style={{ paddingLeft: 24, paddingRight: 24, ...SECTION_LABEL }}>избранные</div>
           <div style={{ paddingTop: 8, paddingLeft: 24, paddingRight: 16, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {FAVORITES.map(({ label, icon }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <div key={label} onClick={() => { if (label === 'работа и отдых') { onNavigate?.('work') } }} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 {icon}
                 <span style={NAV_ITEM_TEXT}>{label}</span>
               </div>
@@ -191,33 +191,27 @@ function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
   );
 }
 
-export function Header({ role, onRoleChange }) {
+export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, onNavigate, activeTab }) {
   const isDocked = useIsDocked();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isDocked) setSidebarOpen(false);
-  }, [isDocked]);
-
-  const sidebarVisible = isDocked || sidebarOpen;
+  const sidebarShown = sidebarOpen;
 
   return (
     <>
-      <Sidebar open={sidebarVisible} isDocked={isDocked} onClose={() => setSidebarOpen(false)} role={role} onRoleChange={onRoleChange} />
+      <Sidebar open={sidebarShown} isDocked={isDocked} onClose={onSidebarClose} onNavigate={onNavigate} role={role} onRoleChange={onRoleChange} />
 
       <div style={{ position: 'sticky', top: 0, zIndex: 100, width: '100%' }}>
         <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
           <div style={{
-            ...(isDocked
-              ? { marginLeft: 280, width: 'calc(100% - 280px)' }
-              : { maxWidth: 1440, margin: '0 auto', width: '100%' }
+            ...(sidebarShown
+              ? { marginLeft: 280, paddingLeft: 88, paddingRight: 88 }
+              : { maxWidth: 1440, margin: '0 auto', paddingLeft: 88, paddingRight: 88 }
             ),
-            height: 72, paddingLeft: 88, paddingRight: 88,
-            display: 'inline-flex', alignItems: 'center', boxSizing: 'border-box',
+            height: 72,
+            display: 'flex', alignItems: 'center', boxSizing: 'border-box',
           }}>
-            {!isDocked && (
+            {!sidebarShown && (
               <div
-                onClick={() => setSidebarOpen(true)}
+                onClick={onSidebarToggle}
                 style={{ height: 24, paddingRight: 16, display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
               >
                 <BurgerLines />
@@ -229,11 +223,17 @@ export function Header({ role, onRoleChange }) {
                 <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>главная</span>
                 <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
-                <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
-              </div>
-              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>
+              {activeTab === 'work' ? (
+                <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                    <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
+                    <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
+                  </div>
+                  <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>
+                </>
+              )}
             </div>
 
             <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}>

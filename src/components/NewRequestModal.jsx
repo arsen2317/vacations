@@ -5,17 +5,17 @@ import { COLLEAGUES } from '../data/mockData'
 import { BTN_STYLE, PersonAvatar, SelectField, CalendarRange } from '../ds/index'
 
 const REQUEST_TYPES = [
-  { id: 'annual',       name: 'Ежегодный оплачиваемый',              deductsBalance: true  },
-  { id: 'unpaid',       name: 'Без сохранения зарплаты',             desc: 'Не списывается из баланса', deductsBalance: false },
+  { id: 'annual',       name: 'Ежегодный основной оплачиваемый',     deductsBalance: true  },
+  { id: 'unpaid',       name: 'Отпуск без сохранения з.п.',          desc: 'Не списывается из баланса', deductsBalance: false },
   { id: 'study_paid',   name: 'Учебный оплачиваемый',                desc: 'Не списывается из баланса', deductsBalance: false },
-  { id: 'study_unpaid', name: 'Учебный без сохранения зарплаты',     desc: 'Не списывается из баланса', deductsBalance: false },
+  { id: 'study_unpaid', name: 'Учебный без сохранения з.п.',         desc: 'Не списывается из баланса', deductsBalance: false },
 ]
 
 const TYPE_LABEL_MAP = {
-  annual:       'Внеплановый — ежегодный оплачиваемый',
-  unpaid:       'Внеплановый — без сохранения зарплаты',
-  study_paid:   'Внеплановый — учебный оплачиваемый',
-  study_unpaid: 'Внеплановый — учебный без сохранения зарплаты',
+  annual:       'Ежегодный основной оплачиваемый',
+  unpaid:       'Отпуск без сохранения з.п.',
+  study_paid:   'Учебный оплачиваемый',
+  study_unpaid: 'Учебный без сохранения з.п.',
 }
 
 const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель', avatar: '/avatars/egor.webp' }
@@ -127,11 +127,11 @@ function Checkbox({ checked, onChange, label }) {
   )
 }
 
-export default function NewRequestModal({ onClose, onSubmitted }) {
+export default function NewRequestModal({ onClose, onSubmitted, initialStart = null, initialEnd = null }) {
   const { requests, setRequests, balance, setBalance } = useApp()
   const [type, setType] = useState('')
-  const [startDate, setStartDate] = useState(null)
-  const [endDate, setEndDate] = useState(null)
+  const [startDate, setStartDate] = useState(initialStart)
+  const [endDate, setEndDate] = useState(initialEnd)
   const [showCalendar, setShowCalendar] = useState(false)
   const [calendarRect, setCalendarRect] = useState(null)
   const periodRef = useRef(null)
@@ -207,7 +207,11 @@ export default function NewRequestModal({ onClose, onSubmitted }) {
           {/* Header */}
           <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>Заявка на внеплановый отпуск</div>
-            <button onClick={onClose} style={{ width: 32, height: 32, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8C9BAB', fontSize: 18, borderRadius: 8, padding: 0, lineHeight: 1 }}>✕</button>
+            <button onClick={onClose} style={{ padding: 4, border: 'none', background: '#F2F3F7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, flexShrink: 0 }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
+              </svg>
+            </button>
           </div>
 
           {/* Body */}
