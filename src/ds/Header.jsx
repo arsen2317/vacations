@@ -203,7 +203,7 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
         <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
           <div style={{
             ...(sidebarShown
-              ? { marginLeft: 280, paddingRight: 88 }
+              ? { marginLeft: 280, paddingLeft: 88, paddingRight: 88 }
               : { maxWidth: 1440, margin: '0 auto', paddingLeft: 88, paddingRight: 88 }
             ),
             height: 72,

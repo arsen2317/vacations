@@ -4,7 +4,7 @@ import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
 import Toast from '../components/Toast'
-import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, YEAR_CALENDAR_WIDTH } from '../ds/index'
+import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 
@@ -344,6 +344,13 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [toast, setToast] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [trackedColleagueIds, setTrackedColleagueIds] = useState(INITIAL_TRACKED_IDS)
+  const [calCols, setCalCols] = useState(() => window.innerWidth < 1400 ? 2 : 3)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1399px)')
+    const handler = e => setCalCols(e.matches ? 2 : 3)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   const trackedColleagues = useMemo(
     () => trackedColleagueIds.map(id => COLLEAGUES.find(c => c.id === id)).filter(Boolean),
@@ -452,9 +459,10 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         <div style={{ width: 1, background: '#E8EDF2', alignSelf: 'stretch', flexShrink: 0 }} />
 
         {/* Right panel */}
-        <div style={{ flexShrink: 0, paddingLeft: 32 }}>
+        <div style={{ flexShrink: 0, paddingLeft: 32, width: calendarWidth(calCols) + 32 }}>
           <YearCalendar
             key={calendarKey}
+            cols={calCols}
             year={year}
             requests={year === 2026 ? yearRequests : segments.map(s => ({
               ...s,
