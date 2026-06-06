@@ -243,7 +243,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
 
 const COL_GAP = 24
 const ROW_GAP = 24
-export const YEAR_CALENDAR_WIDTH = null // calendar fills its container
+export const YEAR_CALENDAR_WIDTH = 832  // 3 × 261.33 + 2 × 24
 
 export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueDates }) {
   const today = dayOnly(new Date())
@@ -279,7 +279,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
       gridTemplateColumns: 'repeat(3, 1fr)',
       columnGap: COL_GAP,
       rowGap: ROW_GAP,
-      width: '100%',
+      width: YEAR_CALENDAR_WIDTH,
     }}>
       {Array.from({ length: 12 }, (_, m) => (
         <YearMonthGrid

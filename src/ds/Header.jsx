@@ -193,8 +193,7 @@ function Sidebar({ open, isDocked, onClose, role, onRoleChange }) {
 
 export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose }) {
   const isDocked = useIsDocked();
-
-  const sidebarShown = isDocked ? sidebarOpen : sidebarOpen;
+  const sidebarShown = sidebarOpen;
 
   return (
     <>
@@ -203,19 +202,21 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
       <div style={{ position: 'sticky', top: 0, zIndex: 100, width: '100%' }}>
         <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
           <div style={{
-            ...(isDocked && sidebarOpen
-              ? { marginLeft: 280, width: 'calc(100% - 280px)' }
-              : { maxWidth: 1440, margin: '0 auto', width: '100%' }
+            ...(sidebarShown
+              ? { marginLeft: 280, paddingRight: 88 }
+              : { maxWidth: 1440, margin: '0 auto', paddingLeft: 88, paddingRight: 88 }
             ),
-            height: 72, paddingLeft: 88, paddingRight: 88,
-            display: 'inline-flex', alignItems: 'center', boxSizing: 'border-box',
+            height: 72,
+            display: 'flex', alignItems: 'center', boxSizing: 'border-box',
           }}>
-            <div
-              onClick={onSidebarToggle}
-              style={{ height: 24, paddingRight: 16, display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
-            >
-              <BurgerLines />
-            </div>
+            {!sidebarShown && (
+              <div
+                onClick={onSidebarToggle}
+                style={{ height: 24, paddingRight: 16, display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
+              >
+                <BurgerLines />
+              </div>
+            )}
 
             <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
