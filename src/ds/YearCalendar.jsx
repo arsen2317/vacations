@@ -17,7 +17,7 @@ const STATUS_STYLES = {
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
 
 const CELL = 36      // pill size
-const ROW_H = 37     // row cell height: CELL + 1px gap at bottom
+const ROW_H = 36     // row cell height
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -75,7 +75,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
   const r = 12
 
   return (
-    <div style={{ width: CELL * 7 }}>
+    <div style={{ width: '100%' }}>
       {/* Month name */}
       <div style={{
         textAlign: 'center',
@@ -89,7 +89,8 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
         {MONTH_NAMES[month]}
       </div>
 
-      {/* Weekday headers */}
+      {/* Weekday headers + day rows — centered within the column */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)`, marginBottom: 4 }}>
         {WEEKDAYS.map(wd => (
           <div key={wd} style={{
@@ -107,7 +108,6 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
         ))}
       </div>
 
-      {/* Week rows — ROW_H = CELL + 1px top + 1px bottom so pills have 1px gap */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {weeks.map((week, wi) => (
           <div key={wi} style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)` }}>
@@ -236,15 +236,14 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
           </div>
         ))}
       </div>
+      </div>
     </div>
   )
 }
 
-// Calendar width: 3 months × (7 × CELL) + 2 × gap
-const MONTH_WIDTH = CELL * 7          // 252
-const COL_GAP     = 24
-const ROW_GAP     = 32
-export const YEAR_CALENDAR_WIDTH = 3 * MONTH_WIDTH + 2 * COL_GAP  // 756
+const COL_GAP = 24
+const ROW_GAP = 24
+export const YEAR_CALENDAR_WIDTH = null // calendar fills its container
 
 export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueDates }) {
   const today = dayOnly(new Date())
@@ -277,10 +276,10 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: `repeat(3, ${MONTH_WIDTH}px)`,
+      gridTemplateColumns: 'repeat(3, 1fr)',
       columnGap: COL_GAP,
       rowGap: ROW_GAP,
-      width: YEAR_CALENDAR_WIDTH,
+      width: '100%',
     }}>
       {Array.from({ length: 12 }, (_, m) => (
         <YearMonthGrid
