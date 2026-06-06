@@ -442,7 +442,7 @@ function ActionsDropdown({ request, onApprove, onReject }) {
           onClick={e => e.stopPropagation()}
           style={{
             position: 'absolute', top: 'calc(100% + 4px)', right: 0,
-            width: 200, padding: 6, background: 'white',
+            padding: 6, background: 'white',
             boxShadow: '0px 12px 20px rgba(0,0,0,0.14), 0px 4px 24px rgba(0,0,0,0.12)',
             borderRadius: 16, display: 'inline-flex', flexDirection: 'column',
             justifyContent: 'flex-start', alignItems: 'flex-start', gap: 8, zIndex: 200,
@@ -459,7 +459,7 @@ function ActionsDropdown({ request, onApprove, onReject }) {
               onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
               onMouseLeave={e => e.currentTarget.style.background = 'white'}
             >
-              <div style={{ flex: '1 1 0', color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
+              <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', whiteSpace: 'nowrap' }}>
                 Согласовать
               </div>
             </div>
@@ -473,7 +473,7 @@ function ActionsDropdown({ request, onApprove, onReject }) {
               onMouseEnter={e => e.currentTarget.style.background = '#F5F6F8'}
               onMouseLeave={e => e.currentTarget.style.background = 'white'}
             >
-              <div style={{ flex: '1 1 0', color: '#D8400C', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
+              <div style={{ color: '#D8400C', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', whiteSpace: 'nowrap' }}>
                 Отклонить
               </div>
             </div>
