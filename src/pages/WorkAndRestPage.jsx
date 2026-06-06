@@ -180,7 +180,7 @@ function VacationCard({ onGoTo }) {
         primaryLabel="ЗАЯВКИ НА ОТПУСК"
         secondaryLabel="ПЛАНЫ НА ОТПУСК"
         onPrimary={() => onGoTo('home')}
-        onSecondary={() => onGoTo('planning')}
+        onSecondary={() => onGoTo('home', 2027)}
       />
     </div>
   )

@@ -14,6 +14,7 @@ function AppInner() {
   const { role, setRole, activeTab, setActiveTab } = useApp()
   const isDocked = useIsDocked()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [dashYear, setDashYear] = useState(2026)
 
   useEffect(() => {
     if (!isDocked) setSidebarOpen(false)
@@ -70,13 +71,14 @@ function AppInner() {
       <div style={{ background: '#fff' }}>
         <div style={contentStyle}>
         {activeTab === 'work' && (
-          <WorkAndRestPage onGoTo={setActiveTab} />
+          <WorkAndRestPage onGoTo={(tab, year) => { if (year) setDashYear(year); setActiveTab(tab) }} />
         )}
         {activeTab === 'home' && (
           <EmployeeDashboard
             onGoToPlanning={() => setActiveTab('planning')}
             onGoToTeam={() => setActiveTab('team')}
             onGoToHR={() => setActiveTab('hr')}
+            initialYear={dashYear}
           />
         )}
         {activeTab === 'planning' && (

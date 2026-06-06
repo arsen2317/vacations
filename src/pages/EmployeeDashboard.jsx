@@ -335,9 +335,10 @@ const INITIAL_TRACKED_IDS = COLLEAGUES
   .filter(c => !c.me && c.team === CURRENT_USER.team)
   .map(c => c.id)
 
-export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR }) {
+export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR, initialYear }) {
   const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign } = useApp()
-  const [year, setYear] = useState(2026)
+  const [year, setYear] = useState(initialYear ?? 2026)
+  useEffect(() => { if (initialYear) setYear(initialYear) }, [initialYear])
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [newRequestRange, setNewRequestRange] = useState(null)
   const [calendarKey, setCalendarKey] = useState(0)
