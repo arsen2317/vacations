@@ -71,11 +71,20 @@ const WeekendIcon = () => (
   </svg>
 )
 
+const ExternalLinkIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M2.5 1C1.67157 1 1 1.67157 1 2.5V9.5C1 10.3284 1.67157 11 2.5 11H9.5C10.3284 11 11 10.3284 11 9.5V7C11 6.72386 10.7761 6.5 10.5 6.5C10.2239 6.5 10 6.72386 10 7V9.5C10 9.77614 9.77614 10 9.5 10H2.5C2.22386 10 2 9.77614 2 9.5V2.5C2 2.22386 2.22386 2 2.5 2H5C5.27614 2 5.5 1.77614 5.5 1.5C5.5 1.22386 5.27614 1 5 1H2.5ZM7.5 1C7.22386 1 7 1.22386 7 1.5C7 1.77614 7.22386 2 7.5 2H9.29289L5.14645 6.14645C4.95118 6.34171 4.95118 6.65829 5.14645 6.85355C5.34171 7.04882 5.65829 7.04882 5.85355 6.85355L10 2.70711V4.5C10 4.77614 10.2239 5 10.5 5C10.7761 5 11 4.77614 11 4.5V1.5C11 1.22386 10.7761 1 10.5 1H7.5Z" fill="#0070E5"/>
+  </svg>
+)
+
 function CardHeader({ title, linkText }) {
   return (
     <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 12, paddingBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>{title}</span>
-      <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', cursor: 'pointer' }}>{linkText}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+        <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>{linkText}</span>
+        <ExternalLinkIcon />
+      </div>
     </div>
   )
 }
@@ -240,7 +249,10 @@ function WorkFormatCard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', textTransform: 'uppercase', letterSpacing: 0.5 }}>МОЙ ФОРМАТ РАБОТЫ ДО 30 СЕНТЯБРЯ 2026</span>
-            <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', cursor: 'pointer' }}>Графики коллег</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+              <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>Графики коллег</span>
+              <ExternalLinkIcon />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {DAY_PILLS.map(({ day, type }) => {
