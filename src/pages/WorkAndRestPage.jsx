@@ -89,12 +89,12 @@ function CardHeader({ title, linkText }) {
   )
 }
 
-function InfoBlock({ label, value, secondary }) {
+function InfoBlock({ label, value, secondary, infoIcon }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={labelStyle}>{label}</span>
-        <InfoIconGray />
+        {infoIcon && <InfoIconGray />}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <span style={valueStyle}>{value}</span>
@@ -114,7 +114,7 @@ function Illustration({ src }) {
 
 function WarningBanner({ title, subtitle }) {
   return (
-    <div style={{ background: '#F2F3F7', borderRadius: 16, padding: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+    <div style={{ background: '#F2F3F7', borderRadius: 16, padding: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
       <InfoIcon />
       <div style={{ flex: 1 }}>
         <div style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>{title}</div>
@@ -149,6 +149,7 @@ function VacationCard({ onGoTo }) {
               label="Доступно дней"
               value={`${balance.main + balance.extra} дней`}
               secondary={balance.extra > 0 ? `из них ${balance.extra} дня доп. отпуска` : null}
+              infoIcon
             />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
