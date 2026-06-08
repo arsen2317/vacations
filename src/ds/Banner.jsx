@@ -1,16 +1,20 @@
-import { CloseCircleIcon, InfoIcon, WarningIcon } from "./icons";
+import { CloseCircleIcon, DoneIcon, InfoIcon, WarningIcon } from "./icons";
 
 export function Banner({ type, title, subtitle, subtitleLink }) {
   const isError = type === "error";
   const isWarning = type === "warning";
+  const isDanger = type === "danger";
+  const isDone = type === "done";
   return (
     <div style={{ width: "100%", padding: 12, background: "#F2F3F7", borderRadius: 16, display: "inline-flex", justifyContent: "flex-start", alignItems: "flex-start", gap: 8, boxSizing: "border-box" }}>
       <div style={{ flexShrink: 0, marginTop: 1 }}>
-        {isError
-          ? <CloseCircleIcon color="#E30611" />
+        {isError || isDanger
+          ? <CloseCircleIcon color={isDanger ? "#F95721" : "#E30611"} />
           : isWarning
             ? <WarningIcon />
-            : <InfoIcon color="#007CFF" />
+            : isDone
+              ? <DoneIcon />
+              : <InfoIcon color="#007CFF" />
         }
       </div>
       <div style={{ flex: "1 1 0", display: "flex", flexDirection: "column", gap: 2 }}>

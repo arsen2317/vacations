@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays, pluralDays } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
-import { BTN_STYLE, PersonAvatar, SelectField, CalendarRange } from '../ds/index'
+import { BTN_STYLE, PersonAvatar, SelectField, CalendarRange, Banner } from '../ds/index'
 
 const REQUEST_TYPES = [
   { id: 'annual',       name: 'Ежегодный основной оплачиваемый',     deductsBalance: true  },
@@ -24,6 +24,39 @@ const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.
 function fmt(d) {
   if (!d) return ''
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
+}
+
+const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+
+function formatOverlapRange(start, end) {
+  return `${start.getDate()} ${MONTH_GEN[start.getMonth()]} – ${end.getDate()} ${MONTH_GEN[end.getMonth()]}`
+}
+
+function formatNameShort(name) {
+  if (!name) return '—'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0]
+  const surname = parts[parts.length - 1]
+  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join(' ')
+  return `${surname} ${initials}`
+}
+
+function findColleagueOverlap(start, end) {
+  if (!start || !end) return null
+  for (const col of COLLEAGUES) {
+    if (col.me) continue
+    for (const seg of (col.segments ?? [])) {
+      if (seg.status === 'draft' || seg.status === 'rejected' || seg.status === 'cancelled') continue
+      const segStart = new Date(seg.startDate + 'T00:00:00')
+      const segEnd   = new Date(seg.endDate   + 'T00:00:00')
+      if (start <= segEnd && end >= segStart) {
+        const overlapStart = start > segStart ? start : segStart
+        const overlapEnd   = end   < segEnd   ? end   : segEnd
+        return { colleague: col, start: overlapStart, end: overlapEnd }
+      }
+    }
+  }
+  return null
 }
 
 function PeriodField({ start, end, error, onClick }) {
@@ -154,6 +187,11 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     }
   }, [startDate, endDate])
 
+  const overlap = useMemo(() => {
+    if (!startDate) return null
+    return findColleagueOverlap(startDate, endDate || startDate)
+  }, [startDate, endDate])
+
   function validate() {
     const errs = {}
     if (!type) errs.type = 'Выберите тип отпуска'
@@ -252,6 +290,12 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
                   {pluralDays(previewDays)} отпуска (праздники не считаются)
                 </span>
+              )}
+              {overlap && (
+                <Banner
+                  type="warning"
+                  title={`Период отпуска пересекается с ${formatNameShort(overlap.colleague.name)}: ${formatOverlapRange(overlap.start, overlap.end)}`}
+                />
               )}
             </div>
 

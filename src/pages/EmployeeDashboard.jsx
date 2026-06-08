@@ -3,8 +3,9 @@ import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
+import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
-import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth } from '../ds/index'
+import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 
@@ -32,14 +33,22 @@ function pluralDays(n) {
 
 
 // Left panel for 2026: balance + vacation list
-function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRange }) {
+function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRange, trackedColleagues, onRemoveColleague, onOpenCalculator }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Balance */}
       <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-          <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            Основной отпуск
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              Основной отпуск
+            </span>
+            <button
+              onClick={onOpenCalculator}
+              style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <CalculatorIcon />
+            </button>
           </div>
           <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
             {balance.main} {pluralDays(balance.main)}
@@ -71,12 +80,9 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
           Мои отпуска
         </h3>
 
-        <Banner
-          type="info"
-          title="Для создания новой заявки на&nbsp;отпуск выберите период в&nbsp;календаре"
-          subtitle="Узнать больше о&nbsp;правилах планирования отпусков можно "
-          subtitleLink={{ label: 'по ссылке', href: '#' }}
-        />
+        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+          Для создания заявки выделите период, выбирая даты прямо в календаре.
+        </div>
 
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {yearRequests.length === 0 ? (
@@ -116,6 +122,44 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
             ))
           )}
         </div>
+      </div>
+
+      {/* Пересечения section */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ paddingTop: 36, paddingBottom: 12 }}>
+          <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
+            Пересечения
+          </span>
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
+          <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
+          <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+            отметка пересечений
+          </span>
+        </div>
+
+        {/* Add colleague row */}
+        <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
+            </svg>
+          </div>
+          <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
+            Добавить сотрудника
+          </span>
+        </div>
+
+        {/* Colleagues list */}
+        {trackedColleagues.map(col => (
+          <ColleagueRow
+            key={col.id}
+            col={col}
+            onRemove={() => onRemoveColleague(col.id)}
+          />
+        ))}
       </div>
     </div>
   )
@@ -203,12 +247,13 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
           </div>
         </div>
 
-        <Banner
-          type="info"
-          title="Для создания плана на&nbsp;отпуск выберите периоды в&nbsp;календаре"
-          subtitle="Узнать больше о&nbsp;правилах планирования отпусков можно "
-          subtitleLink={{ label: 'по ссылке', href: '#' }}
-        />
+        <div style={{ background: '#fff', borderRadius: 20, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px' }}>
+          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+            Для создания плана на отпуск начните выделять периоды, выбирая даты прямо в календаре. Условия, которые необходимо выполнить, чтобы отправить план на согласование:
+          </div>
+          <Banner type="done" title="Один из периодов отпуска должен быть не меньше 14 дней" />
+          <Banner type="danger" title="Необходимо распределить минимум 28 дней отпуска. Максимум – 40 дней отпуска." />
+        </div>
 
         {/* Segments list */}
         {segments.length > 0 && (
@@ -344,6 +389,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [calendarKey, setCalendarKey] = useState(0)
   const [toast, setToast] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
+  const [showCalculator, setShowCalculator] = useState(false)
   const [trackedColleagueIds, setTrackedColleagueIds] = useState(INITIAL_TRACKED_IDS)
   const [calCols, setCalCols] = useState(() => window.innerWidth < 1400 ? 2 : 3)
   useEffect(() => {
@@ -363,6 +409,24 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     for (const col of trackedColleagues) {
       for (const seg of (col.segments ?? [])) {
         if (!seg.startDate.startsWith('2027')) continue
+        if (seg.status === 'draft') continue
+        const s = new Date(seg.startDate + 'T00:00:00')
+        const e = new Date(seg.endDate   + 'T00:00:00')
+        const cur = new Date(s)
+        while (cur <= e) {
+          dates.add(toISODate(cur))
+          cur.setDate(cur.getDate() + 1)
+        }
+      }
+    }
+    return dates
+  }, [trackedColleagues])
+
+  const colleagueDates2026 = useMemo(() => {
+    const dates = new Set()
+    for (const col of trackedColleagues) {
+      for (const seg of (col.segments ?? [])) {
+        if (!seg.startDate.startsWith('2026')) continue
         if (seg.status === 'draft') continue
         const s = new Date(seg.startDate + 'T00:00:00')
         const e = new Date(seg.endDate   + 'T00:00:00')
@@ -403,6 +467,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     setCalendarKey(k => k + 1)
   }
 
+  const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
+
   const yearRequests = requests
     .filter(r => {
       const s = new Date(r.startDate)
@@ -410,6 +476,15 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       return s.getFullYear() === year || e.getFullYear() === year
     })
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+
+  if (year === 2026) {
+    const isPast = r => new Date(r.endDate) < today
+    yearRequests.sort((a, b) => {
+      const pa = isPast(a), pb = isPast(b)
+      if (pa !== pb) return pa ? 1 : -1
+      return new Date(a.startDate) - new Date(b.startDate)
+    })
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 24 }}>
@@ -430,6 +505,9 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               yearRequests={yearRequests}
               setSelectedRequest={setSelectedRequest}
               setNewRequestRange={setNewRequestRange}
+              trackedColleagues={trackedColleagues}
+              onRemoveColleague={id => setTrackedColleagueIds(prev => prev.filter(x => x !== id))}
+              onOpenCalculator={() => setShowCalculator(true)}
             />
           ) : (
             <Panel2027
@@ -485,7 +563,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               ? (start, end) => setNewRequestRange({ start, end })
               : (planStatus === 'draft' ? handleAddSegment : undefined)
             }
-            colleagueDates={year === 2027 ? colleagueDates2027 : null}
+            colleagueDates={year === 2027 ? colleagueDates2027 : colleagueDates2026}
           />
         </div>
       </div>
@@ -519,6 +597,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           }}
         />
       )}
+
+      {showCalculator && <VacationCalculatorModal onClose={() => setShowCalculator(false)} />}
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
