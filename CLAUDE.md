@@ -21,7 +21,8 @@ React 19 + Vite, Tailwind CSS v4 (via `@tailwindcss/vite`), Ant Design (`antd` v
 
 ## Design system rules (critical)
 
-- `src/ds/` is the project's design system (DS). **Never create new components or fork/customize existing ones.** Always look for an existing DS component first (`src/ds/index.js` is the barrel export — check it before assuming something doesn't exist).
+- `src/ds/` is the project's design system (DS, "ДС МТС"). **Never create new components or fork/customize existing ones.** Always look for an existing DS component first (`src/ds/index.js` is the barrel export — check it before assuming something doesn't exist).
+- Ant Design (`antd`) is a legacy dependency from the project's first stage — it is being progressively phased out in favor of `src/ds/`. Don't introduce new `antd` usages; when touching a page/component that still relies on `antd`, prefer migrating it to the equivalent `src/ds/` component if one exists.
 - DS exposes: `Banner`, `StatusBadge`, `Tag`, `Chip`, `PersonAvatar`, `SelectField`, `CalendarRange`, `Tabs`, `Header`, plus shared tokens (`COLORS`, `BTN_STYLE`, `FONT_CSS`) and icons (`LockIcon`, `SelectChevron`, `InfoIcon`, `CloseCircleIcon`, `SearchIcon`, `ChevronUp`, `ChevronDown`, `BreadChevron`).
 - **Never invent or customize icons.** All needed icons already exist in `src/ds/icons.jsx`. If a needed icon is genuinely missing, stop and ask for the SVG rather than approximating one.
 - Styling is done with inline `style` objects using `COLORS` from `src/ds/tokens.js` and the custom fonts `'MTSWide'` (headings/buttons, see `BTN_STYLE`) and `'MTSCompact'` (body), declared in `src/ds/fonts.js`.
