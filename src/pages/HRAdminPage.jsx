@@ -1,37 +1,92 @@
-import { useState } from 'react'
-import { Typography, Alert, Row, Col, Card, Statistic, Button, Modal, Space, Tag, Table, Select } from 'antd'
-import { DownloadOutlined } from '@ant-design/icons'
+import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { ALL_EMPLOYEES } from '../data/mockData'
+import { COLORS, BTN_STYLE, Banner, Chip, SelectField, StatusBadge } from '../ds/index'
 
 const STATUS_FILTER_OPTIONS = [
-  { key: 'all',      label: 'Все' },
-  { key: 'approved', label: 'Согласованы' },
-  { key: 'pending',  label: 'На согласовании' },
-  { key: 'draft',    label: 'Черновик' },
+  { id: 'all',      name: 'Все' },
+  { id: 'approved', name: 'Согласованы' },
+  { id: 'pending',  name: 'На согласовании' },
+  { id: 'draft',    name: 'Черновик' },
 ]
 
-const STATUS_TAG = {
-  draft:    { label: 'Черновик',        bg: '#F2F3F7', color: '#626C77' },
-  pending:  { label: 'На согласовании', bg: '#C7E1FF', color: '#005CBD' },
-  approved: { label: 'Согласован',      bg: '#BEF4BD', color: '#007502' },
-}
-
-function StatusBadge({ status }) {
-  const s = STATUS_TAG[status] ?? STATUS_TAG.draft
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 6px', background: s.bg, color: s.color, borderRadius: 8, fontSize: 14, fontWeight: 500, lineHeight: '20px', whiteSpace: 'nowrap', fontFamily: "'MTSCompact', sans-serif" }}>
-      {s.label}
-    </span>
-  )
+const STATUS_LABEL = {
+  draft:    'Черновик',
+  pending:  'На согласовании',
+  approved: 'Согласован',
 }
 
 const TEAMS = [...new Set(ALL_EMPLOYEES.map(e => e.team))]
 
 const TEAM_OPTIONS = [
-  { value: 'all', label: 'Все подразделения' },
-  ...TEAMS.map(t => ({ value: t, label: t })),
+  { id: 'all', name: 'Все подразделения' },
+  ...TEAMS.map(t => ({ id: t, name: t })),
 ]
+
+const CARD_STYLE = {
+  background: '#fff',
+  borderRadius: 20,
+  padding: 24,
+  outline: `1px ${COLORS.stroke} solid`,
+  outlineOffset: '-1px',
+}
+
+const TH = {
+  padding: '12px 16px', fontSize: 13, fontWeight: 400, color: COLORS.secondary,
+  textAlign: 'left', fontFamily: "'MTSCompact', sans-serif",
+  background: '#F2F3F7', whiteSpace: 'nowrap',
+}
+const TD = {
+  padding: '16px', fontSize: 14, color: COLORS.text,
+  fontFamily: "'MTSCompact', sans-serif", verticalAlign: 'middle',
+  borderTop: `1px ${COLORS.stroke} solid`,
+}
+
+function downloadCsv(filename, headers, rows) {
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
+function ConfirmModal({ onCancel, onConfirm }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onCancel}>
+      <div onClick={e => e.stopPropagation()} style={{ width: 440, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'MTSCompact', sans-serif" }}>
+        <div style={{ padding: '28px 28px 0' }}>
+          <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: COLORS.text, lineHeight: '24px' }}>
+            Завершить кампанию?
+          </div>
+        </div>
+        <div style={{ padding: '16px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Banner
+            type="warning"
+            title="После завершения сотрудники не смогут изменять планы отпуска"
+            subtitle="Это действие можно отменить, запустив кампанию заново."
+          />
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              onClick={onCancel}
+              style={{ ...BTN_STYLE, flex: 1, height: 44, border: 'none', borderRadius: 16, cursor: 'pointer', background: COLORS.bg, color: COLORS.text }}
+            >
+              Отмена
+            </button>
+            <button
+              onClick={onConfirm}
+              style={{ ...BTN_STYLE, flex: 1, height: 44, border: 'none', borderRadius: 16, cursor: 'pointer', background: '#E30611', color: '#fff' }}
+            >
+              Завершить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function HRAdminPage() {
   const { campaign, setCampaign } = useApp()
@@ -55,22 +110,11 @@ export default function HRAdminPage() {
     ? baseEmployees
     : baseEmployees.filter(e => e.planStatus === statusFilter)
 
-  function downloadCsv(filename, headers, rows) {
-    const csv = [headers, ...rows]
-      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
-      .join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = filename; a.click()
-    URL.revokeObjectURL(url)
-  }
-
   function downloadReport() {
     downloadCsv(
       `hr-report-${campaign.year}.csv`,
       ['№', 'Сотрудник', 'Подразделение', 'Статус'],
-      filtered.map((emp, i) => [i + 1, emp.name, emp.team, STATUS_TAG[emp.planStatus]?.label ?? emp.planStatus]),
+      filtered.map((emp, i) => [i + 1, emp.name, emp.team, STATUS_LABEL[emp.planStatus] ?? emp.planStatus]),
     )
   }
 
@@ -87,161 +131,150 @@ export default function HRAdminPage() {
     setShowConfirm(false)
   }
 
-  return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 16px' }}>
-      <Space direction="vertical" style={{ width: '100%' }} size={20}>
+  const stats = useMemo(() => ([
+    { label: 'Всего сотрудников', value: total,         color: COLORS.text },
+    { label: 'Согласованы',       value: approvedCount, color: '#007502' },
+    { label: 'На согласовании',   value: pendingCount,  color: '#005CBD' },
+    { label: 'Черновики',         value: draftCount,    color: COLORS.secondary },
+  ]), [total, approvedCount, pendingCount, draftCount])
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            HR-панель — кампания {campaign.year}
-          </Typography.Title>
-          <Space>
-            <Select
-              value={teamFilter}
-              onChange={setTeamFilter}
-              options={TEAM_OPTIONS}
-              style={{ minWidth: 220 }}
-            />
-            <Button icon={<DownloadOutlined />} onClick={downloadReport}>
-              Скачать отчёт
-            </Button>
-          </Space>
+  return (
+    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 16px 48px', display: 'flex', flexDirection: 'column', gap: 24, fontFamily: "'MTSCompact', sans-serif" }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ fontSize: 24, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
+          HR-панель — кампания {campaign.year}
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ width: 240 }}>
+            <SelectField value={teamFilter} options={TEAM_OPTIONS} onChange={setTeamFilter} />
+          </div>
+          <button
+            onClick={downloadReport}
+            style={{ ...BTN_STYLE, height: 44, paddingLeft: 20, paddingRight: 20, borderRadius: 16, border: 'none', background: COLORS.bg, color: COLORS.text, cursor: 'pointer', flexShrink: 0 }}
+          >
+            Скачать отчёт
+          </button>
+        </div>
+      </div>
+
+      {/* Campaign status */}
+      <div style={{ ...CARD_STYLE, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 320px' }}>
+          <Banner
+            type={campaign.active ? 'done' : 'info'}
+            title={`Кампания по планированию ${campaign.year}`}
+            subtitle={campaign.active
+              ? 'Активна — сотрудники могут распределять дни отпуска'
+              : 'Не активна — планирование закрыто'}
+          />
+        </div>
+        <button
+          onClick={handleToggle}
+          style={{
+            ...BTN_STYLE, height: 44, paddingLeft: 20, paddingRight: 20, borderRadius: 16, border: 'none', cursor: 'pointer', flexShrink: 0,
+            background: campaign.active ? COLORS.bg : COLORS.blue,
+            color: campaign.active ? COLORS.text : '#fff',
+          }}
+        >
+          {campaign.active ? 'Завершить кампанию' : 'Запустить кампанию'}
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        {stats.map(s => (
+          <div key={s.label} style={CARD_STYLE}>
+            <div style={{ fontSize: 14, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px', marginBottom: 8 }}>
+              {s.label}
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 500, color: s.color, fontFamily: "'MTSWide', sans-serif", lineHeight: '32px' }}>
+              {s.value}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress */}
+      <div style={CARD_STYLE}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span style={{ fontSize: 17, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>
+            Прогресс согласования
+          </span>
+          <span style={{ fontSize: 14, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif" }}>
+            {approvedCount} из {total}
+          </span>
+        </div>
+        <div style={{ height: 8, background: COLORS.bg, borderRadius: 4, overflow: 'hidden', display: 'flex' }}>
+          <div style={{ width: `${progressPct}%`, background: '#26CD58', transition: 'width 0.3s' }} />
+          <div style={{ width: `${pendingPct}%`, background: '#FFBB00', transition: 'width 0.3s' }} />
+        </div>
+        <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#26CD58', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif" }}>Согласованы {progressPct}%</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FFBB00', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif" }}>На согласовании {pendingPct}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Employee plans table */}
+      <div style={CARD_STYLE}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+          <span style={{ fontSize: 20, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSWide', sans-serif", lineHeight: '24px' }}>
+            Планы сотрудников
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {STATUS_FILTER_OPTIONS.map(opt => (
+              <Chip key={opt.id} active={statusFilter === opt.id} onClick={() => setStatusFilter(opt.id)}>
+                {opt.name}
+              </Chip>
+            ))}
+          </div>
         </div>
 
-        <Alert
-          type={campaign.active ? 'success' : 'info'}
-          showIcon
-          message={`Кампания по планированию ${campaign.year}`}
-          description={campaign.active
-            ? 'Активна — сотрудники могут распределять дни отпуска'
-            : 'Не активна — планирование закрыто'}
-          action={
-            <Button
-              size="small"
-              danger={campaign.active}
-              type={campaign.active ? 'default' : 'primary'}
-              onClick={handleToggle}
-            >
-              {campaign.active ? 'Завершить кампанию' : 'Запустить кампанию'}
-            </Button>
-          }
-        />
-
-        <Row gutter={[12, 12]}>
-          <Col xs={12} sm={6}>
-            <Card>
-              <Statistic title="Всего сотрудников" value={total} />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card>
-              <Statistic title="Согласованы" value={approvedCount} valueStyle={{ color: '#52c41a' }} />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card>
-              <Statistic title="На согласовании" value={pendingCount} valueStyle={{ color: '#d48806' }} />
-            </Card>
-          </Col>
-          <Col xs={12} sm={6}>
-            <Card>
-              <Statistic title="Черновики" value={draftCount} valueStyle={{ color: '#8c8c8c' }} />
-            </Card>
-          </Col>
-        </Row>
-
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Typography.Text strong>Прогресс согласования</Typography.Text>
-            <Typography.Text type="secondary">{approvedCount} из {total}</Typography.Text>
-          </div>
-          <div style={{ height: 10, background: '#f0f0f0', borderRadius: 5, overflow: 'hidden', display: 'flex' }}>
-            <div style={{ width: `${progressPct}%`, background: '#52c41a', transition: 'width 0.5s' }} />
-            <div style={{ width: `${pendingPct}%`, background: '#faad14', transition: 'width 0.5s' }} />
-          </div>
-          <Space style={{ marginTop: 8 }} size={16}>
-            <Space size={6}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#52c41a', flexShrink: 0 }} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>Согласованы {progressPct}%</Typography.Text>
-            </Space>
-            <Space size={6}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#faad14', flexShrink: 0 }} />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>На согласовании {pendingPct}%</Typography.Text>
-            </Space>
-          </Space>
-        </Card>
-
-        <Card
-          title="Планы сотрудников"
-          extra={
-            <Space size={4}>
-              {STATUS_FILTER_OPTIONS.map(opt => (
-                <Button
-                  key={opt.key}
-                  size="small"
-                  type={statusFilter === opt.key ? 'primary' : 'text'}
-                  onClick={() => setStatusFilter(opt.key)}
-                >
-                  {opt.label}
-                </Button>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <colgroup>
+              <col style={{ width: 56 }} />
+              <col />
+              <col />
+              <col style={{ width: 180 }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th style={{ ...TH, borderRadius: '12px 0 0 12px' }}>№</th>
+                <th style={TH}>Сотрудник</th>
+                <th style={TH}>Подразделение</th>
+                <th style={{ ...TH, borderRadius: '0 12px 12px 0' }}>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={4} style={{ ...TD, textAlign: 'center', color: COLORS.secondary, padding: 32, borderTop: 'none' }}>Нет сотрудников с этим статусом</td></tr>
+              ) : filtered.map((emp, i) => (
+                <tr key={emp.id}>
+                  <td style={TD}>{i + 1}</td>
+                  <td style={TD}>{emp.name}</td>
+                  <td style={TD}>{emp.team}</td>
+                  <td style={TD}><StatusBadge type={emp.planStatus} /></td>
+                </tr>
               ))}
-            </Space>
-          }
-          styles={{ body: { padding: 0 } }}
-        >
-          <Table
-            dataSource={filtered}
-            rowKey="id"
-            pagination={false}
-            size="middle"
-            locale={{ emptyText: 'Нет сотрудников с этим статусом' }}
-            columns={[
-              {
-                title: '№',
-                key: 'index',
-                width: 52,
-                render: (_, __, i) => (
-                  <Typography.Text type="secondary">{i + 1}</Typography.Text>
-                ),
-              },
-              {
-                title: 'Сотрудник',
-                dataIndex: 'name',
-                key: 'name',
-              },
-              {
-                title: 'Подразделение',
-                dataIndex: 'team',
-                key: 'team',
-                responsive: ['sm'],
-              },
-              {
-                title: 'Статус',
-                key: 'status',
-                render: (_, emp) => {
-                  return <StatusBadge status={emp.planStatus} />
-                },
-              },
-            ]}
-          />
-        </Card>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      </Space>
-
-      <Modal
-        open={showConfirm}
-        onCancel={() => setShowConfirm(false)}
-        title="Завершить кампанию?"
-        footer={[
-          <Button key="cancel" onClick={() => setShowConfirm(false)}>Отмена</Button>,
-          <Button key="confirm" type="primary" danger onClick={confirmDeactivate}>Завершить</Button>,
-        ]}
-      >
-        <Typography.Paragraph type="secondary" style={{ marginTop: 8 }}>
-          После завершения сотрудники не смогут изменять планы отпуска.
-          Это действие можно отменить, запустив кампанию заново.
-        </Typography.Paragraph>
-      </Modal>
+      {showConfirm && (
+        <ConfirmModal
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={confirmDeactivate}
+        />
+      )}
     </div>
   )
 }
