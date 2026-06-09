@@ -349,6 +349,8 @@ export const INCOMING_REQUESTS = [
   { id: 'r20', reqNum: '234520', type: 'unplanned', typeLabel: 'Учебный оплачиваемый',           name: 'Николаев Сергей Олегович',    position: 'QA-инженер',           team: 'Продуктовая разработка', avatar: '/avatars/konstantin.webp', startDate: '2026-09-14', endDate: '2026-09-18', days: 5,  status: 'pending'  },
   { id: 'r21', reqNum: '234521', type: 'unplanned', typeLabel: 'Отпуск без сохранения з.п.',     name: 'Смирнов Игорь Павлович',      position: 'UI/UX-дизайнер',       team: 'Дизайн',                 avatar: '/avatars/manokhin.webp',   startDate: '2026-10-05', endDate: '2026-10-09', days: 5,  status: 'approved' },
   { id: 'r22', reqNum: '234522', type: 'unplanned', typeLabel: 'Учебный без сохранения з.п.',    name: 'Иванова Мария Сергеевна',     position: 'Frontend-разработчик', team: 'Продуктовая разработка', avatar: '/avatars/maria.webp',      startDate: '2027-02-10', endDate: '2027-02-14', days: 5,  status: 'pending'  },
+  { id: 'r23', reqNum: '234523', type: 'unplanned', typeLabel: 'Отпуск без сохранения з.п.',     name: 'Козлова Елена Александровна', position: 'Аналитик',             team: 'Продуктовая разработка', avatar: '/avatars/marina.webp',     startDate: '2026-12-08', endDate: '2026-12-12', days: 5,  status: 'pending'  },
+  { id: 'r24', reqNum: '234524', type: 'unplanned', typeLabel: PLANNED_LABEL,                    name: 'Васильева Ольга Николаевна',  position: 'Графический дизайнер', team: 'Дизайн',                 avatar: '/avatars/olga.webp',       startDate: '2027-04-14', endDate: '2027-04-18', days: 5,  status: 'pending'  },
 ]
 
 export const ALL_EMPLOYEES = [

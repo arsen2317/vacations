@@ -287,19 +287,6 @@ function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenRe
             <StatusBadge status={request.status} />
           </div>
 
-          {/* Overlap banners */}
-          {overlaps.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-              {overlaps.map(r => (
-                <Banner
-                  key={r.id}
-                  type="warning"
-                  title={`Период отпуска пересекается с ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
-                />
-              ))}
-            </div>
-          )}
-
           {/* Employee row */}
           <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
@@ -319,6 +306,19 @@ function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenRe
           <InfoCell label="Тип отпуска"   value={request.typeLabel} />
           <InfoCell label="Период" value={fmtRangeRu(request.startDate, request.endDate)} />
           <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+
+          {/* Overlap banners — above action buttons */}
+          {overlaps.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12 }}>
+              {overlaps.map(r => (
+                <Banner
+                  key={r.id}
+                  type="warning"
+                  title={`Период отпуска пересекается с ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Actions */}
           {canApprove && (
@@ -595,6 +595,7 @@ export default function ManagerPage() {
   const [search,          setSearch]          = useState('')
   const [deptFilter,      setDeptFilter]      = useState('all')
   const [typeFilter,      setTypeFilter]      = useState('all')
+  const [yearFilter,      setYearFilter]      = useState('all')
   const [page,            setPage]            = useState(1)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [rejectTarget,    setRejectTarget]    = useState(null)
@@ -617,10 +618,11 @@ export default function ManagerPage() {
     return incomingRequests.filter(r => {
       const matchDept   = deptFilter === 'all' || r.team === deptFilter
       const matchType   = typeFilter === 'all' || r.type === typeFilter
+      const matchYear   = yearFilter === 'all' || r.startDate.startsWith(yearFilter)
       const matchSearch = !q || r.name.toLowerCase().includes(q) || r.team.toLowerCase().includes(q) || r.position.toLowerCase().includes(q)
-      return matchDept && matchType && matchSearch
+      return matchDept && matchType && matchYear && matchSearch
     })
-  }, [incomingRequests, search, deptFilter, typeFilter])
+  }, [incomingRequests, search, deptFilter, typeFilter, yearFilter])
 
   // Overlaps for the currently open request (used in modal)
   const selectedOverlaps = useMemo(() => {
@@ -766,6 +768,19 @@ export default function ManagerPage() {
               { id: 'unplanned', name: 'Внеплановый отпуск' },
             ]}
             onChange={v => { setTypeFilter(v); setPage(1) }}
+          />
+        </div>
+
+        {/* Year filter */}
+        <div style={{ width: 140 }}>
+          <SelectField
+            value={yearFilter}
+            options={[
+              { id: 'all',                     name: 'Все годы' },
+              { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
+              { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
+            ]}
+            onChange={v => { setYearFilter(v); setPage(1) }}
           />
         </div>
 
