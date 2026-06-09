@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useApp } from '../context/AppContext'
 import { COLORS, BTN_STYLE } from '../ds/index'
 
 const DAYS_PER_MONTH = 2.33
@@ -10,48 +11,28 @@ function fullMonthsBetween(start, end) {
   return Math.max(0, months)
 }
 
-function DateField({ label, value, onChange }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-        {label}
-      </div>
-      <input
-        type="date"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{
-          height: 44,
-          paddingLeft: 12,
-          paddingRight: 12,
-          background: '#F2F3F7',
-          borderRadius: 16,
-          outline: '1px rgba(188, 195, 208, 0.50) solid',
-          outlineOffset: '-1px',
-          border: 'none',
-          color: '#1D2023',
-          fontSize: 17,
-          fontFamily: "'MTSCompact', sans-serif",
-          boxSizing: 'border-box',
-        }}
-      />
-    </div>
-  )
+function pluralDays(n) {
+  if (n % 10 === 1 && n % 100 !== 11) return 'день'
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'дня'
+  return 'дней'
 }
 
 export default function VacationCalculatorModal({ onClose }) {
-  const [hireDate, setHireDate] = useState('')
+  const { balance } = useApp()
   const [targetDate, setTargetDate] = useState('')
 
-  const start = hireDate ? new Date(hireDate + 'T00:00:00') : null
+  const today = new Date(); today.setHours(0, 0, 0, 0)
   const end = targetDate ? new Date(targetDate + 'T00:00:00') : null
-  const months = fullMonthsBetween(start, end)
-  const accrued = Math.floor(months * DAYS_PER_MONTH)
-  const canCalculate = !!start && !!end && end > start
+  const isValid = !!end && end > today
+
+  const additionalMonths = isValid ? fullMonthsBetween(today, end) : 0
+  const additionalDays = Math.floor(additionalMonths * DAYS_PER_MONTH)
+  const total = (balance.main ?? 0) + additionalDays
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'MTSCompact', sans-serif" }}>
+
         {/* Header */}
         <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>
@@ -67,24 +48,63 @@ export default function VacationCalculatorModal({ onClose }) {
         {/* Body */}
         <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            Рассчитайте, сколько дней отпуска накопится к выбранной дате. За каждый полный месяц отработанного стажа начисляется {DAYS_PER_MONTH.toString().replace('.', ',')} календарных дня отпуска.
+            Расчёт ведётся от текущего остатка отпуска. За каждый полный месяц начисляется {DAYS_PER_MONTH.toString().replace('.', ',')} календарных дня.
           </div>
 
-          <DateField label="Дата приёма на работу" value={hireDate} onChange={setHireDate} />
-          <DateField label="Рассчитать на дату" value={targetDate} onChange={setTargetDate} />
+          {/* Current balance */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              Текущий остаток
+            </div>
+            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+              {balance.main ?? 0} {pluralDays(balance.main ?? 0)}
+            </div>
+          </div>
 
-          {hireDate && targetDate && !canCalculate && (
-            <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>Дата расчёта должна быть позже даты приёма на работу</span>
-          )}
+          {/* Target date */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              Рассчитать на дату
+            </div>
+            <input
+              type="date"
+              value={targetDate}
+              onChange={e => setTargetDate(e.target.value)}
+              style={{
+                height: 44,
+                paddingLeft: 12,
+                paddingRight: 12,
+                background: '#F2F3F7',
+                borderRadius: 16,
+                outline: '1px rgba(188, 195, 208, 0.50) solid',
+                outlineOffset: '-1px',
+                border: 'none',
+                color: '#1D2023',
+                fontSize: 17,
+                fontFamily: "'MTSCompact', sans-serif",
+                boxSizing: 'border-box',
+                width: '100%',
+              }}
+            />
+            {targetDate && !isValid && (
+              <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>Дата должна быть позже сегодняшней</span>
+            )}
+          </div>
 
-          {canCalculate && (
+          {/* Result */}
+          {isValid && (
             <div style={{ background: '#F2F3F7', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
                 К выбранной дате накопится
               </span>
               <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-                {accrued} дн.
+                {total} {pluralDays(total)}
               </span>
+              {additionalDays > 0 && (
+                <span style={{ color: '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", lineHeight: '16px' }}>
+                  {balance.main ?? 0} сейчас + {additionalDays} накопится за {additionalMonths} {additionalMonths % 10 === 1 && additionalMonths % 100 !== 11 ? 'месяц' : additionalMonths % 10 >= 2 && additionalMonths % 10 <= 4 && (additionalMonths % 100 < 10 || additionalMonths % 100 >= 20) ? 'месяца' : 'месяцев'}
+                </span>
+              )}
             </div>
           )}
         </div>
