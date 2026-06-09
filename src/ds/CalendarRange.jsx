@@ -83,7 +83,7 @@ function formatDate(d) {
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
 }
 
-function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayEnter, onDayLeave, busyDatesMap, onBusyHover }) {
+function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayEnter, onDayLeave, busyDatesMap, onBusyHover, segmentDatesMap, onDeleteSegment }) {
   const grid = getMonthGrid(year, month)
   const weeks = []
   for (let i = 0; i < grid.length; i += 7) weeks.push(grid.slice(i, i + 7))
@@ -134,6 +134,15 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
               const busyColleagues = busyDatesMap?.[isoD] ?? []
               const hasBusy = busyColleagues.length > 0
 
+              const segCells = segmentDatesMap?.[isoD] ?? []
+              const inSegment = segCells.length > 0
+              const isSegStart = segCells.some(s => s.isStart)
+              const isSegEnd = segCells.some(s => s.isEnd)
+              const endSegId = segCells.find(s => s.isEnd)?.segId
+
+              const segBgLeft = inSegment ? ((isSegStart || isRowStart) ? 12 : 0) : 0
+              const segBgRight = inSegment ? ((isSegEnd || isRowEnd) ? 12 : 0) : 0
+
               return (
                 <div
                   key={di}
@@ -149,6 +158,18 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
                     onBusyHover?.(null, null)
                   }}
                 >
+                  {/* User segment background */}
+                  {inSegment && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 2, bottom: 2,
+                      left: (isSegStart || isRowStart) ? 2 : 0,
+                      right: (isSegEnd || isRowEnd) ? 2 : 0,
+                      background: '#C7E1FF',
+                      borderRadius: `${segBgLeft}px ${segBgRight}px ${segBgRight}px ${segBgLeft}px`,
+                    }} />
+                  )}
+
                   {/* Range background strip */}
                   {showRangeBg && (
                     <div style={{
@@ -199,6 +220,29 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
                       zIndex: 3,
                     }} />
                   )}
+
+                  {/* Segment delete button */}
+                  {isSegEnd && endSegId !== undefined && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteSegment?.(endSegId) }}
+                      style={{
+                        position: 'absolute',
+                        top: 0, right: 0,
+                        width: 16, height: 16,
+                        background: 'rgba(29,32,35,0.65)',
+                        border: 'none',
+                        borderRadius: '0 12px 0 8px',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 5,
+                      }}
+                    >
+                      <svg width="7" height="7" viewBox="0 0 12 12" fill="none">
+                        <path d="M1 1L11 11M11 1L1 11" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -209,7 +253,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
   )
 }
 
-export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = 'Применить', onApply, onClose, colleagueSegments = [] }) {
+export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = 'Применить', onApply, onClose, colleagueSegments = [], userSegments = [], onDeleteSegment }) {
   const today = dayOnly(new Date())
 
   const [viewMonth, setViewMonth] = useState(() => {
@@ -238,6 +282,24 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
     }
     return map
   }, [colleagueSegments])
+
+  const segmentDatesMap = useMemo(() => {
+    const map = {}
+    for (const seg of userSegments) {
+      const s = new Date(typeof seg.startDate === 'string' ? seg.startDate + 'T00:00:00' : seg.startDate)
+      const e = new Date(typeof seg.endDate === 'string' ? seg.endDate + 'T00:00:00' : seg.endDate)
+      const startKey = toISODate(s)
+      const endKey = toISODate(e)
+      const cur = new Date(s)
+      while (cur <= e) {
+        const key = toISODate(cur)
+        if (!map[key]) map[key] = []
+        map[key].push({ segId: seg.id, isStart: key === startKey, isEnd: key === endKey })
+        cur.setDate(cur.getDate() + 1)
+      }
+    }
+    return map
+  }, [userSegments])
 
   const [calTooltip, setCalTooltip] = useState(null)
 
@@ -328,12 +390,14 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
             start={start} effectiveEnd={effectiveEnd} today={today}
             onDayClick={handleDayClick} onDayEnter={handleDayEnter} onDayLeave={() => setHover(null)}
             busyDatesMap={busyDatesMap} onBusyHover={handleBusyHover}
+            segmentDatesMap={segmentDatesMap} onDeleteSegment={onDeleteSegment}
           />
           <MonthGrid
             year={month2.getFullYear()} month={month2.getMonth()}
             start={start} effectiveEnd={effectiveEnd} today={today}
             onDayClick={handleDayClick} onDayEnter={handleDayEnter} onDayLeave={() => setHover(null)}
             busyDatesMap={busyDatesMap} onBusyHover={handleBusyHover}
+            segmentDatesMap={segmentDatesMap} onDeleteSegment={onDeleteSegment}
           />
         </div>
       </div>

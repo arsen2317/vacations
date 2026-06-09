@@ -124,14 +124,7 @@ export const HOLIDAYS_2026 = new Set([
   '2026-11-04',
 ])
 
-export const INITIAL_SEGMENTS = [
-  {
-    id: 1,
-    startDate: '2027-07-14',
-    endDate: '2027-07-27',
-    days: 14,
-  },
-]
+export const INITIAL_SEGMENTS = []
 
 export const APPROVED_SEGMENTS = [
   {

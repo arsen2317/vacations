@@ -1,12 +1,15 @@
-import { CloseCircleIcon, InfoIcon } from "./icons";
+import { CloseCircleIcon, InfoIcon, CheckCircleIcon } from "./icons";
 
 export function Banner({ type, title, subtitle }) {
   const isError = type === "error";
+  const isSuccess = type === "success";
   return (
     <div style={{ width: "100%", padding: 12, background: "#F2F3F7", borderRadius: 16, display: "inline-flex", justifyContent: "flex-start", alignItems: "flex-start", gap: 8, boxSizing: "border-box" }}>
       <div style={{ flexShrink: 0, marginTop: 1 }}>
         {isError
           ? <CloseCircleIcon color="#E30611" />
+          : isSuccess
+          ? <CheckCircleIcon color="#26CD58" />
           : <InfoIcon color="#007CFF" />
         }
       </div>

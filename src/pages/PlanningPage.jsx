@@ -5,7 +5,7 @@ import { COLLEAGUES, ALL_EMPLOYEES, CURRENT_USER, CAMPAIGN } from '../data/mockD
 import {
   COLORS, BTN_STYLE,
   Banner, CalendarRange, SelectField, Chip,
-  SearchIcon, InfoIcon,
+  SearchIcon, InfoIcon, CloseCircleIcon,
 } from '../ds/index.js'
 import StatusBadge from '../components/StatusBadge'
 import RequestModal from '../components/RequestModal'
@@ -517,39 +517,65 @@ export default function PlanningPage({ onGoToRequests }) {
   const progressPct     = Math.min(100, Math.round((distributedDays / campaign.totalDays) * 100))
 
   const [showAddDialog,     setShowAddDialog]     = useState(false)
-  const [addError,          setAddError]          = useState('')
+  const [calendarResetKey,  setCalendarResetKey]  = useState(0)
+  const [toast,             setToast]             = useState(null)
   const [showSubmitDialog,  setShowSubmitDialog]  = useState(false)
   const [extraApprover,     setExtraApprover]     = useState(null)
   const [segModal,          setSegModal]          = useState(null)
 
   const displaySegments = planStatus === 'approved' ? approvedSegments : segments
 
+  function showToast(msg) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3500)
+  }
+
   function tryAddSegment(start, end) {
-    setAddError('')
     const startStr = dateToISO(start)
-    const endStr   = dateToISO(end)
+    const endStr = dateToISO(end)
     const s = new Date(startStr + 'T00:00:00')
-    const e = new Date(endStr   + 'T00:00:00')
+    const e = new Date(endStr + 'T00:00:00')
+
     if (s.getFullYear() !== year || e.getFullYear() !== year) {
-      setAddError(`Даты должны быть в ${year} году`); return false
+      showToast(`Даты должны быть в ${year} году`)
+      return false
     }
-    for (const seg of segments) {
+
+    const overlapping = segments.filter(seg => {
       const ss = new Date(seg.startDate + 'T00:00:00')
-      const se = new Date(seg.endDate   + 'T00:00:00')
-      if (s <= se && e >= ss) { setAddError('Период пересекается с существующим'); return false }
-    }
+      const se = new Date(seg.endDate + 'T00:00:00')
+      return s <= se && e >= ss
+    })
+
+    const freedDays = overlapping.reduce((sum, seg) => sum + seg.days, 0)
     const days = countVacationDays(s, e)
-    if (days > remainingDays) {
-      setAddError(`${pluralDays(days)} — превышает остаток ${pluralDays(remainingDays)}`); return false
+    const availableDays = remainingDays + freedDays
+
+    if (remainingDays === 0 && overlapping.length === 0) {
+      showToast('У вас больше нет доступных дней отпуска')
+      return false
     }
+
+    if (days > availableDays) {
+      showToast('Выбранный период превышает остаток дней отпуска')
+      return false
+    }
+
     const seg = { id: Date.now(), startDate: startStr, endDate: endStr, days }
-    setSegments(prev => [...prev, seg].sort((a, b) => a.startDate.localeCompare(b.startDate)))
+    setSegments(prev => {
+      const filtered = prev.filter(p => !overlapping.some(o => o.id === p.id))
+      return [...filtered, seg].sort((a, b) => a.startDate.localeCompare(b.startDate))
+    })
     setDraftSaved(false)
     return true
   }
 
   function handleAddApply(start, end) {
-    if (tryAddSegment(start, end)) setShowAddDialog(false)
+    if (tryAddSegment(start, end)) {
+      setShowAddDialog(false)
+    } else {
+      setCalendarResetKey(k => k + 1)
+    }
   }
 
   function handleSegReschedule(segId, start, end) {
