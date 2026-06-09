@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
 
 const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+const MONTH_GEN  = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 
 const STATUS_STYLES = {
@@ -16,8 +17,8 @@ const STATUS_STYLES = {
 
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
 
-const CELL = 36      // pill size
-const ROW_H = 36     // row cell height
+const CELL = 36
+const ROW_H = 36
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -41,9 +42,23 @@ function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
-// Standard row-based calendar grid (same approach as CalendarRange)
+function formatNameShort(name) {
+  if (!name) return '—'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0]
+  const surname = parts[parts.length - 1]
+  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join(' ')
+  return `${surname} ${initials}`
+}
+
+function formatDateRangeISO(startISO, endISO) {
+  const s = new Date(startISO + 'T00:00:00')
+  const e = new Date(endISO + 'T00:00:00')
+  return `${s.getDate()} ${MONTH_GEN[s.getMonth()]} – ${e.getDate()} ${MONTH_GEN[e.getMonth()]}`
+}
+
 function getMonthWeeks(year, month) {
-  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7 // Mon=0
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const grid = []
   for (let i = 0; i < firstDow; i++) grid.push(null)
@@ -70,13 +85,12 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueDates }) {
+function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, onDeleteRequest }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
   return (
     <div style={{ width: '100%' }}>
-      {/* Month name */}
       <div style={{
         textAlign: 'center',
         color: '#1D2023',
@@ -89,7 +103,6 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
         {MONTH_NAMES[month]}
       </div>
 
-      {/* Weekday headers + day rows — centered within the column */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)`, marginBottom: 4 }}>
         {WEEKDAYS.map(wd => (
@@ -120,14 +133,14 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               const isToday = sameDay(d, today)
               const req = getRequestForDay(d, requests)
               const vacStyle = req ? (STATUS_STYLES[req.status] || STATUS_STYLES.cancelled) : null
-              const hasColleagueDot = colleagueDates?.has(toISODate(d)) ?? false
+              const isoDate = toISODate(d)
+              const hasColleagueDot = colleagueMap?.has(isoDate) ?? false
 
               const isStart = sameDay(d, selStart)
               const isEnd   = sameDay(d, effectiveSelEnd)
               const inRange = selStart && effectiveSelEnd && d > selStart && d < effectiveSelEnd
               const isSelected = isStart || isEnd
 
-              // Strip logic — identical to CalendarRange
               const rangeHalfStart = isStart && effectiveSelEnd && selStart.getTime() !== effectiveSelEnd.getTime()
               const rangeHalfEnd   = isEnd   && selStart       && selStart.getTime() !== effectiveSelEnd.getTime()
               const showStripBg    = inRange || rangeHalfStart || rangeHalfEnd
@@ -143,17 +156,14 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                   ? `${isRowStart ? r : 0}px 0 0 ${isRowStart ? r : 0}px`
                   : `${isRowStart ? r : 0}px ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px ${isRowStart ? r : 0}px`
 
-              // Past dates with a vacation are still clickable (view-only)
               const canClick = !isPast || req !== null
 
-              // Text color
               const inAnyHighlight = isSelected || showStripBg
               let textColor = isToday ? '#0066FF' : isNonWorking ? '#F95721' : '#1D2023'
               if (isSelected) textColor = '#FAFAFA'
               else if (vacStyle && !inAnyHighlight) textColor = vacStyle.color
               if (isPast) {
                 if (vacStyle && !inAnyHighlight) {
-                  // Mute the vacation color to ~50% blend with white
                   const MUTED = { approved: '#80BA81', pending: '#80ADE0', rescheduling: '#80ADE0', reviewing: '#BC9BE4', cancelled: '#B0B4BE', draft: '#B0B4BE' }
                   textColor = MUTED[req?.status] ?? '#BCC3D0'
                 } else {
@@ -162,15 +172,28 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
               }
               const fontWeight = (isSelected || (vacStyle && !inAnyHighlight)) ? 500 : 400
 
+              // Delete button: show on end date of each request when onDeleteRequest is provided
+              const reqEndingHere = onDeleteRequest
+                ? requests.find(r2 => r2.status !== 'rejected' && sameDay(dayOnly(r2.endDate), d))
+                : null
+
               return (
                 <div
                   key={di}
                   style={{ position: 'relative', width: CELL, height: ROW_H, cursor: canClick ? 'pointer' : 'default' }}
                   onClick={() => { if (canClick) onDayClick(d, req) }}
-                  onMouseEnter={() => { if (canClick) onDayEnter(d) }}
-                  onMouseLeave={onDayLeave}
+                  onMouseEnter={e => {
+                    if (canClick) onDayEnter(d)
+                    if (hasColleagueDot) {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      onColEnter?.(rect.left + rect.width / 2, rect.top, colleagueMap.get(isoDate))
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    onDayLeave()
+                    if (hasColleagueDot) onColLeave?.()
+                  }}
                 >
-                  {/* Selection range strip — bottom 1px left empty for gap */}
                   {showStripBg && (
                     <div style={{
                       position: 'absolute',
@@ -182,7 +205,6 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                     }} />
                   )}
 
-                  {/* Vacation pill — 36×36, bottom 1px left for gap */}
                   {vacStyle && !showStripBg && !isSelected && (
                     <div style={{
                       position: 'absolute',
@@ -193,7 +215,6 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                     }} />
                   )}
 
-                  {/* Selection circle (start / end) — 36×36 */}
                   {isSelected && (
                     <div style={{
                       position: 'absolute',
@@ -207,14 +228,39 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
 
                   {/* Colleague vacation dot */}
                   {hasColleagueDot && (
-                    <div style={{
-                      position: 'absolute',
-                      width: 6, height: 6,
-                      borderRadius: '50%',
-                      background: '#FFBB00',
-                      top: 6, right: 6,
-                      zIndex: 3,
-                    }} />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        width: 6, height: 6,
+                        borderRadius: '50%',
+                        background: '#FFBB00',
+                        top: 4, right: 4,
+                        zIndex: 3,
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  )}
+
+                  {/* Delete button on last date of each request */}
+                  {reqEndingHere && onDeleteRequest && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0, right: 0,
+                        width: 16, height: 16,
+                        zIndex: 4,
+                        cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: '#fff',
+                        borderRadius: '50%',
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.08)',
+                      }}
+                      onClick={e => { e.stopPropagation(); onDeleteRequest(reqEndingHere) }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none">
+                        <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
+                      </svg>
+                    </div>
                   )}
 
                   {/* Day number */}
@@ -247,11 +293,12 @@ const MONTH_W = (832 - COL_GAP * 2) / 3  // 261.33
 export function calendarWidth(cols) { return cols * MONTH_W + (cols - 1) * COL_GAP }
 export const YEAR_CALENDAR_WIDTH = calendarWidth(3)  // 832
 
-export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueDates, cols = 3 }) {
+export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onDeleteRequest }) {
   const today = dayOnly(new Date())
   const [selStart, setSelStart] = useState(null)
   const [selEnd,   setSelEnd]   = useState(null)
   const [hover,    setHover]    = useState(null)
+  const [colTooltip, setColTooltip] = useState(null) // { x, y, entries }
 
   const effectiveSelEnd = selEnd
     || (selStart && hover && hover > selStart ? hover : null)
@@ -276,28 +323,74 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
   }
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: `repeat(${cols}, 1fr)`,
-      columnGap: COL_GAP,
-      rowGap: ROW_GAP,
-      width: calendarWidth(cols),
-    }}>
-      {Array.from({ length: 12 }, (_, m) => (
-        <YearMonthGrid
-          key={m}
-          year={year}
-          month={m}
-          requests={requests}
-          selStart={selStart}
-          effectiveSelEnd={effectiveSelEnd}
-          today={today}
-          onDayClick={handleDayClick}
-          onDayEnter={handleDayEnter}
-          onDayLeave={() => setHover(null)}
-          colleagueDates={colleagueDates}
-        />
-      ))}
-    </div>
+    <>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        columnGap: COL_GAP,
+        rowGap: ROW_GAP,
+        width: calendarWidth(cols),
+      }}>
+        {Array.from({ length: 12 }, (_, m) => (
+          <YearMonthGrid
+            key={m}
+            year={year}
+            month={m}
+            requests={requests}
+            selStart={selStart}
+            effectiveSelEnd={effectiveSelEnd}
+            today={today}
+            onDayClick={handleDayClick}
+            onDayEnter={handleDayEnter}
+            onDayLeave={() => { setHover(null) }}
+            colleagueMap={colleagueMap}
+            onColEnter={(x, y, entries) => setColTooltip({ x, y, entries })}
+            onColLeave={() => setColTooltip(null)}
+            onDeleteRequest={onDeleteRequest}
+          />
+        ))}
+      </div>
+
+      {colTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: colTooltip.x,
+          top: colTooltip.y,
+          transform: 'translate(-50%, calc(-100% - 4px))',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          display: 'inline-flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          <div style={{
+            padding: 12,
+            background: '#1D2023',
+            borderRadius: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            minWidth: 180,
+          }}>
+            <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+              Отпуска коллег
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {colTooltip.entries.map((entry, i) => (
+                <div key={i} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#FAC031', flexShrink: 0 }} />
+                  <div style={{ color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>
+                    {formatNameShort(entry.name)} ({formatDateRangeISO(entry.startDate, entry.endDate)})
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="8" viewBox="0 0 20 8" fill="none">
+            <path fillRule="evenodd" clipRule="evenodd" d="M10 8C13 8 15.9999 0 20 0H0C3.9749 0 7 8 10 8Z" fill="#1D2023"/>
+          </svg>
+        </div>
+      )}
+    </>
   )
 }

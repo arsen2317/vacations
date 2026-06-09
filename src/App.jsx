@@ -23,7 +23,10 @@ function AppInner() {
 
   function handleRoleChange(value) {
     setRole(value)
-    setActiveTab('home')
+    const tabsAlwaysAccessible = ['work', 'home', 'planning', 'colleagues']
+    if (!tabsAlwaysAccessible.includes(activeTab)) {
+      setActiveTab('home')
+    }
   }
 
   const sidebarShown = isDocked && sidebarOpen

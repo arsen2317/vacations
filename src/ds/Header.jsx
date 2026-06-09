@@ -228,7 +228,7 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
               ) : (
                 <>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                    <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
+                    <span onClick={() => onNavigate?.('work')} style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', cursor: 'pointer' }}>работа и отдых</span>
                     <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
                   </div>
                   <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>

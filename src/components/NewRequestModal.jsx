@@ -59,6 +59,26 @@ function findColleagueOverlap(start, end) {
   return null
 }
 
+function findAllColleagueOverlaps(start, end) {
+  if (!start || !end) return []
+  const results = []
+  for (const col of COLLEAGUES) {
+    if (col.me) continue
+    for (const seg of (col.segments ?? [])) {
+      if (seg.status === 'draft' || seg.status === 'rejected' || seg.status === 'cancelled') continue
+      const segStart = new Date(seg.startDate + 'T00:00:00')
+      const segEnd   = new Date(seg.endDate   + 'T00:00:00')
+      if (start <= segEnd && end >= segStart) {
+        const overlapStart = start > segStart ? start : segStart
+        const overlapEnd   = end   < segEnd   ? end   : segEnd
+        results.push({ colleague: col, start: overlapStart, end: overlapEnd })
+      }
+    }
+  }
+  return results
+}
+
+
 function PeriodField({ start, end, error, onClick }) {
   const hasValue = !!start
   return (
@@ -192,6 +212,11 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     return findColleagueOverlap(startDate, endDate || startDate)
   }, [startDate, endDate])
 
+  const overlaps = useMemo(() => {
+    if (!startDate) return []
+    return findAllColleagueOverlaps(startDate, endDate || startDate)
+  }, [startDate, endDate])
+
   function validate() {
     const errs = {}
     if (!type) errs.type = 'Выберите тип отпуска'
@@ -255,25 +280,6 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
           {/* Body */}
           <div className="modal-scroll" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
 
-            {/* Тип отпуска */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <SelectField
-                label="Тип отпуска"
-                value={type}
-                options={REQUEST_TYPES}
-                placeholder="Выберите тип отпуска"
-                onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
-              />
-              {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
-              {selectedType && (
-                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
-                  {selectedType.id === 'annual'
-                    ? `За счёт накопленного ежегодного основного оплачиваемого отпуска: ${balance.main} дней`
-                    : selectedType.desc}
-                </span>
-              )}
-            </div>
-
             {/* Период */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div ref={periodRef}>
@@ -296,6 +302,25 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                   type="warning"
                   title={`Период отпуска пересекается с ${formatNameShort(overlap.colleague.name)}: ${formatOverlapRange(overlap.start, overlap.end)}`}
                 />
+              )}
+            </div>
+
+            {/* Тип отпуска */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <SelectField
+                label="Тип отпуска"
+                value={type}
+                options={REQUEST_TYPES}
+                placeholder="Выберите тип отпуска"
+                onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
+              />
+              {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
+              {selectedType && (
+                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
+                  {selectedType.id === 'annual'
+                    ? `За счёт накопленного ежегодного основного оплачиваемого отпуска: ${balance.main} дней`
+                    : selectedType.desc}
+                </span>
               )}
             </div>
 

@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays } from '../utils/dateUtils'
 import StatusBadge from './StatusBadge'
-import { CalendarRange, BTN_STYLE } from '../ds/index'
+import { CalendarRange, BTN_STYLE, Banner } from '../ds/index'
+import { COLLEAGUES } from '../data/mockData'
 
 const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
+const MONTHS_GEN = MONTHS_RU
 
 function fmtDateRu(date) {
   if (!date) return '—'
@@ -38,8 +40,33 @@ function formatNameShort(name) {
   const parts = name.trim().split(/\s+/)
   if (parts.length === 1) return parts[0]
   const surname = parts[parts.length - 1]
-  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join('')
+  const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join(' ')
   return `${surname} ${initials}`
+}
+
+function formatOverlapRange(start, end) {
+  return `${start.getDate()} ${MONTHS_GEN[start.getMonth()]} – ${end.getDate()} ${MONTHS_GEN[end.getMonth()]}`
+}
+
+function findAllColleagueOverlaps(start, end) {
+  if (!start || !end) return []
+  const s = start instanceof Date ? start : new Date(start)
+  const e = end instanceof Date ? end : new Date(end)
+  const results = []
+  for (const col of COLLEAGUES) {
+    if (col.me) continue
+    for (const seg of (col.segments ?? [])) {
+      if (seg.status === 'draft' || seg.status === 'rejected' || seg.status === 'cancelled') continue
+      const segStart = new Date(seg.startDate + 'T00:00:00')
+      const segEnd   = new Date(seg.endDate   + 'T00:00:00')
+      if (s <= segEnd && e >= segStart) {
+        const overlapStart = s > segStart ? s : segStart
+        const overlapEnd   = e < segEnd   ? e : segEnd
+        results.push({ colleague: col, start: overlapStart, end: overlapEnd })
+      }
+    }
+  }
+  return results
 }
 
 function InfoCell({ label, value }) {
@@ -88,6 +115,11 @@ export default function RequestModal({ request, onClose, onAction }) {
   const { setRequests } = useApp()
   const [showReschedule, setShowReschedule] = useState(false)
   const [rescheduleError, setRescheduleError] = useState(null)
+
+  const overlaps = useMemo(() => {
+    if (!request) return []
+    return findAllColleagueOverlaps(request.startDate, request.endDate)
+  }, [request])
 
   if (!request) return null
 
@@ -237,12 +269,28 @@ export default function RequestModal({ request, onClose, onAction }) {
                 value={fmtRange(request.originalRequest.startDate, request.originalRequest.endDate)}
               />
               <InfoCell label="Новый период" value={fmtRange(request.startDate, request.endDate)} />
+              {overlaps.length > 0 && (
+                <div style={{ paddingBottom: 4 }}>
+                  <Banner
+                    type="warning"
+                    title={`Период отпуска пересекается с ${formatNameShort(overlaps[0].colleague.name)}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
+                  />
+                </div>
+              )}
               <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
             </>
           ) : (
             <>
               <InfoCell label="Тип отпуска" value={request.typeLabel || 'Ежегодный основной оплачиваемый'} />
               <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
+              {overlaps.length > 0 && (
+                <div style={{ paddingBottom: 4 }}>
+                  <Banner
+                    type="warning"
+                    title={`Период отпуска пересекается с ${formatNameShort(overlaps[0].colleague.name)}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
+                  />
+                </div>
+              )}
               <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
               {isPlanned && status === 'approved' && (
                 <InfoCell label="Доступно переносов" value={`${rescheduleLeft} из ${request.rescheduleLimit ?? 2}`} />

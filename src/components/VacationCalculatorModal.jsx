@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useApp } from '../context/AppContext'
-import { COLORS, BTN_STYLE, CalendarRange } from '../ds/index'
+import { COLORS, BTN_STYLE, CalendarSingle } from '../ds/index'
 
 const DAYS_PER_MONTH = 2.33
 const MONTH_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
@@ -112,7 +112,7 @@ export default function VacationCalculatorModal({ onClose }) {
               >
                 <div style={{ flex: '1 1 0', overflow: 'hidden' }}>
                   <div style={{ color: targetDate ? '#1D2023' : '#8C9BAB', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-                    {targetDate ? fmtDate(targetDate) : 'дд месяц гггг'}
+                    {targetDate ? fmtDate(targetDate) : 'Выберите дату'}
                   </div>
                 </div>
                 <div style={{ padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -163,10 +163,11 @@ export default function VacationCalculatorModal({ onClose }) {
             onClick={e => e.stopPropagation()}
             style={{ position: 'fixed', top: calendarRect.bottom + 4, left: calendarRect.left }}
           >
-            <CalendarRange
-              initialStart={targetDate}
-              onApply={(start) => {
-                setTargetDate(start)
+            <CalendarSingle
+              initialDate={targetDate}
+              minDate={(() => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + 1); return d })()}
+              onApply={(date) => {
+                setTargetDate(date)
                 setShowCalendar(false)
               }}
               onClose={() => setShowCalendar(false)}
