@@ -59,6 +59,53 @@ function findColleagueOverlap(start, end) {
   return null
 }
 
+function findAllColleagueOverlaps(start, end) {
+  if (!start || !end) return []
+  const results = []
+  for (const col of COLLEAGUES) {
+    if (col.me) continue
+    for (const seg of (col.segments ?? [])) {
+      if (seg.status === 'draft' || seg.status === 'rejected' || seg.status === 'cancelled') continue
+      const segStart = new Date(seg.startDate + 'T00:00:00')
+      const segEnd   = new Date(seg.endDate   + 'T00:00:00')
+      if (start <= segEnd && end >= segStart) {
+        const overlapStart = start > segStart ? start : segStart
+        const overlapEnd   = end   < segEnd   ? end   : segEnd
+        results.push({ colleague: col, start: overlapStart, end: overlapEnd })
+      }
+    }
+  }
+  return results
+}
+
+function ColleaguesTooltip({ overlaps }) {
+  if (!overlaps.length) return null
+  return (
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 50, display: 'inline-flex', alignItems: 'flex-start' }}>
+      <div style={{ width: 8, height: 36, position: 'relative', flexShrink: 0 }}>
+        <div style={{ width: 9, height: 20, left: 0, top: 8, position: 'absolute', background: '#1D2023' }} />
+      </div>
+      <div style={{ flex: '1 1 0', padding: 12, background: '#1D2023', borderRadius: 12, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex' }}>
+        <div style={{ alignSelf: 'stretch', flexDirection: 'column', gap: 12, display: 'flex' }}>
+          <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>Отпуска коллег</div>
+          <div style={{ alignSelf: 'stretch', flexDirection: 'column', gap: 2, display: 'flex' }}>
+            {overlaps.map((o, i) => (
+              <div key={i} style={{ display: 'inline-flex', gap: 8, alignSelf: 'stretch', alignItems: 'flex-start' }}>
+                <div style={{ width: 4, height: 20, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                  <div style={{ width: 4, height: 4, left: 0, top: 8, position: 'absolute', background: '#FAC031', borderRadius: 12 }} />
+                </div>
+                <div style={{ flex: '1 1 0', color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+                  {formatNameShort(o.colleague.name)} ({formatOverlapRange(o.start, o.end)})
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PeriodField({ start, end, error, onClick }) {
   const hasValue = !!start
   return (
@@ -175,6 +222,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const [addExtraApprover, setAddExtraApprover] = useState(false)
   const [extraApprover, setExtraApprover] = useState('')
   const [errors, setErrors] = useState({})
+  const [hoveringPeriod, setHoveringPeriod] = useState(false)
   const selectedType = REQUEST_TYPES.find(t => t.id === type)
 
   const previewDays = useMemo(() => {
@@ -190,6 +238,11 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const overlap = useMemo(() => {
     if (!startDate) return null
     return findColleagueOverlap(startDate, endDate || startDate)
+  }, [startDate, endDate])
+
+  const overlaps = useMemo(() => {
+    if (!startDate) return []
+    return findAllColleagueOverlaps(startDate, endDate || startDate)
   }, [startDate, endDate])
 
   function validate() {
@@ -255,6 +308,37 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
           {/* Body */}
           <div className="modal-scroll" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
 
+            {/* Период */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div
+                ref={periodRef}
+                style={{ position: 'relative' }}
+                onMouseEnter={() => setHoveringPeriod(true)}
+                onMouseLeave={() => setHoveringPeriod(false)}
+              >
+                <PeriodField
+                  start={startDate} end={endDate}
+                  error={errors.dates}
+                  onClick={() => {
+                    setCalendarRect(periodRef.current?.getBoundingClientRect())
+                    setShowCalendar(true)
+                  }}
+                />
+                {hoveringPeriod && overlaps.length > 0 && <ColleaguesTooltip overlaps={overlaps} />}
+              </div>
+              {!errors.dates && previewDays !== null && (
+                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
+                  {pluralDays(previewDays)} отпуска (праздники не считаются)
+                </span>
+              )}
+              {overlap && (
+                <Banner
+                  type="warning"
+                  title={`Период отпуска пересекается с ${formatNameShort(overlap.colleague.name)}: ${formatOverlapRange(overlap.start, overlap.end)}`}
+                />
+              )}
+            </div>
+
             {/* Тип отпуска */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <SelectField
@@ -271,31 +355,6 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                     ? `За счёт накопленного ежегодного основного оплачиваемого отпуска: ${balance.main} дней`
                     : selectedType.desc}
                 </span>
-              )}
-            </div>
-
-            {/* Период */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div ref={periodRef}>
-                <PeriodField
-                  start={startDate} end={endDate}
-                  error={errors.dates}
-                  onClick={() => {
-                    setCalendarRect(periodRef.current?.getBoundingClientRect())
-                    setShowCalendar(true)
-                  }}
-                />
-              </div>
-              {!errors.dates && previewDays !== null && (
-                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
-                  {pluralDays(previewDays)} отпуска (праздники не считаются)
-                </span>
-              )}
-              {overlap && (
-                <Banner
-                  type="warning"
-                  title={`Период отпуска пересекается с ${formatNameShort(overlap.colleague.name)}: ${formatOverlapRange(overlap.start, overlap.end)}`}
-                />
               )}
             </div>
 
