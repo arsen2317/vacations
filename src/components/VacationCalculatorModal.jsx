@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useApp } from '../context/AppContext'
-import { COLORS, BTN_STYLE, CalendarRange } from '../ds/index'
+import { COLORS, BTN_STYLE, CalendarSingle } from '../ds/index'
 
 const DAYS_PER_MONTH = 2.33
 const MONTH_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
@@ -163,10 +163,11 @@ export default function VacationCalculatorModal({ onClose }) {
             onClick={e => e.stopPropagation()}
             style={{ position: 'fixed', top: calendarRect.bottom + 4, left: calendarRect.left }}
           >
-            <CalendarRange
-              initialStart={targetDate}
-              onApply={(start) => {
-                setTargetDate(start)
+            <CalendarSingle
+              initialDate={targetDate}
+              minDate={(() => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + 1); return d })()}
+              onApply={(date) => {
+                setTargetDate(date)
                 setShowCalendar(false)
               }}
               onClose={() => setShowCalendar(false)}

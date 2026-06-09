@@ -182,8 +182,17 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                   key={di}
                   style={{ position: 'relative', width: CELL, height: ROW_H, cursor: canClick ? 'pointer' : 'default' }}
                   onClick={() => { if (canClick) onDayClick(d, req) }}
-                  onMouseEnter={() => { if (canClick) onDayEnter(d) }}
-                  onMouseLeave={onDayLeave}
+                  onMouseEnter={e => {
+                    if (canClick) onDayEnter(d)
+                    if (hasColleagueDot) {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      onColEnter?.(rect.left + rect.width / 2, rect.top, colleagueMap.get(isoDate))
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    onDayLeave()
+                    if (hasColleagueDot) onColLeave?.()
+                  }}
                 >
                   {showStripBg && (
                     <div style={{
@@ -227,13 +236,8 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                         background: '#FFBB00',
                         top: 4, right: 4,
                         zIndex: 3,
+                        pointerEvents: 'none',
                       }}
-                      onMouseEnter={e => {
-                        e.stopPropagation()
-                        const rect = e.currentTarget.getBoundingClientRect()
-                        onColEnter?.(rect.left + rect.width / 2, rect.top, colleagueMap.get(isoDate))
-                      }}
-                      onMouseLeave={e => { e.stopPropagation(); onColLeave?.() }}
                     />
                   )}
 
