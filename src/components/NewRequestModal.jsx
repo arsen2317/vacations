@@ -78,33 +78,6 @@ function findAllColleagueOverlaps(start, end) {
   return results
 }
 
-function ColleaguesTooltip({ overlaps }) {
-  if (!overlaps.length) return null
-  return (
-    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 50, display: 'inline-flex', alignItems: 'flex-start' }}>
-      <div style={{ width: 8, height: 36, position: 'relative', flexShrink: 0 }}>
-        <div style={{ width: 9, height: 20, left: 0, top: 8, position: 'absolute', background: '#1D2023' }} />
-      </div>
-      <div style={{ flex: '1 1 0', padding: 12, background: '#1D2023', borderRadius: 12, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex' }}>
-        <div style={{ alignSelf: 'stretch', flexDirection: 'column', gap: 12, display: 'flex' }}>
-          <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>Отпуска коллег</div>
-          <div style={{ alignSelf: 'stretch', flexDirection: 'column', gap: 2, display: 'flex' }}>
-            {overlaps.map((o, i) => (
-              <div key={i} style={{ display: 'inline-flex', gap: 8, alignSelf: 'stretch', alignItems: 'flex-start' }}>
-                <div style={{ width: 4, height: 20, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-                  <div style={{ width: 4, height: 4, left: 0, top: 8, position: 'absolute', background: '#FAC031', borderRadius: 12 }} />
-                </div>
-                <div style={{ flex: '1 1 0', color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                  {formatNameShort(o.colleague.name)} ({formatOverlapRange(o.start, o.end)})
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function PeriodField({ start, end, error, onClick }) {
   const hasValue = !!start
@@ -222,7 +195,6 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const [addExtraApprover, setAddExtraApprover] = useState(false)
   const [extraApprover, setExtraApprover] = useState('')
   const [errors, setErrors] = useState({})
-  const [hoveringPeriod, setHoveringPeriod] = useState(false)
   const selectedType = REQUEST_TYPES.find(t => t.id === type)
 
   const previewDays = useMemo(() => {
@@ -310,12 +282,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
 
             {/* Период */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div
-                ref={periodRef}
-                style={{ position: 'relative' }}
-                onMouseEnter={() => setHoveringPeriod(true)}
-                onMouseLeave={() => setHoveringPeriod(false)}
-              >
+              <div ref={periodRef}>
                 <PeriodField
                   start={startDate} end={endDate}
                   error={errors.dates}
@@ -324,7 +291,6 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                     setShowCalendar(true)
                   }}
                 />
-                {hoveringPeriod && overlaps.length > 0 && <ColleaguesTooltip overlaps={overlaps} />}
               </div>
               {!errors.dates && previewDays !== null && (
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>

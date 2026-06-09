@@ -69,34 +69,6 @@ function findAllColleagueOverlaps(start, end) {
   return results
 }
 
-function ColleaguesTooltip({ overlaps }) {
-  if (!overlaps.length) return null
-  return (
-    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 50, display: 'inline-flex', alignItems: 'flex-start' }}>
-      <div style={{ width: 8, height: 36, position: 'relative', flexShrink: 0 }}>
-        <div style={{ width: 9, height: 20, left: 0, top: 8, position: 'absolute', background: '#1D2023' }} />
-      </div>
-      <div style={{ flex: '1 1 0', padding: 12, background: '#1D2023', borderRadius: 12, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', display: 'inline-flex' }}>
-        <div style={{ alignSelf: 'stretch', flexDirection: 'column', gap: 12, display: 'flex' }}>
-          <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>Отпуска коллег</div>
-          <div style={{ alignSelf: 'stretch', flexDirection: 'column', gap: 2, display: 'flex' }}>
-            {overlaps.map((o, i) => (
-              <div key={i} style={{ display: 'inline-flex', gap: 8, alignSelf: 'stretch', alignItems: 'flex-start' }}>
-                <div style={{ width: 4, height: 20, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-                  <div style={{ width: 4, height: 4, left: 0, top: 8, position: 'absolute', background: '#FAC031', borderRadius: 12 }} />
-                </div>
-                <div style={{ flex: '1 1 0', color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                  {formatNameShort(o.colleague.name)} ({formatOverlapRange(o.start, o.end)})
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function InfoCell({ label, value }) {
   if (value == null) return null
   return (
@@ -143,7 +115,6 @@ export default function RequestModal({ request, onClose, onAction }) {
   const { setRequests } = useApp()
   const [showReschedule, setShowReschedule] = useState(false)
   const [rescheduleError, setRescheduleError] = useState(null)
-  const [hoveringPeriod, setHoveringPeriod] = useState(false)
 
   const overlaps = useMemo(() => {
     if (!request) return []
@@ -297,14 +268,7 @@ export default function RequestModal({ request, onClose, onAction }) {
                 label="Старый период"
                 value={fmtRange(request.originalRequest.startDate, request.originalRequest.endDate)}
               />
-              <div
-                style={{ position: 'relative' }}
-                onMouseEnter={() => setHoveringPeriod(true)}
-                onMouseLeave={() => setHoveringPeriod(false)}
-              >
-                <InfoCell label="Новый период" value={fmtRange(request.startDate, request.endDate)} />
-                {hoveringPeriod && overlaps.length > 0 && <ColleaguesTooltip overlaps={overlaps} />}
-              </div>
+              <InfoCell label="Новый период" value={fmtRange(request.startDate, request.endDate)} />
               {overlaps.length > 0 && (
                 <div style={{ paddingBottom: 4 }}>
                   <Banner
@@ -318,14 +282,7 @@ export default function RequestModal({ request, onClose, onAction }) {
           ) : (
             <>
               <InfoCell label="Тип отпуска" value={request.typeLabel || 'Ежегодный основной оплачиваемый'} />
-              <div
-                style={{ position: 'relative' }}
-                onMouseEnter={() => setHoveringPeriod(true)}
-                onMouseLeave={() => setHoveringPeriod(false)}
-              >
-                <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
-                {hoveringPeriod && overlaps.length > 0 && <ColleaguesTooltip overlaps={overlaps} />}
-              </div>
+              <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
               {overlaps.length > 0 && (
                 <div style={{ paddingBottom: 4 }}>
                   <Banner

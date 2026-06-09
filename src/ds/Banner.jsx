@@ -6,8 +6,8 @@ export function Banner({ type, title, subtitle, subtitleLink }) {
   const isDanger = type === "danger";
   const isDone = type === "done";
   return (
-    <div style={{ width: "100%", padding: 12, background: "#F2F3F7", borderRadius: 16, display: "inline-flex", justifyContent: "flex-start", alignItems: "flex-start", gap: 8, boxSizing: "border-box" }}>
-      <div style={{ flexShrink: 0, marginTop: 1 }}>
+    <div style={{ width: "100%", padding: 12, background: "#F2F3F7", borderRadius: 16, display: "inline-flex", justifyContent: "flex-start", alignItems: "center", gap: 8, boxSizing: "border-box" }}>
+      <div style={{ flexShrink: 0 }}>
         {isError || isDanger
           ? <CloseCircleIcon color={isDanger ? "#F95721" : "#E30611"} />
           : isWarning

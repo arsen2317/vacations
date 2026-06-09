@@ -112,7 +112,7 @@ export default function VacationCalculatorModal({ onClose }) {
               >
                 <div style={{ flex: '1 1 0', overflow: 'hidden' }}>
                   <div style={{ color: targetDate ? '#1D2023' : '#8C9BAB', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-                    {targetDate ? fmtDate(targetDate) : 'дд месяц гггг'}
+                    {targetDate ? fmtDate(targetDate) : 'Выберите дату'}
                   </div>
                 </div>
                 <div style={{ padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

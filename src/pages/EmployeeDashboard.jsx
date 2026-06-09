@@ -242,18 +242,13 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
           <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
             Периоды отпуска
           </div>
-          <div style={{ marginTop: 4, color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            Один из периодов должен быть не менее 14 дней
-          </div>
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 20, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, outline: `1px ${COLORS.stroke} solid`, outlineOffset: '-1px' }}>
-          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            Для создания плана на отпуск начните выделять периоды, выбирая даты прямо в календаре. Условия, которые необходимо выполнить, чтобы отправить план на согласование:
-          </div>
-          <Banner type="done" title="Один из периодов отпуска должен быть не меньше 14 дней" />
-          <Banner type="danger" title="Необходимо распределить минимум 28 дней отпуска. Максимум – 40 дней отпуска." />
+        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+          Для создания плана на отпуск начните выделять периоды, выбирая даты прямо в календаре. Условия, которые необходимо выполнить, чтобы отправить план на согласование:
         </div>
+        <Banner type={hasLongSegment ? 'done' : 'danger'} title="Один из периодов отпуска должен быть не меньше 14 дней" />
+        <Banner type={distributedDays >= MIN_PLAN_DAYS ? 'done' : 'danger'} title="Необходимо распределить минимум 28 дней отпуска. Максимум – 40 дней отпуска." />
 
         {/* Segments list */}
         {segments.length > 0 && (
@@ -305,22 +300,21 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
           </div>
         )}
 
-        {/* Submit button */}
-        {planStatus === 'draft' && (
+        {/* Submit button — only shown when conditions are met */}
+        {planStatus === 'draft' && canSubmit && (
           <button
-            onClick={() => canSubmit && onOpenPlanModal()}
-            disabled={!canSubmit}
+            onClick={onOpenPlanModal}
             style={{
               alignSelf: 'stretch', height: 44, padding: 10,
-              background: canSubmit ? '#0066FF' : '#F2F3F7',
+              background: '#0066FF',
               overflow: 'hidden', borderRadius: 16, border: 'none',
-              cursor: canSubmit ? 'pointer' : 'not-allowed',
+              cursor: 'pointer',
               display: 'flex', justifyContent: 'center', alignItems: 'center',
             }}
           >
             <span style={{
               paddingLeft: 8, paddingRight: 8,
-              color: canSubmit ? '#FFFFFF' : '#8C9BAB',
+              color: '#FFFFFF',
               fontSize: 12, fontFamily: "'MTSWide', sans-serif",
               fontWeight: 700, textTransform: 'uppercase',
               lineHeight: '16px', letterSpacing: 0.6,
@@ -404,8 +398,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     [trackedColleagueIds],
   )
 
-  const colleagueDates2027 = useMemo(() => {
-    const dates = new Set()
+  const colleagueMap2027 = useMemo(() => {
+    const map = new Map()
     for (const col of trackedColleagues) {
       for (const seg of (col.segments ?? [])) {
         if (!seg.startDate.startsWith('2027')) continue
@@ -414,16 +408,18 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         const e = new Date(seg.endDate   + 'T00:00:00')
         const cur = new Date(s)
         while (cur <= e) {
-          dates.add(toISODate(cur))
+          const iso = toISODate(cur)
+          if (!map.has(iso)) map.set(iso, [])
+          map.get(iso).push({ name: col.name, startDate: seg.startDate, endDate: seg.endDate })
           cur.setDate(cur.getDate() + 1)
         }
       }
     }
-    return dates
+    return map
   }, [trackedColleagues])
 
-  const colleagueDates2026 = useMemo(() => {
-    const dates = new Set()
+  const colleagueMap2026 = useMemo(() => {
+    const map = new Map()
     for (const col of trackedColleagues) {
       for (const seg of (col.segments ?? [])) {
         if (!seg.startDate.startsWith('2026')) continue
@@ -432,12 +428,14 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         const e = new Date(seg.endDate   + 'T00:00:00')
         const cur = new Date(s)
         while (cur <= e) {
-          dates.add(toISODate(cur))
+          const iso = toISODate(cur)
+          if (!map.has(iso)) map.set(iso, [])
+          map.get(iso).push({ name: col.name, startDate: seg.startDate, endDate: seg.endDate })
           cur.setDate(cur.getDate() + 1)
         }
       }
     }
-    return dates
+    return map
   }, [trackedColleagues])
 
   function closeNewRequest() {
@@ -454,15 +452,35 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     const startStr = toISODate(start)
     const endStr   = toISODate(end)
     const days = countVacationDays(start, end)
-    const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
-    if (distributedDays + days > MAX_PLAN_DAYS) return
-    // check overlap
+
+    // Classify overlapping segments as encompassed (new fully contains them) or partial
+    const encompassed = []
     for (const seg of segments) {
       const ss = new Date(seg.startDate + 'T00:00:00')
       const se = new Date(seg.endDate   + 'T00:00:00')
-      if (start <= se && end >= ss) return
+      if (start <= se && end >= ss) {
+        if (start <= ss && end >= se) {
+          encompassed.push(seg)
+        } else {
+          setToast('Выбранный период пересекается с существующим')
+          setCalendarKey(k => k + 1)
+          return
+        }
+      }
     }
-    setSegments(prev => [...prev, { id: Date.now(), startDate: startStr, endDate: endStr, days }]
+
+    const encDays = encompassed.reduce((s, seg) => s + seg.days, 0)
+    const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
+    if (distributedDays - encDays + days > MAX_PLAN_DAYS) {
+      setToast(distributedDays >= MAX_PLAN_DAYS
+        ? 'У вас больше нет доступных дней отпуска'
+        : 'Выбранный период превышает остаток дней отпуска')
+      setCalendarKey(k => k + 1)
+      return
+    }
+
+    const encIds = new Set(encompassed.map(s => s.id))
+    setSegments(prev => [...prev.filter(s => !encIds.has(s.id)), { id: Date.now(), startDate: startStr, endDate: endStr, days }]
       .sort((a, b) => a.startDate.localeCompare(b.startDate)))
     setCalendarKey(k => k + 1)
   }
@@ -563,7 +581,11 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               ? (start, end) => setNewRequestRange({ start, end })
               : (planStatus === 'draft' ? handleAddSegment : undefined)
             }
-            colleagueDates={year === 2027 ? colleagueDates2027 : colleagueDates2026}
+            colleagueMap={year === 2027 ? colleagueMap2027 : colleagueMap2026}
+            onDeleteRequest={year === 2027 && planStatus === 'draft'
+              ? (req) => handleRemoveSegment(req.id)
+              : undefined
+            }
           />
         </div>
       </div>
