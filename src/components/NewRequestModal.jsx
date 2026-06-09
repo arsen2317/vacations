@@ -4,6 +4,39 @@ import { countVacationDays, pluralDays } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
 import { BTN_STYLE, PersonAvatar, SelectField, CalendarRange } from '../ds/index'
 
+const MONTH_SHORT_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']
+function fmtShortDate(d) {
+  const date = d instanceof Date ? d : new Date(String(d) + 'T00:00:00')
+  return `${date.getDate()} ${MONTH_SHORT_RU[date.getMonth()]}`
+}
+
+const COLLEAGUE_SEGMENTS = COLLEAGUES.filter(c => !c.me).flatMap(c =>
+  c.segments.map(s => ({ name: c.name, startDate: s.startDate, endDate: s.endDate }))
+)
+
+function ColleaguesOverlapBanner({ overlaps }) {
+  if (!overlaps.length) return null
+  return (
+    <div style={{ padding: 12, background: '#1D2023', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+        Отпуска коллег
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {overlaps.map((o, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ width: 4, height: 20, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ width: 4, height: 4, left: 0, top: 8, position: 'absolute', background: '#FAC031', borderRadius: 12 }} />
+            </div>
+            <div style={{ color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              {o.name} ({fmtShortDate(o.startDate)} – {fmtShortDate(o.endDate)})
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const REQUEST_TYPES = [
   { id: 'annual',       name: 'Ежегодный оплачиваемый',              desc: 'Списывается из баланса основного отпуска', deductsBalance: true  },
   { id: 'unpaid',       name: 'Без сохранения зарплаты',             desc: 'Не списывается из баланса',                deductsBalance: false },
@@ -146,6 +179,23 @@ export default function NewRequestModal({ onClose }) {
 
   const selectedType = REQUEST_TYPES.find(t => t.id === type)
 
+  const colleagueOverlaps = useMemo(() => {
+    if (!startDate) return []
+    const end = endDate || startDate
+    const sd = new Date(startDate); sd.setHours(0,0,0,0)
+    const ed = new Date(end); ed.setHours(0,0,0,0)
+    return COLLEAGUES.flatMap(c => {
+      if (c.me) return []
+      return c.segments
+        .filter(seg => {
+          const s = new Date(seg.startDate + 'T00:00:00')
+          const e = new Date(seg.endDate + 'T00:00:00')
+          return sd <= e && ed >= s
+        })
+        .map(seg => ({ name: c.name, startDate: seg.startDate, endDate: seg.endDate }))
+    })
+  }, [startDate, endDate])
+
   const previewDays = useMemo(() => {
     if (!startDate || !endDate) return null
     try {
@@ -233,23 +283,6 @@ export default function NewRequestModal({ onClose }) {
           {/* Body */}
           <div className="modal-scroll" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
 
-            {/* Тип отпуска */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <SelectField
-                label="Тип отпуска"
-                value={type}
-                options={REQUEST_TYPES}
-                placeholder="Выберите тип отпуска"
-                onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
-              />
-              {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
-              {selectedType && (
-                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
-                  {selectedType.desc}{selectedType.deductsBalance && ` · Баланс: ${balance.main} дн.`}
-                </span>
-              )}
-            </div>
-
             {/* Период */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div ref={periodRef}>
@@ -265,6 +298,24 @@ export default function NewRequestModal({ onClose }) {
               {!errors.dates && previewDays !== null && (
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
                   {pluralDays(previewDays)} отпуска (праздники не считаются)
+                </span>
+              )}
+              <ColleaguesOverlapBanner overlaps={colleagueOverlaps} />
+            </div>
+
+            {/* Тип отпуска */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <SelectField
+                label="Тип отпуска"
+                value={type}
+                options={REQUEST_TYPES}
+                placeholder="Выберите тип отпуска"
+                onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
+              />
+              {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
+              {selectedType && (
+                <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
+                  {selectedType.desc}{selectedType.deductsBalance && ` · Баланс: ${balance.main} дн.`}
                 </span>
               )}
             </div>
@@ -371,6 +422,7 @@ export default function NewRequestModal({ onClose }) {
             <CalendarRange
               initialStart={startDate}
               initialEnd={endDate}
+              colleagueSegments={COLLEAGUE_SEGMENTS}
               onApply={(s, e) => {
                 setStartDate(s)
                 setEndDate(e)

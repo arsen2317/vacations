@@ -1,6 +1,36 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import StatusBadge from './StatusBadge'
 import { CalendarRange, COLORS, BTN_STYLE } from '../ds/index'
+import { COLLEAGUES } from '../data/mockData'
+
+const MONTH_SHORT_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']
+function fmtShortDate(d) {
+  const date = d instanceof Date ? d : new Date(String(d) + 'T00:00:00')
+  return `${date.getDate()} ${MONTH_SHORT_RU[date.getMonth()]}`
+}
+
+function ColleaguesOverlapBanner({ overlaps }) {
+  if (!overlaps.length) return null
+  return (
+    <div style={{ padding: 12, background: '#1D2023', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+        Отпуска коллег
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {overlaps.map((o, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ width: 4, height: 20, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ width: 4, height: 4, left: 0, top: 8, position: 'absolute', background: '#FAC031', borderRadius: 12 }} />
+            </div>
+            <div style={{ color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+              {o.name} ({fmtShortDate(o.startDate)} – {fmtShortDate(o.endDate)})
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function fmtDate(date) {
   if (!date) return '—'
@@ -42,6 +72,24 @@ export default function RequestModal({ request, onClose, onReschedule }) {
   const [showActionsMenu, setShowActionsMenu] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [showRescheduleCalendar, setShowRescheduleCalendar] = useState(false)
+
+  const colleagueOverlaps = useMemo(() => {
+    if (!request) return []
+    const start = request.startDate instanceof Date ? request.startDate : new Date(String(request.startDate) + 'T00:00:00')
+    const end = request.endDate instanceof Date ? request.endDate : new Date(String(request.endDate) + 'T00:00:00')
+    const sd = new Date(start); sd.setHours(0,0,0,0)
+    const ed = new Date(end); ed.setHours(0,0,0,0)
+    return COLLEAGUES.flatMap(c => {
+      if (c.me) return []
+      return c.segments
+        .filter(seg => {
+          const s = new Date(seg.startDate + 'T00:00:00')
+          const e = new Date(seg.endDate + 'T00:00:00')
+          return sd <= e && ed >= s
+        })
+        .map(seg => ({ name: c.name, startDate: seg.startDate, endDate: seg.endDate }))
+    })
+  }, [request])
 
   if (!request) return null
 
@@ -183,6 +231,9 @@ export default function RequestModal({ request, onClose, onReschedule }) {
             <InfoRow label="Переносов использовано" value={`${request.rescheduleCount} / ${request.rescheduleLimit ?? 2}`} />
           )}
         </div>
+
+        {/* Colleagues overlap banner */}
+        <ColleaguesOverlapBanner overlaps={colleagueOverlaps} />
 
         {/* Rejection comment */}
         {status === 'rejected' && request.rejectionComment && (

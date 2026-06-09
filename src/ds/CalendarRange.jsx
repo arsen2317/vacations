@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+const MONTH_SHORT_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']
+
+function fmtShortDate(d) {
+  const date = d instanceof Date ? d : new Date(String(d) + 'T00:00:00')
+  return `${date.getDate()} ${MONTH_SHORT_RU[date.getMonth()]}`
+}
 
 // RF production calendar holidays
 const RF_HOLIDAYS_2026 = new Set([
@@ -77,8 +83,7 @@ function formatDate(d) {
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
 }
 
-function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayEnter, onDayLeave }) {
-  // holiday check is local to rendering
+function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayEnter, onDayLeave, busyDatesMap, onBusyHover }) {
   const grid = getMonthGrid(year, month)
   const weeks = []
   for (let i = 0; i < grid.length; i += 7) weeks.push(grid.slice(i, i + 7))
@@ -125,13 +130,24 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
                   ? `${isRowStart ? r : 0}px 0 0 ${isRowStart ? r : 0}px`
                   : `${isRowStart ? r : 0}px ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px ${isRowStart ? r : 0}px`
 
+              const isoD = toISODate(d)
+              const busyColleagues = busyDatesMap?.[isoD] ?? []
+              const hasBusy = busyColleagues.length > 0
+
               return (
                 <div
                   key={di}
                   style={{ position: 'relative', height: 36, cursor: 'pointer' }}
                   onClick={() => onDayClick(d)}
-                  onMouseEnter={() => onDayEnter(d)}
-                  onMouseLeave={onDayLeave}
+                  onMouseEnter={(e) => {
+                    onDayEnter(d)
+                    if (hasBusy) onBusyHover?.(e.currentTarget.getBoundingClientRect(), busyColleagues)
+                    else onBusyHover?.(null, null)
+                  }}
+                  onMouseLeave={() => {
+                    onDayLeave()
+                    onBusyHover?.(null, null)
+                  }}
                 >
                   {/* Range background strip */}
                   {showRangeBg && (
@@ -169,6 +185,20 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
                   }}>
                     {date.getDate()}
                   </div>
+
+                  {/* Busy indicator dot */}
+                  {hasBusy && !isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 2,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 4, height: 4,
+                      borderRadius: '50%',
+                      background: '#FAC031',
+                      zIndex: 3,
+                    }} />
+                  )}
                 </div>
               )
             })}
@@ -179,7 +209,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
   )
 }
 
-export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = 'Применить', onApply, onClose }) {
+export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = 'Применить', onApply, onClose, colleagueSegments = [] }) {
   const today = dayOnly(new Date())
 
   const [viewMonth, setViewMonth] = useState(() => {
@@ -192,6 +222,28 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
   const [hover, setHover] = useState(null)
 
   const month2 = addMonths(viewMonth, 1)
+
+  const busyDatesMap = useMemo(() => {
+    const map = {}
+    for (const seg of colleagueSegments) {
+      const s = new Date(seg.startDate instanceof Date ? seg.startDate : String(seg.startDate) + 'T00:00:00')
+      const e = new Date(seg.endDate instanceof Date ? seg.endDate : String(seg.endDate) + 'T00:00:00')
+      const cur = new Date(s)
+      while (cur <= e) {
+        const key = toISODate(cur)
+        if (!map[key]) map[key] = []
+        if (!map[key].some(x => x.name === seg.name && x.startDate === seg.startDate)) map[key].push(seg)
+        cur.setDate(cur.getDate() + 1)
+      }
+    }
+    return map
+  }, [colleagueSegments])
+
+  const [calTooltip, setCalTooltip] = useState(null)
+
+  function handleBusyHover(rect, colleagues) {
+    setCalTooltip(rect && colleagues ? { rect, colleagues } : null)
+  }
 
   const effectiveEnd = end
     || (start && hover && hover.getTime() !== start.getTime() ? (hover > start ? hover : null) : null)
@@ -275,14 +327,50 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
             year={viewMonth.getFullYear()} month={viewMonth.getMonth()}
             start={start} effectiveEnd={effectiveEnd} today={today}
             onDayClick={handleDayClick} onDayEnter={handleDayEnter} onDayLeave={() => setHover(null)}
+            busyDatesMap={busyDatesMap} onBusyHover={handleBusyHover}
           />
           <MonthGrid
             year={month2.getFullYear()} month={month2.getMonth()}
             start={start} effectiveEnd={effectiveEnd} today={today}
             onDayClick={handleDayClick} onDayEnter={handleDayEnter} onDayLeave={() => setHover(null)}
+            busyDatesMap={busyDatesMap} onBusyHover={handleBusyHover}
           />
         </div>
       </div>
+
+      {/* Colleague vacation tooltip */}
+      {calTooltip && (
+        <div style={{
+          position: 'fixed',
+          left: calTooltip.rect.right + 4,
+          top: calTooltip.rect.top,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          display: 'inline-flex',
+          alignItems: 'flex-start',
+        }}>
+          <div style={{ width: 8, height: 36, position: 'relative', flexShrink: 0 }}>
+            <div style={{ width: 9, height: 20, left: 0, top: 8, position: 'absolute', background: '#1D2023' }} />
+          </div>
+          <div style={{ padding: 12, background: '#1D2023', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 280 }}>
+            <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
+              Отпуска коллег
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {calTooltip.colleagues.map((c, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ width: 4, height: 20, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: 4, height: 4, left: 0, top: 8, position: 'absolute', background: '#FAC031', borderRadius: 12 }} />
+                  </div>
+                  <div style={{ color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', wordBreak: 'break-word' }}>
+                    {c.name} ({fmtShortDate(c.startDate)} – {fmtShortDate(c.endDate)})
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{ padding: '16px 20px 24px', borderTop: '1px solid rgba(188,195,208,0.50)', display: 'flex', alignItems: 'center', gap: 12 }}>
