@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { BTN_STYLE, Chip, SearchIcon, SelectField } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, SearchIcon, SelectField } from '../ds/index'
 import StatusBadge from '../components/StatusBadge'
 import Toast from '../components/Toast'
 
@@ -247,9 +247,10 @@ function ManagerYearGrid({ year, people, overlapIds, onBarClick, onBarEnter, onB
 }
 
 // ── Request view modal (manager) ──────────────────────────────────────────────
-function RequestViewModal({ request, onClose, onApprove, onOpenReject }) {
+function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenReject }) {
   if (!request) return null
   const canApprove = request.status === 'pending'
+  const title = request.type === 'unplanned' ? 'Заявка на внеплановый отпуск' : 'Заявка на плановый отпуск'
 
   return (
     <div
@@ -264,7 +265,7 @@ function RequestViewModal({ request, onClose, onApprove, onOpenReject }) {
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              Заявка на плановый отпуск
+              {title}
             </div>
             <button
               onClick={onClose}
@@ -286,6 +287,19 @@ function RequestViewModal({ request, onClose, onApprove, onOpenReject }) {
             <StatusBadge status={request.status} />
           </div>
 
+          {/* Overlap banners */}
+          {overlaps.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+              {overlaps.map(r => (
+                <Banner
+                  key={r.id}
+                  type="warning"
+                  title={`Период отпуска пересекается с ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Employee row */}
           <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
@@ -302,6 +316,7 @@ function RequestViewModal({ request, onClose, onApprove, onOpenReject }) {
           </div>
 
           <InfoCell label="Подразделение" value={request.team} />
+          <InfoCell label="Тип отпуска"   value={request.typeLabel} />
           <InfoCell label="Период" value={fmtRangeRu(request.startDate, request.endDate)} />
           <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
 
@@ -579,8 +594,8 @@ export default function ManagerPage() {
   const [view,            setView]            = useState('table')
   const [search,          setSearch]          = useState('')
   const [deptFilter,      setDeptFilter]      = useState('all')
+  const [typeFilter,      setTypeFilter]      = useState('all')
   const [page,            setPage]            = useState(1)
-  const [gridYear,        setGridYear]        = useState('all')
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [rejectTarget,    setRejectTarget]    = useState(null)
   const [tooltip,         setTooltip]         = useState(null)
@@ -601,10 +616,26 @@ export default function ManagerPage() {
     const q = search.toLowerCase().trim()
     return incomingRequests.filter(r => {
       const matchDept   = deptFilter === 'all' || r.team === deptFilter
+      const matchType   = typeFilter === 'all' || r.type === typeFilter
       const matchSearch = !q || r.name.toLowerCase().includes(q) || r.team.toLowerCase().includes(q) || r.position.toLowerCase().includes(q)
-      return matchDept && matchSearch
+      return matchDept && matchType && matchSearch
     })
-  }, [incomingRequests, search, deptFilter])
+  }, [incomingRequests, search, deptFilter, typeFilter])
+
+  // Overlaps for the currently open request (used in modal)
+  const selectedOverlaps = useMemo(() => {
+    if (!selectedRequest) return []
+    const rS = new Date(selectedRequest.startDate + 'T00:00:00')
+    const rE = new Date(selectedRequest.endDate   + 'T00:00:00')
+    return incomingRequests.filter(r => {
+      if (r.id   === selectedRequest.id)   return false
+      if (r.name === selectedRequest.name) return false
+      if (r.status === 'rejected')         return false
+      const s = new Date(r.startDate + 'T00:00:00')
+      const e = new Date(r.endDate   + 'T00:00:00')
+      return rS <= e && rE >= s
+    })
+  }, [selectedRequest, incomingRequests])
 
   // Stats from ALL requests (not filtered)
   const totalCount    = incomingRequests.length
@@ -615,11 +646,12 @@ export default function ManagerPage() {
   // Table pagination
   const pagedRequests = filteredRequests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  // Grid: group filtered requests by person (exclude rejected for display)
+  // Grid: group filtered requests by person (chart shows CAMPAIGN.year only)
   const gridPeople = useMemo(() => {
     const byName = {}
     for (const req of filteredRequests) {
       if (req.status === 'rejected') continue
+      if (!yearBarPos(req.startDate, req.endDate, CAMPAIGN.year)) continue
       if (!byName[req.name]) byName[req.name] = { name: req.name, position: req.position, team: req.team, avatar: req.avatar, requests: [] }
       byName[req.name].requests.push(req)
     }
@@ -724,16 +756,16 @@ export default function ManagerPage() {
           />
         </div>
 
-        {/* Year selector */}
-        <div style={{ width: 160 }}>
+        {/* Type filter */}
+        <div style={{ width: 200 }}>
           <SelectField
-            value={String(gridYear)}
+            value={typeFilter}
             options={[
-              { id: 'all',                     name: 'За всё время' },
-              { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
-              { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
+              { id: 'all',       name: 'Все заявки' },
+              { id: 'planned',   name: 'Плановый отпуск' },
+              { id: 'unplanned', name: 'Внеплановый отпуск' },
             ]}
-            onChange={v => setGridYear(v === 'all' ? 'all' : Number(v))}
+            onChange={v => { setTypeFilter(v); setPage(1) }}
           />
         </div>
 
@@ -834,7 +866,7 @@ export default function ManagerPage() {
           <div style={{ background: '#fff', border: DIVIDER, borderTop: 'none', overflow: 'hidden' }}>
             <ManagerTooltip tooltip={tooltip} />
             <ManagerYearGrid
-              year={gridYear === 'all' ? CAMPAIGN.year : gridYear}
+              year={CAMPAIGN.year}
               people={gridPeople}
               overlapIds={overlapIds}
               onBarClick={req => setSelectedRequest(req)}
@@ -856,6 +888,7 @@ export default function ManagerPage() {
       {selectedRequest && (
         <RequestViewModal
           request={selectedRequest}
+          overlaps={selectedOverlaps}
           onClose={() => setSelectedRequest(null)}
           onApprove={id => { handleApprove(id); setSelectedRequest(null) }}
           onOpenReject={req => { setRejectTarget(req); setSelectedRequest(null) }}
