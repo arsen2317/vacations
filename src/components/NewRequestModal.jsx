@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef } from 'react'
 import { useApp } from '../context/AppContext'
-import { countVacationDays, pluralDays } from '../utils/dateUtils'
+import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
 import { BTN_STYLE, PersonAvatar, SelectField, CalendarRange, Banner } from '../ds/index'
+import { t, tName, MONTH_GEN, pluralDays } from '../i18n/translate'
 
 const REQUEST_TYPES = [
   { id: 'annual',       name: 'Ежегодный основной оплачиваемый',     deductsBalance: true  },
@@ -25,8 +26,6 @@ function fmt(d) {
   if (!d) return ''
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
 }
-
-const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
 function formatOverlapRange(start, end) {
   return `${start.getDate()} ${MONTH_GEN[start.getMonth()]} – ${end.getDate()} ${MONTH_GEN[end.getMonth()]}`
@@ -84,7 +83,7 @@ function PeriodField({ start, end, error, onClick }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-        Период
+        {t('Период')}
       </div>
       <div
         onClick={onClick}
@@ -107,7 +106,7 @@ function PeriodField({ start, end, error, onClick }) {
           <div style={{ color: hasValue ? '#1D2023' : '#8C9BAB', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
             {hasValue
               ? `${fmt(start)}${end && end.getTime() !== start.getTime() ? ` – ${fmt(end)}` : ''}`
-              : 'дд.мм.гггг – дд.мм.гггг'}
+              : t('дд.мм.гггг – дд.мм.гггг')}
           </div>
         </div>
         <div style={{ padding: 4, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -134,7 +133,7 @@ function TextAreaField({ label, value, onChange, optional, description }) {
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="Введите комментарий"
+        placeholder={t('Введите комментарий')}
         style={{
           width: '100%',
           height: 96,
@@ -155,7 +154,7 @@ function TextAreaField({ label, value, onChange, optional, description }) {
       />
       {(description || optional) && (
         <div style={{ color: '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '16px' }}>
-          {description || 'Необязательно'}
+          {description || t('Необязательно')}
         </div>
       )}
     </div>
@@ -195,7 +194,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const [addExtraApprover, setAddExtraApprover] = useState(false)
   const [extraApprover, setExtraApprover] = useState('')
   const [errors, setErrors] = useState({})
-  const selectedType = REQUEST_TYPES.find(t => t.id === type)
+  const selectedType = REQUEST_TYPES.find(rt => rt.id === type)
 
   const previewDays = useMemo(() => {
     if (!startDate || !endDate) return null
@@ -219,11 +218,11 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
 
   function validate() {
     const errs = {}
-    if (!type) errs.type = 'Выберите тип отпуска'
+    if (!type) errs.type = t('Выберите тип отпуска')
     if (!startDate) {
-      errs.dates = 'Укажите период'
+      errs.dates = t('Укажите период')
     } else if (selectedType?.deductsBalance && previewDays !== null && previewDays > balance.main) {
-      errs.dates = `Недостаточно дней: нужно ${pluralDays(previewDays)}, доступно ${pluralDays(balance.main)}`
+      errs.dates = `${t('Недостаточно дней: нужно')} ${previewDays} ${pluralDays(previewDays)}${t(', доступно')} ${balance.main} ${pluralDays(balance.main)}`
     }
     return errs
   }
@@ -269,7 +268,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
         >
           {/* Header */}
           <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>Заявка на внеплановый отпуск</div>
+            <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>{t('Заявка на внеплановый отпуск')}</div>
             <button onClick={onClose} style={{ padding: 4, border: 'none', background: '#F2F3F7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, flexShrink: 0 }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
@@ -294,13 +293,13 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
               </div>
               {!errors.dates && previewDays !== null && (
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
-                  {pluralDays(previewDays)} отпуска (праздники не считаются)
+                  {previewDays} {pluralDays(previewDays)} {t('отпуска (праздники не считаются)')}
                 </span>
               )}
               {overlap && (
                 <Banner
                   type="warning"
-                  title={`Период отпуска пересекается с ${formatNameShort(overlap.colleague.name)}: ${formatOverlapRange(overlap.start, overlap.end)}`}
+                  title={`${t('Период отпуска пересекается с')} ${formatNameShort(tName(overlap.colleague.name))}: ${formatOverlapRange(overlap.start, overlap.end)}`}
                 />
               )}
             </div>
@@ -308,43 +307,43 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
             {/* Тип отпуска */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <SelectField
-                label="Тип отпуска"
+                label={t('Тип отпуска')}
                 value={type}
-                options={REQUEST_TYPES}
-                placeholder="Выберите тип отпуска"
+                options={REQUEST_TYPES.map(rt => ({ ...rt, name: t(rt.name), desc: rt.desc ? t(rt.desc) : rt.desc }))}
+                placeholder={t('Выберите тип отпуска')}
                 onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
               />
               {errors.type && <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{errors.type}</span>}
               {selectedType && (
                 <span style={{ fontSize: 12, lineHeight: '16px', color: '#8C9BAB', paddingLeft: 4 }}>
                   {selectedType.id === 'annual'
-                    ? `За счёт накопленного ежегодного основного оплачиваемого отпуска: ${balance.main} дней`
-                    : selectedType.desc}
+                    ? `${t('За счёт накопленного ежегодного основного оплачиваемого отпуска:')} ${balance.main} ${pluralDays(balance.main)}`
+                    : t(selectedType.desc)}
                 </span>
               )}
             </div>
 
             {/* Заместитель */}
             <SelectField
-              label="Заместитель"
+              label={t('Заместитель')}
               value={substitute}
-              options={APPROVER_OPTIONS}
-              placeholder="Добавьте заместителя"
+              options={APPROVER_OPTIONS.map(o => ({ ...o, name: tName(o.name) }))}
+              placeholder={t('Добавьте заместителя')}
               onChange={setSubstitute}
               searchable
             />
 
             {/* Комментарий */}
-            <TextAreaField label="Комментарий" value={comment} onChange={setComment} description="До 255 символов" />
+            <TextAreaField label={t('Комментарий')} value={comment} onChange={setComment} description={t('До 255 символов')} />
 
             {/* Согласующий */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>Согласующий</span>
+              <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>{t('Согласующий')}</span>
               {changeApprover ? (
                 <SelectField
                   value={approverOverride}
-                  options={APPROVER_OPTIONS}
-                  placeholder="Выберите согласующего"
+                  options={APPROVER_OPTIONS.map(o => ({ ...o, name: tName(o.name) }))}
+                  placeholder={t('Выберите согласующего')}
                   onChange={v => { setApproverOverride(v); setChangeApprover(false) }}
                   searchable
                 />
@@ -353,8 +352,8 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <PersonAvatar src={approverAvatar} />
                     <div>
-                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{approverName}</div>
-                      <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77' }}>{DEFAULT_APPROVER.role}</div>
+                      <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{tName(approverName)}</div>
+                      <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77' }}>{t(DEFAULT_APPROVER.role)}</div>
                     </div>
                   </div>
                   <button onClick={() => setChangeApprover(true)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -368,16 +367,16 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
 
             {/* Дополнительный согласующий */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <Checkbox checked={addExtraApprover} onChange={v => { setAddExtraApprover(v); if (!v) setExtraApprover('') }} label="Добавить дополнительного согласующего" />
+              <Checkbox checked={addExtraApprover} onChange={v => { setAddExtraApprover(v); if (!v) setExtraApprover('') }} label={t('Добавить дополнительного согласующего')} />
               {addExtraApprover && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>Дополнительный согласующий</span>
+                  <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '20px', color: '#626C77', textTransform: 'uppercase', marginTop: 20 }}>{t('Дополнительный согласующий')}</span>
                   {extraApprover ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <PersonAvatar src={APPROVER_OPTIONS.find(o => o.id === extraApprover)?.avatar} />
                         <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>
-                          {APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name}
+                          {tName(APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name)}
                         </div>
                       </div>
                       <button onClick={() => setExtraApprover('')} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -389,8 +388,8 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
                   ) : (
                     <SelectField
                       value={extraApprover}
-                      options={APPROVER_OPTIONS}
-                      placeholder="Выберите согласующего"
+                      options={APPROVER_OPTIONS.map(o => ({ ...o, name: tName(o.name) }))}
+                      placeholder={t('Выберите согласующего')}
                       onChange={setExtraApprover}
                       searchable
                     />
@@ -403,7 +402,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
           {/* Footer */}
           <div style={{ padding: '8px 28px 28px', flexShrink: 0 }}>
             <button onClick={handleSubmit} style={{ width: '100%', height: 52, background: '#0066FF', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}>
-              ОТПРАВИТЬ НА СОГЛАСОВАНИЕ
+              {t('ОТПРАВИТЬ НА СОГЛАСОВАНИЕ')}
             </button>
           </div>
         </div>

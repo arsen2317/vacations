@@ -1,27 +1,16 @@
 import { useState, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { COLORS, BTN_STYLE, CalendarSingle } from '../ds/index'
+import { LOCALE } from '../i18n/locale'
+import { t, MONTH_GEN, pluralDays, pluralMonths } from '../i18n/translate'
 
 const DAYS_PER_MONTH = 2.33
-const MONTH_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 
 function fullMonthsBetween(start, end) {
   if (!start || !end || end <= start) return 0
   let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
   if (end.getDate() < start.getDate()) months -= 1
   return Math.max(0, months)
-}
-
-function pluralDays(n) {
-  if (n % 10 === 1 && n % 100 !== 11) return 'день'
-  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'дня'
-  return 'дней'
-}
-
-function pluralMonths(n) {
-  if (n % 10 === 1 && n % 100 !== 11) return 'месяц'
-  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'месяца'
-  return 'месяцев'
 }
 
 function fmtDate(d) {
@@ -62,7 +51,7 @@ export default function VacationCalculatorModal({ onClose }) {
           {/* Header */}
           <div style={{ padding: '28px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
             <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>
-              Калькулятор отпуска
+              {t('Калькулятор отпуска')}
             </div>
             <button onClick={onClose} style={{ padding: 4, border: 'none', background: '#F2F3F7', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 12, flexShrink: 0 }}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -74,13 +63,14 @@ export default function VacationCalculatorModal({ onClose }) {
           {/* Body */}
           <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              Расчёт ведётся от текущего остатка отпуска. За каждый полный месяц начисляется {DAYS_PER_MONTH.toString().replace('.', ',')} календарных дня.
+              {t('Расчёт ведётся от текущего остатка отпуска. За каждый полный месяц начисляется {n} календарных дня.')
+                .replace('{n}', DAYS_PER_MONTH.toString().replace('.', LOCALE === 'en' ? '.' : ','))}
             </div>
 
             {/* Current balance */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                Текущий остаток
+                {t('Текущий остаток')}
               </div>
               <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
                 {balance.main ?? 0} {pluralDays(balance.main ?? 0)}
@@ -90,7 +80,7 @@ export default function VacationCalculatorModal({ onClose }) {
             {/* Date picker field */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                Рассчитать на дату
+                {t('Рассчитать на дату')}
               </div>
               <div
                 ref={fieldRef}
@@ -112,7 +102,7 @@ export default function VacationCalculatorModal({ onClose }) {
               >
                 <div style={{ flex: '1 1 0', overflow: 'hidden' }}>
                   <div style={{ color: targetDate ? '#1D2023' : '#8C9BAB', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-                    {targetDate ? fmtDate(targetDate) : 'Выберите дату'}
+                    {targetDate ? fmtDate(targetDate) : t('Выберите дату')}
                   </div>
                 </div>
                 <div style={{ padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -122,7 +112,7 @@ export default function VacationCalculatorModal({ onClose }) {
                 </div>
               </div>
               {targetDate && !isValid && (
-                <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>Дата должна быть позже сегодняшней</span>
+                <span style={{ fontSize: 12, color: '#E30611', paddingLeft: 4 }}>{t('Дата должна быть позже сегодняшней')}</span>
               )}
             </div>
 
@@ -130,14 +120,14 @@ export default function VacationCalculatorModal({ onClose }) {
             {isValid && (
               <div style={{ background: '#F2F3F7', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                  К выбранной дате накопится
+                  {t('К выбранной дате накопится')}
                 </span>
                 <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
                   {total} {pluralDays(total)}
                 </span>
                 {additionalDays > 0 && (
                   <span style={{ color: '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", lineHeight: '16px' }}>
-                    {balance.main ?? 0} сейчас + {additionalDays} накопится за {additionalMonths} {pluralMonths(additionalMonths)}
+                    {balance.main ?? 0} {t('сейчас +')} {additionalDays} {t('накопится за')} {additionalMonths} {pluralMonths(additionalMonths)}
                   </span>
                 )}
               </div>
@@ -147,7 +137,7 @@ export default function VacationCalculatorModal({ onClose }) {
           {/* Footer */}
           <div style={{ padding: '0 28px 28px' }}>
             <button onClick={onClose} style={{ ...BTN_STYLE, height: 44, width: '100%', border: 'none', borderRadius: 16, cursor: 'pointer', background: COLORS.bg, color: '#1D2023' }}>
-              Закрыть
+              {t('Закрыть')}
             </button>
           </div>
         </div>

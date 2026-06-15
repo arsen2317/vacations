@@ -1,7 +1,5 @@
 import { useState } from 'react'
-
-const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
-const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+import { t, MONTH_NAMES, WEEKDAYS } from '../i18n/translate'
 
 // RF production calendar holidays
 const RF_HOLIDAYS_2026 = new Set([
@@ -179,7 +177,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
   )
 }
 
-export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = 'Применить', onApply, onClose }) {
+export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = t('Применить'), onApply, onClose }) {
   const today = dayOnly(new Date())
 
   const [viewMonth, setViewMonth] = useState(() => {
@@ -288,13 +286,13 @@ export function CalendarRange({ initialStart, initialEnd, initialViewMonth, appl
       {/* Footer */}
       <div style={{ padding: '16px 20px 24px', borderTop: '1px solid rgba(188,195,208,0.50)', display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, display: 'flex', gap: 4, alignItems: 'baseline' }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#626C77', textTransform: 'uppercase', lineHeight: '16px' }}>Дней отпуска:</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#626C77', textTransform: 'uppercase', lineHeight: '16px' }}>{t('Дней отпуска:')}</span>
           <span style={{ fontSize: 12, fontWeight: 500, color: '#1D2023', textTransform: 'uppercase', lineHeight: '16px' }}>
             {start ? countWorkDays(start, effectiveEnd || start) : '—'}
           </span>
         </div>
         <button onClick={handleReset} style={{ height: 44, padding: '0 16px', background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#1D2023', textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: "'MTSWide', sans-serif" }}>
-          Сбросить
+          {t('Сбросить')}
         </button>
         <button onClick={handleApply} style={{ height: 44, padding: '0 16px', background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: "'MTSWide', sans-serif" }}>
           {applyLabel}

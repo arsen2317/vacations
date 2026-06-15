@@ -2,12 +2,10 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { COLLEAGUES, ALL_EMPLOYEES } from '../data/mockData'
 import { Chip, SearchIcon, SelectField } from '../ds/index'
+import { t, tName, tTeam, MONTH_NAMES, MONTH_GEN, WD } from '../i18n/translate'
+import { LOCALE } from '../i18n/locale'
 
 // ── Constants ────────────────────────────────────────────────────────────────
-
-const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
-const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
-const WD = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 
 const STATUS_LABEL = {
   approved:  'согласован',
@@ -35,17 +33,18 @@ function diMonth(y, m)  { return new Date(y, m + 1, 0).getDate() }
 function diYear(y)      { return new Date(y, 1, 29).getMonth() === 1 ? 366 : 365 }
 
 function shortName(person) {
-  const parts = (person.name || '').trim().split(/\s+/)
+  const name = tName(person.name)
+  const parts = (name || '').trim().split(/\s+/)
   const surname = parts[parts.length - 1]
   const firstName = parts[0] || ''
   let initials = firstName ? firstName[0].toUpperCase() + '.' : ''
-  if (person.patronymic) initials += person.patronymic[0].toUpperCase() + '.'
+  if (LOCALE !== 'en' && person.patronymic) initials += person.patronymic[0].toUpperCase() + '.'
   return `${surname} ${initials}`.trim()
 }
 
 function fmtDate(iso) {
   const d = new Date(iso + 'T00:00:00')
-  return `${d.getDate()} ${MONTHS_GEN[d.getMonth()]}`
+  return `${d.getDate()} ${MONTH_GEN[d.getMonth()]}`
 }
 
 function yearBarPos(seg, year) {
@@ -92,7 +91,7 @@ function SmallAvatar({ src }) {
 
 // ── Person left cell (shared by both grids) ──────────────────────────────────
 function PersonCell({ person, onRemove, height = ROW_H }) {
-  const label = shortName(person) + (person.me ? ' (вы)' : '')
+  const label = shortName(person) + (person.me ? t(' (вы)') : '')
   return (
     <div style={{
       width: PERSON_W, flexShrink: 0, height,
@@ -136,14 +135,14 @@ function ColleaguesTooltip({ tooltip }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: BAR[tooltip.status] ?? BAR.approved }} />
         <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
-          {STATUS_LABEL[tooltip.status] ?? tooltip.status}
+          {t(STATUS_LABEL[tooltip.status] ?? tooltip.status)}
         </span>
       </div>
       {hasOverlap && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#FAC031' }} />
           <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
-            пересекается: {tooltip.overlaps.join(', ')}
+            {t('пересекается: ')}{tooltip.overlaps.join(', ')}
           </span>
         </div>
       )}
@@ -188,7 +187,7 @@ function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onB
         {/* Header */}
         <div style={{ display: 'flex', height: 40, background: '#F2F3F7' }}>
           <div style={{ width: PERSON_W, flexShrink: 0, padding: '0 16px', boxShadow: COL_SHADOW, display: 'flex', alignItems: 'center', boxSizing: 'border-box' }}>
-            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>Сотрудник</span>
+            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>{t('Сотрудник')}</span>
           </div>
           <div style={{ flex: 1, display: 'flex' }}>
             {Array.from({ length: 12 }, (_, m) => (
@@ -200,7 +199,7 @@ function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onB
                 overflow: 'hidden',
               }}>
                 <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", whiteSpace: 'nowrap' }}>
-                  {MONTHS[m]}
+                  {MONTH_NAMES[m]}
                 </span>
               </div>
             ))}
@@ -260,7 +259,7 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
               </svg>
             </button>
             <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", color: '#626C77', whiteSpace: 'nowrap' }}>
-              {MONTHS[month]} {year}
+              {MONTH_NAMES[month]} {year}
             </span>
             <button onClick={onNext} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}>
               <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
@@ -350,7 +349,7 @@ export default function ColleaguesPage() {
     return listIds.map(id => {
       const col = COLLEAGUES.find(c => c.id === id)
       const emp = ALL_EMPLOYEES.find(e => e.id === id)
-      const name       = col?.name       ?? emp?.name       ?? `Сотрудник ${id}`
+      const name       = col?.name       ?? emp?.name       ?? `${t('Сотрудник')} ${id}`
       const patronymic = col?.patronymic ?? emp?.patronymic
       const avatar     = col?.avatar     ?? emp?.avatar
       const me         = col?.me         ?? false
@@ -455,7 +454,7 @@ export default function ColleaguesPage() {
               value={searchQ}
               onChange={e => { setSearchQ(e.target.value); setShowDrop(true) }}
               onFocus={() => setShowDrop(true)}
-              placeholder="Поиск по сотрудникам"
+              placeholder={t('Поиск по сотрудникам')}
               style={{
                 flex: 1, border: 'none', background: 'transparent',
                 fontSize: 17, fontFamily: "'MTSCompact', sans-serif",
@@ -478,8 +477,8 @@ export default function ColleaguesPage() {
                 >
                   <SmallAvatar src={emp.avatar} />
                   <div>
-                    <div style={{ fontSize: 14, color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{emp.name}</div>
-                    <div style={{ fontSize: 12, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{emp.team}</div>
+                    <div style={{ fontSize: 14, color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{tName(emp.name)}</div>
+                    <div style={{ fontSize: 12, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{tTeam(emp.team)}</div>
                   </div>
                 </div>
               ))}
@@ -513,15 +512,15 @@ export default function ColleaguesPage() {
               </svg>
             )}
           </div>
-          <span style={{ fontSize: 17, color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>Показывать черновики</span>
+          <span style={{ fontSize: 17, color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{t('Показывать черновики')}</span>
         </label>
 
         <div style={{ flex: 1 }} />
 
         {/* View toggle */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <Chip active={viewMode === 'year'}  onClick={() => setViewMode('year')}>Год</Chip>
-          <Chip active={viewMode === 'month'} onClick={() => setViewMode('month')}>Месяц</Chip>
+          <Chip active={viewMode === 'year'}  onClick={() => setViewMode('year')}>{t('Год')}</Chip>
+          <Chip active={viewMode === 'month'} onClick={() => setViewMode('month')}>{t('Месяц')}</Chip>
         </div>
       </div>
 
@@ -545,7 +544,7 @@ export default function ColleaguesPage() {
         )}
         {people.length === 0 && (
           <div style={{ padding: '48px 0', textAlign: 'center', color: '#626C77', fontFamily: "'MTSCompact', sans-serif", fontSize: 14 }}>
-            Нет сотрудников для отображения
+            {t('Нет сотрудников для отображения')}
           </div>
         )}
       </div>
@@ -553,10 +552,10 @@ export default function ColleaguesPage() {
       {/* ── Legend ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         {[
-          { key: 'draft',    label: 'черновик',               border: true },
-          { key: 'pending',  label: 'на согласовании' },
-          { key: 'approved', label: 'согласован' },
-          { key: 'overlap',  label: 'пересечения с коллегами' },
+          { key: 'draft',    label: t('черновик'),               border: true },
+          { key: 'pending',  label: t('на согласовании') },
+          { key: 'approved', label: t('согласован') },
+          { key: 'overlap',  label: t('пересечения с коллегами') },
         ].map(({ key, label, border }) => (
           <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
