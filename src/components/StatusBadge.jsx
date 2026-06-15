@@ -1,3 +1,5 @@
+import { t } from '../i18n/translate'
+
 const STATUS_CONFIG = {
   draft:        { bg: '#F2F3F7', color: '#626C77',  label: 'Черновик' },
   pending:      { bg: '#C7E1FF', color: '#005CBD',  label: 'На согласовании' },
@@ -24,7 +26,7 @@ export default function StatusBadge({ status }) {
       whiteSpace: 'nowrap',
       fontFamily: "'MTSCompact', sans-serif",
     }}>
-      {cfg.label}
+      {t(cfg.label)}
     </span>
   )
 }

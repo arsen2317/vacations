@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
-import PasswordGate from './components/PasswordGate'
 import TabNav from './components/TabNav'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import PlanningPage from './pages/PlanningPage'
@@ -101,10 +100,8 @@ function AppInner() {
 
 export default function App() {
   return (
-    <PasswordGate>
-      <AppProvider>
-        <AppInner />
-      </AppProvider>
-    </PasswordGate>
+    <AppProvider>
+      <AppInner />
+    </AppProvider>
   )
 }

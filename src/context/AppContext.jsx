@@ -8,7 +8,7 @@ import { LOCALE } from '../i18n/locale'
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
-  const [role, setRole] = useState(CURRENT_USER.role)
+  const [role, setRole] = useState(LOCALE === 'en' ? 'manager' : CURRENT_USER.role)
   const [activeTab, setActiveTab] = useState(LOCALE === 'en' ? 'home' : 'work')
   const [campaign, setCampaign] = useState(CAMPAIGN)
   const [segments, setSegments] = useState(INITIAL_SEGMENTS)

@@ -5,7 +5,7 @@ const T = {
   'Отпуск': 'Vacation',
   'главная': 'Home',
   'отпуск': 'Vacation',
-  'уведомления раздела': 'Section notifications',
+  'уведомления раздела': 'Notifications',
   'Мой отпуск': 'My vacation',
   'Планы коллег': "Colleagues' plans",
 
@@ -64,6 +64,7 @@ const T = {
   'на согласовании': 'pending approval',
   'согласован': 'approved',
   'ознакомление': 'acknowledgement',
+  'пересечения': 'overlaps',
   'пересечения с коллегами': 'overlaps with colleagues',
   'пересекается: ': 'overlaps: ',
   'Сотрудник': 'Employee',
@@ -152,6 +153,41 @@ const T = {
     'The calculation is based on your current vacation balance. For each full month, {n} calendar days are accrued.',
   'сейчас +': 'now +',
   'накопится за': 'will accrue over',
+
+  // ManagerPage
+  'Входящие заявки': 'Incoming requests',
+  'отклонён': 'rejected',
+  'Нет заявок для отображения': 'No requests to display',
+  'Заявка на плановый отпуск': 'Planned vacation request',
+  'Согласовать': 'Approve',
+  'Отклонить': 'Reject',
+  'СОГЛАСОВАТЬ': 'APPROVE',
+  'ОТКЛОНИТЬ': 'REJECT',
+  'Отклонить заявку': 'Reject request',
+  'Укажите причину отклонения': 'Please specify a rejection reason',
+  'Отмена': 'Cancel',
+  'Статистика по кампании': 'Campaign statistics',
+  'Скачайте подробный отчет по планированию отпусков ваших сотрудников.':
+    'Download a detailed report on your employees’ vacation planning.',
+  'Подано заявок': 'Requests submitted',
+  'Согласованы': 'Approved',
+  'Не создан план отпуска': 'No vacation plan created',
+  'СКАЧАТЬ ОТЧЁТ': 'DOWNLOAD REPORT',
+  'Таблица': 'Table',
+  'График': 'Chart',
+  'Все подразделения': 'All departments',
+  'Все заявки': 'All requests',
+  'Все годы': 'All years',
+  'Скачать отчёт': 'Download report',
+  '№ заявки': 'Request No.',
+  'Подразделение': 'Department',
+  'Должность': 'Position',
+  'Период отпуска': 'Vacation period',
+  'Статус': 'Status',
+  'Действия': 'Actions',
+  'Нет заявок': 'No requests',
+  'Заявка согласована': 'Request approved',
+  'Заявка отклонена': 'Request rejected',
 }
 
 export function t(ru) {
@@ -166,6 +202,10 @@ export const MONTH_NAMES = LOCALE === 'en'
 export const MONTH_GEN = LOCALE === 'en'
   ? MONTH_NAMES
   : ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+
+export const MONTHS_SHORT = LOCALE === 'en'
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 // Lowercase two-letter weekday abbreviations (calendar headers)
 export const WEEKDAYS = LOCALE === 'en'
@@ -227,4 +267,18 @@ const TEAM_MAP = {
 export function tTeam(team) {
   if (LOCALE !== 'en' || !team) return team
   return TEAM_MAP[team] ?? team
+}
+
+const POSITION_MAP = {
+  'Frontend-разработчик': 'Frontend Developer',
+  'Backend-разработчик': 'Backend Developer',
+  'QA-инженер': 'QA Engineer',
+  'Аналитик': 'Analyst',
+  'UI/UX-дизайнер': 'UI/UX Designer',
+  'Графический дизайнер': 'Graphic Designer',
+}
+
+export function tPosition(position) {
+  if (LOCALE !== 'en' || !position) return position
+  return POSITION_MAP[position] ?? position
 }

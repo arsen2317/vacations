@@ -4,11 +4,10 @@ import { CAMPAIGN } from '../data/mockData'
 import { BTN_STYLE, Banner, Chip, SearchIcon, SelectField } from '../ds/index'
 import StatusBadge from '../components/StatusBadge'
 import Toast from '../components/Toast'
+import { t, tName, tTeam, tPosition, pluralDays as unitDays, MONTH_NAMES, MONTHS_SHORT } from '../i18n/translate'
+import { LOCALE } from '../i18n/locale'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
-const MONTHS_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
-
 const PAGE_SIZE   = 10
 const PERSON_W    = 256
 const ROW_H       = 64
@@ -65,40 +64,45 @@ function fmtDateShort(str) {
 
 function fmtPeriod(s, e) { return `${fmtDateShort(s)} – ${fmtDateShort(e)}` }
 
+const DATE_SUFFIX = LOCALE === 'en' ? '' : ' г.'
+
 function fmtDateRu(str) {
   const d = new Date(str + 'T00:00:00')
-  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()} г.`
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}${DATE_SUFFIX}`
 }
 
 function fmtRangeRu(s, e) {
   const sd = new Date(s + 'T00:00:00'), ed = new Date(e + 'T00:00:00')
   if (sd.getFullYear() === ed.getFullYear()) {
     if (sd.getMonth() === ed.getMonth())
-      return `${sd.getDate()} – ${ed.getDate()} ${MONTHS_SHORT[ed.getMonth()]} ${ed.getFullYear()} г.`
-    return `${sd.getDate()} ${MONTHS_SHORT[sd.getMonth()]} – ${ed.getDate()} ${MONTHS_SHORT[ed.getMonth()]} ${ed.getFullYear()} г.`
+      return `${sd.getDate()} – ${ed.getDate()} ${MONTHS_SHORT[ed.getMonth()]} ${ed.getFullYear()}${DATE_SUFFIX}`
+    return `${sd.getDate()} ${MONTHS_SHORT[sd.getMonth()]} – ${ed.getDate()} ${MONTHS_SHORT[ed.getMonth()]} ${ed.getFullYear()}${DATE_SUFFIX}`
   }
   return `${fmtDateRu(s)} – ${fmtDateRu(e)}`
 }
 
 function shortName(fullName) {
-  const p = fullName.trim().split(' ')
-  if (p.length < 2) return fullName
+  const name = tName(fullName)
+  const p = name.trim().split(/\s+/)
+  if (p.length < 2) return name
+  if (LOCALE === 'en') {
+    // EN names are "FirstName Surname" — show "Surname F."
+    const surname = p[p.length - 1]
+    const initials = p.slice(0, -1).map(w => w[0] + '.').join('')
+    return `${surname} ${initials}`
+  }
   // Фамилия И.О. — первое слово фамилия, остальные инициалы
   const initials = p.slice(1).map(w => w[0] + '.').join('')
   return `${p[0]} ${initials}`
 }
 
 function pluralDays(n) {
-  const mod10 = n % 10, mod100 = n % 100
-  if (mod100 >= 11 && mod100 <= 14) return `${n} дней`
-  if (mod10 === 1) return `${n} день`
-  if (mod10 >= 2 && mod10 <= 4) return `${n} дня`
-  return `${n} дней`
+  return `${n} ${unitDays(n)}`
 }
 
 function downloadCSV(requests) {
-  const rows = requests.map(r => [r.name, r.team, r.position, fmtPeriod(r.startDate, r.endDate), STATUS_LABEL[r.status] ?? r.status])
-  const csv = [['Сотрудник','Подразделение','Должность','Период','Статус'], ...rows]
+  const rows = requests.map(r => [tName(r.name), tTeam(r.team), tPosition(r.position), fmtPeriod(r.startDate, r.endDate), t(STATUS_LABEL[r.status] ?? r.status)])
+  const csv = [[t('Сотрудник'), t('Подразделение'), t('Должность'), t('Период'), t('Статус')], ...rows]
     .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
     .join('\n')
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
@@ -123,14 +127,14 @@ function ManagerTooltip({ tooltip }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: BAR_STATUS_COLOR[tooltip.status] ?? '#BCC3D0' }} />
         <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
-          {STATUS_LABEL[tooltip.status] ?? tooltip.status}
+          {t(STATUS_LABEL[tooltip.status] ?? tooltip.status)}
         </span>
       </div>
       {hasOverlap && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: BAR_OVERLAP_COLOR }} />
           <span style={{ fontSize: 12, color: '#BCC3D0', fontFamily: "'MTSCompact', sans-serif" }}>
-            пересекается: {tooltip.overlaps.join(', ')}
+            {t('пересекается: ')}{tooltip.overlaps.join(', ')}
           </span>
         </div>
       )}
@@ -141,7 +145,7 @@ function ManagerTooltip({ tooltip }) {
 
 // ── Year grid ─────────────────────────────────────────────────────────────────
 function ManagerPersonCell({ person }) {
-  const initials = person.name.trim().split(' ').slice(0, 2).map(w => w[0]).join('')
+  const initials = tName(person.name).trim().split(' ').slice(0, 2).map(w => w[0]).join('')
   return (
     <div style={{
       width: PERSON_W, flexShrink: 0, height: ROW_H,
@@ -171,7 +175,7 @@ function ManagerPersonCell({ person }) {
             fontSize: 12, fontFamily: "'MTSCompact', sans-serif",
             color: '#626C77', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2,
           }}>
-            {person.position}
+            {tPosition(person.position)}
           </div>
         )}
       </div>
@@ -190,7 +194,7 @@ function ManagerYearGrid({ year, people, overlapIds, onBarClick, onBarEnter, onB
         {/* Header */}
         <div style={{ display: 'flex', height: 40, background: '#F2F3F7' }}>
           <div style={{ width: PERSON_W, flexShrink: 0, padding: '0 16px', boxShadow: COL_SHADOW, display: 'flex', alignItems: 'center', boxSizing: 'border-box' }}>
-            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>Сотрудник</span>
+            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>{t('Сотрудник')}</span>
           </div>
           <div style={{ flex: 1, display: 'flex' }}>
             {Array.from({ length: 12 }, (_, m) => (
@@ -210,7 +214,7 @@ function ManagerYearGrid({ year, people, overlapIds, onBarClick, onBarEnter, onB
         {/* Rows */}
         {people.length === 0 ? (
           <div style={{ padding: '48px 0', textAlign: 'center', color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>
-            Нет заявок для отображения
+            {t('Нет заявок для отображения')}
           </div>
         ) : people.map((person, pi) => (
           <div key={person.name} style={{ display: 'flex', borderBottom: pi < people.length - 1 ? DIVIDER : 'none' }}>
@@ -250,7 +254,7 @@ function ManagerYearGrid({ year, people, overlapIds, onBarClick, onBarEnter, onB
 function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenReject }) {
   if (!request) return null
   const canApprove = request.status === 'pending'
-  const title = request.type === 'unplanned' ? 'Заявка на внеплановый отпуск' : 'Заявка на плановый отпуск'
+  const title = t(request.type === 'unplanned' ? 'Заявка на внеплановый отпуск' : 'Заявка на плановый отпуск')
 
   return (
     <div
@@ -294,18 +298,18 @@ function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenRe
               background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
             }}>
-              {request.name.trim().split(' ').slice(0, 2).map(w => w[0]).join('')}
+              {tName(request.name).trim().split(' ').slice(0, 2).map(w => w[0]).join('')}
             </div>
             <div style={{ flex: '1 1 0' }}>
-              <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{request.name}</div>
-              <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{request.position}</div>
+              <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{tName(request.name)}</div>
+              <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{tPosition(request.position)}</div>
             </div>
           </div>
 
-          <InfoCell label="Подразделение" value={request.team} />
-          <InfoCell label="Тип отпуска"   value={request.typeLabel} />
-          <InfoCell label="Период" value={fmtRangeRu(request.startDate, request.endDate)} />
-          <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+          <InfoCell label={t('Подразделение')} value={tTeam(request.team)} />
+          <InfoCell label={t('Тип отпуска')}   value={t(request.typeLabel)} />
+          <InfoCell label={t('Период')} value={fmtRangeRu(request.startDate, request.endDate)} />
+          <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
 
           {/* Overlap banners — above action buttons */}
           {overlaps.length > 0 && (
@@ -314,7 +318,7 @@ function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenRe
                 <Banner
                   key={r.id}
                   type="warning"
-                  title={`Период отпуска пересекается с ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
+                  title={`${t('Период отпуска пересекается с')} ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
                 />
               ))}
             </div>
@@ -327,13 +331,13 @@ function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenRe
                 onClick={() => { onApprove(request.id); onClose() }}
                 style={{ flex: 1, height: 44, background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#FFFFFF' }}
               >
-                СОГЛАСОВАТЬ
+                {t('СОГЛАСОВАТЬ')}
               </button>
               <button
                 onClick={() => { onOpenReject(request); onClose() }}
                 style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
               >
-                ОТКЛОНИТЬ
+                {t('ОТКЛОНИТЬ')}
               </button>
             </div>
           )}
@@ -360,7 +364,7 @@ function RejectModal({ request, onClose, onConfirm }) {
   const [error, setError]     = useState('')
 
   function confirm() {
-    if (!comment.trim()) { setError('Укажите причину отклонения'); return }
+    if (!comment.trim()) { setError(t('Укажите причину отклонения')); return }
     onConfirm(request.id, comment)
   }
 
@@ -376,10 +380,10 @@ function RejectModal({ request, onClose, onConfirm }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
-              Отклонить заявку
+              {t('Отклонить заявку')}
             </div>
             <div style={{ fontSize: 14, color: '#626C77', marginTop: 4 }}>
-              {request.name} · {fmtPeriod(request.startDate, request.endDate)}
+              {tName(request.name)} · {fmtPeriod(request.startDate, request.endDate)}
             </div>
           </div>
           <button onClick={onClose} style={{ background: '#F2F3F7', border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, flexShrink: 0 }}>
@@ -390,12 +394,12 @@ function RejectModal({ request, onClose, onConfirm }) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ fontSize: 14, color: '#626C77' }}>
-            Причина отклонения <span style={{ color: '#E30611' }}>*</span>
+            {t('Причина отклонения')} <span style={{ color: '#E30611' }}>*</span>
           </label>
           <textarea
             value={comment}
             onChange={e => { setComment(e.target.value); setError('') }}
-            placeholder="Введите комментарий"
+            placeholder={t('Введите комментарий')}
             className="mts-textarea"
             style={{
               width: '100%', height: 96, boxSizing: 'border-box',
@@ -410,10 +414,10 @@ function RejectModal({ request, onClose, onConfirm }) {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button onClick={onClose} style={{ ...BTN_STYLE, flex: 1, height: 44, background: '#F2F3F7', color: '#1D2023', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-            Отмена
+            {t('Отмена')}
           </button>
           <button onClick={confirm} style={{ ...BTN_STYLE, flex: 2, height: 44, background: '#F2F3F7', color: '#E30611', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-            Отклонить
+            {t('Отклонить')}
           </button>
         </div>
       </div>
@@ -475,7 +479,7 @@ function ActionsDropdown({ request, onApprove, onReject }) {
               onMouseLeave={e => e.currentTarget.style.background = 'white'}
             >
               <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', whiteSpace: 'nowrap' }}>
-                Согласовать
+                {t('Согласовать')}
               </div>
             </div>
             <div
@@ -489,7 +493,7 @@ function ActionsDropdown({ request, onApprove, onReject }) {
               onMouseLeave={e => e.currentTarget.style.background = 'white'}
             >
               <div style={{ color: '#D8400C', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', whiteSpace: 'nowrap' }}>
-                Отклонить
+                {t('Отклонить')}
               </div>
             </div>
           </div>
@@ -551,7 +555,7 @@ function ReportStatsModal({ onClose, onDownload, requests, subordinates }) {
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              Статистика по кампании {CAMPAIGN.year}
+              {t('Статистика по кампании')} {CAMPAIGN.year}
             </div>
             <button
               onClick={onClose}
@@ -563,15 +567,15 @@ function ReportStatsModal({ onClose, onDownload, requests, subordinates }) {
             </button>
           </div>
           <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            Скачайте подробный отчет по планированию отпусков ваших сотрудников.
+            {t('Скачайте подробный отчет по планированию отпусков ваших сотрудников.')}
           </div>
         </div>
 
         <div style={{ paddingLeft: 20, paddingRight: 20 }}>
-          <InfoCell label="Подано заявок"          value={String(totalCount)} />
-          <InfoCell label="На согласовании"         value={String(pendingCount)} />
-          <InfoCell label="Согласованы"             value={String(approvedCount)} />
-          <InfoCell label="Не создан план отпуска"  value={String(noPlanCount)} />
+          <InfoCell label={t('Подано заявок')}          value={String(totalCount)} />
+          <InfoCell label={t('На согласовании')}         value={String(pendingCount)} />
+          <InfoCell label={t('Согласованы')}             value={String(approvedCount)} />
+          <InfoCell label={t('Не создан план отпуска')}  value={String(noPlanCount)} />
         </div>
 
         <div style={{ padding: 20 }}>
@@ -579,7 +583,7 @@ function ReportStatsModal({ onClose, onDownload, requests, subordinates }) {
             onClick={onDownload}
             style={{ width: '100%', height: 44, background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#FFFFFF' }}
           >
-            СКАЧАТЬ ОТЧЁТ
+            {t('СКАЧАТЬ ОТЧЁТ')}
           </button>
         </div>
       </div>
@@ -607,8 +611,8 @@ export default function ManagerPage() {
   const deptOptions = useMemo(() => {
     const teams = [...new Set(incomingRequests.map(r => r.team))]
     return [
-      { id: 'all', name: 'Все подразделения' },
-      ...teams.map(t => ({ id: t, name: t })),
+      { id: 'all', name: t('Все подразделения') },
+      ...teams.map(team => ({ id: team, name: tTeam(team) })),
     ]
   }, [incomingRequests])
 
@@ -702,13 +706,13 @@ export default function ManagerPage() {
 
   function handleApprove(id) {
     setIncomingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r))
-    setToast('Заявка согласована')
+    setToast(t('Заявка согласована'))
   }
 
   function handleReject(id, comment) {
     setIncomingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected', rejectionComment: comment } : r))
     setRejectTarget(null)
-    setToast('Заявка отклонена')
+    setToast(t('Заявка отклонена'))
   }
 
   const TH = {
@@ -727,8 +731,8 @@ export default function ManagerPage() {
       {/* ── Toolbar ── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          <Chip active={view === 'table'} onClick={() => setView('table')}>Таблица</Chip>
-          <Chip active={view === 'chart'} onClick={() => setView('chart')}>График</Chip>
+          <Chip active={view === 'table'} onClick={() => setView('table')}>{t('Таблица')}</Chip>
+          <Chip active={view === 'chart'} onClick={() => setView('chart')}>{t('График')}</Chip>
         </div>
 
         {/* Search — same width as ColleaguesPage */}
@@ -743,7 +747,7 @@ export default function ManagerPage() {
             <input
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1) }}
-              placeholder="Поиск по сотрудникам"
+              placeholder={t('Поиск по сотрудникам')}
               style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", color: '#1D2023' }}
             />
           </div>
@@ -763,9 +767,9 @@ export default function ManagerPage() {
           <SelectField
             value={typeFilter}
             options={[
-              { id: 'all',       name: 'Все заявки' },
-              { id: 'planned',   name: 'Плановый отпуск' },
-              { id: 'unplanned', name: 'Внеплановый отпуск' },
+              { id: 'all',       name: t('Все заявки') },
+              { id: 'planned',   name: t('Плановый отпуск') },
+              { id: 'unplanned', name: t('Внеплановый отпуск') },
             ]}
             onChange={v => { setTypeFilter(v); setPage(1) }}
           />
@@ -776,7 +780,7 @@ export default function ManagerPage() {
           <SelectField
             value={yearFilter}
             options={[
-              { id: 'all',                     name: 'Все годы' },
+              { id: 'all',                     name: t('Все годы') },
               { id: String(CAMPAIGN.year - 1), name: String(CAMPAIGN.year - 1) },
               { id: String(CAMPAIGN.year),     name: String(CAMPAIGN.year) },
             ]}
@@ -789,7 +793,7 @@ export default function ManagerPage() {
           onClick={() => setShowReportModal(true)}
           style={{ height: 44, paddingLeft: 20, paddingRight: 20, borderRadius: 16, border: 'none', background: '#F2F3F7', color: '#1D2023', fontSize: 12, fontFamily: "'MTSWide', sans-serif", fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', cursor: 'pointer', flexShrink: 0, marginLeft: 'auto' }}
         >
-          Скачать отчёт
+          {t('Скачать отчёт')}
         </button>
       </div>
 
@@ -808,17 +812,17 @@ export default function ManagerPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th style={TH}>№ заявки</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Сотрудник</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Подразделение</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Период отпуска</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>Статус</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset', textAlign: 'center' }}>Действия</th>
+                  <th style={TH}>{t('№ заявки')}</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Сотрудник')}</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Подразделение')}</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Период отпуска')}</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Статус')}</th>
+                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset', textAlign: 'center' }}>{t('Действия')}</th>
                 </tr>
               </thead>
               <tbody>
                 {pagedRequests.length === 0 ? (
-                  <tr><td colSpan={6} style={{ ...TD, textAlign: 'center', color: '#626C77', padding: 32 }}>Нет заявок</td></tr>
+                  <tr><td colSpan={6} style={{ ...TD, textAlign: 'center', color: '#626C77', padding: 32 }}>{t('Нет заявок')}</td></tr>
                 ) : pagedRequests.map((req, i) => {
                   const isLast = i === pagedRequests.length - 1
                   const rowBorder = isLast ? 'none' : DIVIDER
@@ -832,10 +836,10 @@ export default function ManagerPage() {
                     >
                       <td style={{ ...TD, borderBottom: rowBorder, color: '#626C77' }}>{req.reqNum}</td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
-                        <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px' }}>{req.name}</div>
-                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{req.position}</div>
+                        <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px' }}>{tName(req.name)}</div>
+                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{tPosition(req.position)}</div>
                       </td>
-                      <td style={{ ...TD, borderBottom: rowBorder }}>{req.team}</td>
+                      <td style={{ ...TD, borderBottom: rowBorder }}>{tTeam(req.team)}</td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
                         <div style={{ fontSize: 14, lineHeight: '20px' }}>{fmtPeriod(req.startDate, req.endDate)}</div>
                         <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{pluralDays(req.days)}</div>
@@ -873,7 +877,7 @@ export default function ManagerPage() {
             ].map(({ color, label }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{t(label)}</span>
               </div>
             ))}
           </div>
