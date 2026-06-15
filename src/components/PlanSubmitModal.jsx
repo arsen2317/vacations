@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { COLLEAGUES } from '../data/mockData'
 import { BTN_STYLE, PersonAvatar, SelectField } from '../ds/index'
-
-const MONTH_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
+import { LOCALE } from '../i18n/locale'
+import { t, tName, MONTH_GEN, pluralDays } from '../i18n/translate'
 
 const DEFAULT_APPROVER = { name: 'Дмитрий Соколов', role: 'Руководитель', avatar: '/avatars/egor.webp' }
 const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.id), name: c.name, avatar: c.avatar }))
@@ -10,12 +10,6 @@ const APPROVER_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({ id: String(c.
 function formatSegmentDate(iso) {
   const d = new Date(iso + 'T00:00:00')
   return `${d.getDate()} ${MONTH_GEN[d.getMonth()]}`
-}
-
-function pluralDays(n) {
-  if (n % 10 === 1 && n % 100 !== 11) return 'день'
-  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'дня'
-  return 'дней'
 }
 
 // "Дмитрий Соколов" → "Соколов Д."
@@ -62,7 +56,9 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
   function handleSubmit() {
     onSubmit({
       approver: { name: approverName, role: 'Руководитель', avatar: approverAvatar },
-      extraApprover: extraApproverColleague ? formatSurnameFirst(extraApproverColleague.name) : undefined,
+      extraApprover: extraApproverColleague
+        ? (LOCALE === 'en' ? tName(extraApproverColleague.name) : formatSurnameFirst(extraApproverColleague.name))
+        : undefined,
     })
   }
 
@@ -78,7 +74,7 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
         {/* Header */}
         <div style={{ padding: '28px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0, gap: 12 }}>
           <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'MTSWide', sans-serif", color: '#1D2023', lineHeight: '24px' }}>
-            Планы на отпуск 2027
+            {t('Планы на отпуск 2027')}
           </div>
           <button
             onClick={onClose}
@@ -95,12 +91,12 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
 
           {/* Periods list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <SectionLabel>Периоды отпуска</SectionLabel>
+            <SectionLabel>{t('Периоды отпуска')}</SectionLabel>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {segments.map(seg => (
                 <div key={seg.id} style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <div style={{ width: '100%', color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word' }}>
-                    {seg.days} {pluralDays(seg.days)} отпуска
+                    {seg.days} {pluralDays(seg.days)} {t('отпуска')}
                   </div>
                   <div style={{ width: '100%', color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', wordWrap: 'break-word' }}>
                     {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
@@ -112,12 +108,12 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
 
           {/* Согласующий */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <SectionLabel>Согласующий</SectionLabel>
+            <SectionLabel>{t('Согласующий')}</SectionLabel>
             {changeApprover ? (
               <SelectField
                 value={approverOverride}
-                options={APPROVER_OPTIONS}
-                placeholder="Выберите согласующего"
+                options={APPROVER_OPTIONS.map(o => ({ ...o, name: tName(o.name) }))}
+                placeholder={t('Выберите согласующего')}
                 onChange={v => { setApproverOverride(v); setChangeApprover(false) }}
                 searchable
               />
@@ -126,8 +122,8 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <PersonAvatar src={approverAvatar} size={52} />
                   <div>
-                    <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{formatNameShort(approverName)}</div>
-                    <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{DEFAULT_APPROVER.role}</div>
+                    <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{formatNameShort(tName(approverName))}</div>
+                    <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>{t(DEFAULT_APPROVER.role)}</div>
                   </div>
                 </div>
                 <button
@@ -144,13 +140,13 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
 
           {/* Дополнительный согласующий */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <SectionLabel>Дополнительный согласующий</SectionLabel>
+            <SectionLabel>{t('Дополнительный согласующий')}</SectionLabel>
             {extraApproverColleague ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <PersonAvatar src={extraApproverColleague.avatar} size={52} />
                   <div>
-                    <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{formatSurnameFirst(extraApproverColleague.name)}</div>
+                    <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: "'MTSCompact', sans-serif" }}>{LOCALE === 'en' ? tName(extraApproverColleague.name) : formatSurnameFirst(extraApproverColleague.name)}</div>
                   </div>
                 </div>
                 <button
@@ -165,8 +161,8 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
             ) : pickingExtra ? (
               <SelectField
                 value={extraApprover}
-                options={APPROVER_OPTIONS}
-                placeholder="Выберите согласующего"
+                options={APPROVER_OPTIONS.map(o => ({ ...o, name: tName(o.name) }))}
+                placeholder={t('Выберите согласующего')}
                 onChange={v => { setExtraApprover(v); setPickingExtra(false) }}
                 searchable
               />
@@ -181,7 +177,7 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
                   </svg>
                 </div>
                 <span style={{ fontSize: 17, lineHeight: '24px', color: '#0070E5', fontFamily: "'MTSCompact', sans-serif" }}>
-                  Добавьте дополнительного согласующего
+                  {t('Добавьте дополнительного согласующего')}
                 </span>
               </button>
             )}
@@ -194,13 +190,13 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
             onClick={handleSubmit}
             style={{ flex: 1, height: 52, background: '#0066FF', color: '#fff', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}
           >
-            СОЗДАТЬ ЗАЯВКИ
+            {t('СОЗДАТЬ ЗАЯВКИ')}
           </button>
           <button
             onClick={onClose}
             style={{ flex: 1, height: 52, background: '#F2F3F7', color: '#1D2023', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE }}
           >
-            ОТМЕНА
+            {t('ОТМЕНА')}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { Tabs } from '../ds/index'
 import { useApp } from '../context/AppContext'
+import { t } from '../i18n/translate'
 
 const BASE_TABS = [
   { key: 'home',       label: 'Мой отпуск' },
@@ -14,7 +15,7 @@ export default function TabNav({ activeTab, onTabChange }) {
     : 0
 
   const tabs = [
-    ...BASE_TABS,
+    ...BASE_TABS.map(tab => ({ ...tab, label: t(tab.label) })),
     ...(role === 'manager' || role === 'hr_admin'
       ? [{ key: 'team', label: 'Входящие заявки', count: pendingCount > 0 ? pendingCount : undefined }]
       : []),

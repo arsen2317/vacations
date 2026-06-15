@@ -1,3 +1,5 @@
+import { t } from "../i18n/translate";
+
 const STATUS_STYLES = {
   draft:        { bg: '#F2F3F7', color: '#626C77', label: 'Черновик' },
   pending:      { bg: '#C7E1FF', color: '#005CBD', label: 'На согласовании' },
@@ -15,7 +17,7 @@ export function StatusBadge({ type }) {
   const s = STATUS_STYLES[type] || STATUS_STYLES.done;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", background: s.bg, color: s.color, borderRadius: 8, fontSize: 14, fontWeight: 500, lineHeight: "20px", whiteSpace: "nowrap", fontFamily: "'MTSCompact', sans-serif" }}>
-      {s.label}
+      {t(s.label)}
     </span>
   );
 }

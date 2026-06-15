@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useIsDocked } from "./useIsDocked";
+import { LOCALE } from "../i18n/locale";
+import { t } from "../i18n/translate";
 
 const BASE = import.meta.env.BASE_URL;
 const I = (name) => `${BASE}icons/${name}.png`;
@@ -209,7 +211,7 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
             height: 72,
             display: 'flex', alignItems: 'center', boxSizing: 'border-box',
           }}>
-            {!sidebarShown && (
+            {!sidebarShown && LOCALE !== 'en' && (
               <div
                 onClick={onSidebarToggle}
                 style={{ height: 24, paddingRight: 16, display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
@@ -220,10 +222,12 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
 
             <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>главная</span>
+                <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>{t('главная')}</span>
                 <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
               </div>
-              {activeTab === 'work' ? (
+              {LOCALE === 'en' ? (
+                <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>{t('отпуск')}</span>
+              ) : activeTab === 'work' ? (
                 <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
               ) : (
                 <>
@@ -240,7 +244,7 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
               <div style={{ paddingLeft: 4, paddingRight: 8, display: 'flex', alignItems: 'center' }}>
                 <BellIcon />
               </div>
-              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>уведомления раздела</span>
+              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>{t('уведомления раздела')}</span>
             </div>
           </div>
         </div>

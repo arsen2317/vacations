@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon } from "./icons";
+import { t } from "../i18n/translate";
 
 function useOutsideClick(ref, cb) {
   useEffect(() => {
@@ -121,7 +122,7 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onClick={e => e.stopPropagation()}
-                  placeholder={hasValue ? "" : "Начните вводить имя…"}
+                  placeholder={hasValue ? "" : t("Начните вводить имя…")}
                   style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 60, padding: 0, fontFamily: "inherit" }}
                 />
               )}
@@ -133,7 +134,7 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
               onChange={e => setQuery(e.target.value)}
               onClick={e => e.stopPropagation()}
               onKeyDown={e => { if (e.key === "Backspace" && query === "" && value) onChange(""); }}
-              placeholder={selectedOptions?.name || "Начните вводить имя…"}
+              placeholder={selectedOptions?.name || t("Начните вводить имя…")}
               style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 0, padding: 0, fontFamily: "inherit" }}
             />
           ) : (
@@ -155,7 +156,7 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
       {open && !disabled && (
         <div style={{ position: "absolute", top: label ? 72 : 52, left: 0, right: 0, zIndex: 200, background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", border: "1px solid #E8EDF2", overflow: "hidden" }}>
           {filteredOptions.length === 0 && (
-            <div style={{ padding: "14px 16px", fontSize: 17, color: "#8C9BAB" }}>{query ? "Ничего не найдено" : "Нет вариантов"}</div>
+            <div style={{ padding: "14px 16px", fontSize: 17, color: "#8C9BAB" }}>{query ? t("Ничего не найдено") : t("Нет вариантов")}</div>
           )}
           {filteredOptions.map(opt => {
             const sel = multi ? (value || []).includes(opt.id) : value === opt.id;
@@ -176,8 +177,8 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
           })}
           {multi && (
             <div style={{ padding: "12px 16px", display: "flex", gap: 12, background: "#fff", borderTop: "1px solid #F2F3F7" }}>
-              <button onClick={() => { onChange([]); openValueRef.current = null; setOpen(false); setQuery(""); }} style={{ flex: 1, height: 44, background: "#F2F3F7", color: "#1A1A1A", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 12, lineHeight: "16px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", fontFamily: "'MTSWide', sans-serif" }}>СБРОСИТЬ</button>
-              <button onClick={() => { openValueRef.current = null; setOpen(false); setQuery(""); }} style={{ flex: 2, height: 44, background: "#0066FF", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 12, lineHeight: "16px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", fontFamily: "'MTSWide', sans-serif" }}>ПРИМЕНИТЬ</button>
+              <button onClick={() => { onChange([]); openValueRef.current = null; setOpen(false); setQuery(""); }} style={{ flex: 1, height: 44, background: "#F2F3F7", color: "#1A1A1A", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 12, lineHeight: "16px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", fontFamily: "'MTSWide', sans-serif" }}>{t("СБРОСИТЬ")}</button>
+              <button onClick={() => { openValueRef.current = null; setOpen(false); setQuery(""); }} style={{ flex: 2, height: 44, background: "#0066FF", color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 12, lineHeight: "16px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", fontFamily: "'MTSWide', sans-serif" }}>{t("ПРИМЕНИТЬ")}</button>
             </div>
           )}
         </div>

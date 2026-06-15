@@ -4,14 +4,13 @@ import { countVacationDays } from '../utils/dateUtils'
 import StatusBadge from './StatusBadge'
 import { CalendarRange, BTN_STYLE, Banner } from '../ds/index'
 import { COLLEAGUES } from '../data/mockData'
-
-const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
-const MONTHS_GEN = MONTHS_RU
+import { LOCALE } from '../i18n/locale'
+import { t, tName, MONTH_GEN, pluralDays as pluralDaysWord } from '../i18n/translate'
 
 function fmtDateRu(date) {
   if (!date) return '—'
   const d = date instanceof Date ? date : new Date(date)
-  return `${d.getDate()} ${MONTHS_RU[d.getMonth()]} ${d.getFullYear()} г.`
+  return `${d.getDate()} ${MONTH_GEN[d.getMonth()]} ${d.getFullYear()}${LOCALE === 'en' ? '' : ' г.'}`
 }
 
 function fmtRange(start, end) {
@@ -20,18 +19,14 @@ function fmtRange(start, end) {
   const e = end instanceof Date ? end : new Date(end)
   if (s.getFullYear() === e.getFullYear()) {
     if (s.getMonth() === e.getMonth())
-      return `${s.getDate()} – ${e.getDate()} ${MONTHS_RU[e.getMonth()]} ${e.getFullYear()} г.`
-    return `${s.getDate()} ${MONTHS_RU[s.getMonth()]} – ${e.getDate()} ${MONTHS_RU[e.getMonth()]} ${e.getFullYear()} г.`
+      return `${s.getDate()} – ${e.getDate()} ${MONTH_GEN[e.getMonth()]} ${e.getFullYear()}${LOCALE === 'en' ? '' : ' г.'}`
+    return `${s.getDate()} ${MONTH_GEN[s.getMonth()]} – ${e.getDate()} ${MONTH_GEN[e.getMonth()]} ${e.getFullYear()}${LOCALE === 'en' ? '' : ' г.'}`
   }
   return `${fmtDateRu(s)} – ${fmtDateRu(e)}`
 }
 
 function pluralDays(n) {
-  const mod10 = n % 10, mod100 = n % 100
-  if (mod100 >= 11 && mod100 <= 14) return `${n} дней`
-  if (mod10 === 1) return `${n} день`
-  if (mod10 >= 2 && mod10 <= 4) return `${n} дня`
-  return `${n} дней`
+  return `${n} ${pluralDaysWord(n)}`
 }
 
 // "Дмитрий Соколов" → "Соколов Д."
@@ -45,7 +40,7 @@ function formatNameShort(name) {
 }
 
 function formatOverlapRange(start, end) {
-  return `${start.getDate()} ${MONTHS_GEN[start.getMonth()]} – ${end.getDate()} ${MONTHS_GEN[end.getMonth()]}`
+  return `${start.getDate()} ${MONTH_GEN[start.getMonth()]} – ${end.getDate()} ${MONTH_GEN[end.getMonth()]}`
 }
 
 function findAllColleagueOverlaps(start, end) {
@@ -143,12 +138,12 @@ export default function RequestModal({ request, onClose, onAction }) {
 
   function handleWithdraw() {
     setRequests(prev => prev.filter(r => r.id !== request.id))
-    onAction?.('Заявка отозвана')
+    onAction?.(t('Заявка отозвана'))
   }
 
   function handleCancelVacation() {
     setRequests(prev => prev.filter(r => r.id !== request.id))
-    onAction?.('Отпуск отменён')
+    onAction?.(t('Отпуск отменён'))
   }
 
   function handleWithdrawReschedule() {
@@ -156,13 +151,13 @@ export default function RequestModal({ request, onClose, onAction }) {
       const without = prev.filter(r => r.id !== request.id)
       return [...without, request.originalRequest]
     })
-    onAction?.('Заявка на перенос отозвана')
+    onAction?.(t('Заявка на перенос отозвана'))
   }
 
   function handleRescheduleApply(start, end) {
     const newDays = countVacationDays(start, end)
     if (newDays !== request.days) {
-      setRescheduleError(`Количество дней нового периода должно совпадать с текущим — ${pluralDays(request.days)}`)
+      setRescheduleError(`${t('Количество дней нового периода должно совпадать с текущим —')} ${pluralDays(request.days)}`)
       return
     }
     setRescheduleError(null)
@@ -183,7 +178,7 @@ export default function RequestModal({ request, onClose, onAction }) {
     }
 
     setRequests(prev => [...prev.filter(r => r.id !== request.id), rescheduleRequest])
-    onAction?.('Заявка на перенос направлена')
+    onAction?.(t('Заявка на перенос направлена'))
   }
 
   // Reschedule calendar view
@@ -196,10 +191,10 @@ export default function RequestModal({ request, onClose, onAction }) {
         <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
           <div style={{ background: '#fff', borderRadius: 24, padding: '24px 32px', width: 760 }}>
             <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", marginBottom: 4 }}>
-              Перенести плановый отпуск
+              {t('Перенести плановый отпуск')}
             </div>
             <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-              Количество дней нового периода должно совпадать с текущим — {pluralDays(request.days)}
+              {t('Количество дней нового периода должно совпадать с текущим —')} {pluralDays(request.days)}
             </div>
             {rescheduleError && (
               <div style={{ marginTop: 8, fontSize: 13, color: '#E30611', fontFamily: "'MTSCompact', sans-serif" }}>
@@ -208,7 +203,7 @@ export default function RequestModal({ request, onClose, onAction }) {
             )}
           </div>
           <CalendarRange
-            applyLabel="Отправить на согласование"
+            applyLabel={t('Отправить на согласование')}
             onApply={handleRescheduleApply}
             onClose={() => setShowReschedule(false)}
           />
@@ -222,8 +217,8 @@ export default function RequestModal({ request, onClose, onAction }) {
   const extraApproverName = typeof request.extraApprover === 'string' ? request.extraApprover : request.extraApprover?.name
 
   const modalTitle = isReschedule
-    ? 'Заявка на перенос планового отпуска'
-    : isPlanned ? 'Плановый отпуск' : 'Внеплановый отпуск'
+    ? t('Заявка на перенос планового отпуска')
+    : isPlanned ? t('Плановый отпуск') : t('Внеплановый отпуск')
 
   return (
     <div
@@ -263,37 +258,37 @@ export default function RequestModal({ request, onClose, onAction }) {
 
           {isReschedule ? (
             <>
-              <InfoCell label="Тип отпуска" value="Плановый" />
+              <InfoCell label={t('Тип отпуска')} value={t('Плановый')} />
               <InfoCell
-                label="Старый период"
+                label={t('Старый период')}
                 value={fmtRange(request.originalRequest.startDate, request.originalRequest.endDate)}
               />
-              <InfoCell label="Новый период" value={fmtRange(request.startDate, request.endDate)} />
+              <InfoCell label={t('Новый период')} value={fmtRange(request.startDate, request.endDate)} />
               {overlaps.length > 0 && (
                 <div style={{ paddingBottom: 4 }}>
                   <Banner
                     type="warning"
-                    title={`Период отпуска пересекается с ${formatNameShort(overlaps[0].colleague.name)}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
+                    title={`${t('Период отпуска пересекается с')} ${formatNameShort(tName(overlaps[0].colleague.name))}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
                   />
                 </div>
               )}
-              <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+              <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
             </>
           ) : (
             <>
-              <InfoCell label="Тип отпуска" value={request.typeLabel || 'Ежегодный основной оплачиваемый'} />
-              <InfoCell label="Период" value={fmtRange(request.startDate, request.endDate)} />
+              <InfoCell label={t('Тип отпуска')} value={t(request.typeLabel || 'Ежегодный основной оплачиваемый')} />
+              <InfoCell label={t('Период')} value={fmtRange(request.startDate, request.endDate)} />
               {overlaps.length > 0 && (
                 <div style={{ paddingBottom: 4 }}>
                   <Banner
                     type="warning"
-                    title={`Период отпуска пересекается с ${formatNameShort(overlaps[0].colleague.name)}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
+                    title={`${t('Период отпуска пересекается с')} ${formatNameShort(tName(overlaps[0].colleague.name))}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
                   />
                 </div>
               )}
-              <InfoCell label="Количество дней отпуска" value={pluralDays(request.days)} />
+              <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
               {isPlanned && status === 'approved' && (
-                <InfoCell label="Доступно переносов" value={`${rescheduleLeft} из ${request.rescheduleLimit ?? 2}`} />
+                <InfoCell label={t('Доступно переносов')} value={`${rescheduleLeft} ${t('из')} ${request.rescheduleLimit ?? 2}`} />
               )}
             </>
           )}
@@ -303,7 +298,7 @@ export default function RequestModal({ request, onClose, onAction }) {
             <div style={{ paddingTop: 8, paddingBottom: 8 }}>
               <div style={{ padding: '12px 16px', background: '#FFF3F0', borderRadius: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: '#AD3400', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: "'MTSCompact', sans-serif" }}>
-                  Причина отклонения
+                  {t('Причина отклонения')}
                 </div>
                 <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px', fontFamily: "'MTSCompact', sans-serif" }}>
                   {request.rejectionComment}
@@ -315,23 +310,23 @@ export default function RequestModal({ request, onClose, onAction }) {
           {/* Reschedule info banner (≤10 days) */}
           {showRescheduleInfo && (
             <div style={{ padding: '12px 16px', background: '#F2F3F7', borderRadius: 16, marginTop: 8, fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-              До начала отпуска осталось менее 10 дней — перенос недоступен
+              {t('До начала отпуска осталось менее 10 дней — перенос недоступен')}
             </div>
           )}
 
           {/* Approver */}
           {approverName && (
             <>
-              <SectionHeader label="Согласующий" />
-              <PersonRow name={approverName} role={approverRole} />
+              <SectionHeader label={t('Согласующий')} />
+              <PersonRow name={tName(approverName)} role={t(approverRole)} />
             </>
           )}
 
           {/* Extra approver */}
           {extraApproverName && (
             <>
-              <SectionHeader label="Дополнительный согласующий" />
-              <PersonRow name={extraApproverName} />
+              <SectionHeader label={t('Дополнительный согласующий')} />
+              <PersonRow name={tName(extraApproverName)} />
             </>
           )}
 
@@ -343,7 +338,7 @@ export default function RequestModal({ request, onClose, onAction }) {
                   onClick={() => setShowReschedule(true)}
                   style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#1D2023' }}
                 >
-                  ПЕРЕНЕСТИ ОТПУСК
+                  {t('ПЕРЕНЕСТИ ОТПУСК')}
                 </button>
               )}
               {canWithdraw && (
@@ -351,7 +346,7 @@ export default function RequestModal({ request, onClose, onAction }) {
                   onClick={handleWithdraw}
                   style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
                 >
-                  ОТОЗВАТЬ ЗАЯВКУ
+                  {t('ОТОЗВАТЬ ЗАЯВКУ')}
                 </button>
               )}
               {canCancel && (
@@ -359,7 +354,7 @@ export default function RequestModal({ request, onClose, onAction }) {
                   onClick={handleCancelVacation}
                   style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
                 >
-                  ОТМЕНИТЬ ОТПУСК
+                  {t('ОТМЕНИТЬ ОТПУСК')}
                 </button>
               )}
               {canWithdrawReschedule && (
@@ -367,7 +362,7 @@ export default function RequestModal({ request, onClose, onAction }) {
                   onClick={handleWithdrawReschedule}
                   style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
                 >
-                  ОТОЗВАТЬ ЗАЯВКУ
+                  {t('ОТОЗВАТЬ ЗАЯВКУ')}
                 </button>
               )}
             </div>

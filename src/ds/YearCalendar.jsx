@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
-
-const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
-const MONTH_GEN  = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
-const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+import { t, tName, MONTH_NAMES, MONTH_GEN, WEEKDAYS } from '../i18n/translate'
 
 const STATUS_STYLES = {
   pending:      { bg: '#C7E1FF', color: '#005CBD' },
@@ -373,14 +370,14 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             minWidth: 180,
           }}>
             <div style={{ color: '#FAFAFA', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-              Отпуска коллег
+              {t('Отпуска коллег')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {colTooltip.entries.map((entry, i) => (
                 <div key={i} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
                   <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#FAC031', flexShrink: 0 }} />
                   <div style={{ color: '#FAFAFA', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>
-                    {formatNameShort(entry.name)} ({formatDateRangeISO(entry.startDate, entry.endDate)})
+                    {formatNameShort(tName(entry.name))} ({formatDateRangeISO(entry.startDate, entry.endDate)})
                   </div>
                 </div>
               ))}

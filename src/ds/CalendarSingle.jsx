@@ -1,7 +1,6 @@
 import { useState } from 'react'
+import { MONTH_NAMES, WEEKDAYS } from '../i18n/translate'
 
-const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
-const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
 const CELL_W = 44
 const CELL_H = 40
 

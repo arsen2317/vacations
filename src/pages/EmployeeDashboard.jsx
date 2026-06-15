@@ -8,8 +8,8 @@ import Toast from '../components/Toast'
 import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
-
-const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+import { t, tName, tTeam, MONTH_GEN, pluralDays } from '../i18n/translate'
+import { LOCALE } from '../i18n/locale'
 
 const MAX_PLAN_DAYS = 40
 const MIN_PLAN_DAYS = 28
@@ -25,12 +25,6 @@ function formatSegmentDate(isoStr) {
   return `${d.getDate()} ${MONTH_GEN[d.getMonth()]}`
 }
 
-function pluralDays(n) {
-  if (n % 10 === 1 && n % 100 !== 11) return 'день'
-  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'дня'
-  return 'дней'
-}
-
 
 // Left panel for 2026: balance + vacation list
 function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRange, trackedColleagues, onRemoveColleague, onOpenCalculator }) {
@@ -41,7 +35,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
         <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              Основной отпуск
+              {t('Основной отпуск')}
             </span>
             <button
               onClick={onOpenCalculator}
@@ -57,7 +51,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
         {balance.extra > 0 && (
           <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
             <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              Дополнительный отпуск
+              {t('Дополнительный отпуск')}
             </div>
             <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
               {balance.extra} {pluralDays(balance.extra)}
@@ -77,17 +71,17 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
           fontWeight: 500,
           lineHeight: '28px',
         }}>
-          Мои отпуска
+          {t('Мои отпуска')}
         </h3>
 
         <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          Для создания заявки выделите период, выбирая даты прямо в календаре.
+          {t('Для создания заявки выделите период, выбирая даты прямо в календаре.')}
         </div>
 
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {yearRequests.length === 0 ? (
             <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", padding: '8px 0' }}>
-              Нет&nbsp;заявок за&nbsp;2026 год
+              {LOCALE === 'en' ? <>No requests for 2026</> : <>Нет&nbsp;заявок за&nbsp;2026 год</>}
             </div>
           ) : (
             yearRequests.map(req => (
@@ -114,7 +108,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
                     color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
                     fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word',
                   }}>
-                    {req.days} {pluralDays(req.days)} · {req.typeLabel}
+                    {req.days} {pluralDays(req.days)} · {t(req.typeLabel)}
                   </div>
                 </div>
                 <StatusBadge type={req.status} />
@@ -128,7 +122,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ paddingTop: 36, paddingBottom: 12 }}>
           <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            Пересечения
+            {t('Пересечения')}
           </span>
         </div>
 
@@ -136,7 +130,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
           <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
           <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            отметка пересечений
+            {t('отметка пересечений')}
           </span>
         </div>
 
@@ -148,7 +142,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRan
             </svg>
           </div>
           <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-            Добавить сотрудника
+            {t('Добавить сотрудника')}
           </span>
         </div>
 
@@ -171,10 +165,10 @@ function ColleagueRow({ col, onRemove }) {
       <PersonAvatar src={col.avatar} />
       <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {col.name}
+          {tName(col.name)}
         </div>
         <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          {col.position ?? col.team}
+          {col.position ?? tTeam(col.team)}
         </div>
       </div>
       <button
@@ -201,15 +195,15 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
           <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            Основной отпуск
+            {t('Основной отпуск')}
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
             <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-              {campaign.totalDays} дней
+              {campaign.totalDays} {pluralDays(campaign.totalDays)}
             </div>
             {balance.accumulated > 0 && (
               <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                + {balance.accumulated} накопленный
+                + {balance.accumulated} {t('накопленный')}
               </div>
             )}
           </div>
@@ -218,7 +212,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
         {balance.extra > 0 && (
           <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
             <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              Дополнительный отпуск
+              {t('Дополнительный отпуск')}
             </div>
             <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
               {balance.extra} {pluralDays(balance.extra)}
@@ -228,10 +222,10 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
 
         <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
           <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            Распределено
+            {t('Распределено')}
           </div>
           <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-            {distributedDays} из {MAX_PLAN_DAYS} дней
+            {distributedDays} {t('из')} {MAX_PLAN_DAYS} {pluralDays(MAX_PLAN_DAYS)}
           </div>
         </div>
       </div>
@@ -240,15 +234,15 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ paddingTop: 36, paddingBottom: 12 }}>
           <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            Периоды отпуска
+            {t('Периоды отпуска')}
           </div>
         </div>
 
         <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          Для создания плана на отпуск начните выделять периоды, выбирая даты прямо в календаре. Условия, которые необходимо выполнить, чтобы отправить план на согласование:
+          {t('Для создания плана на отпуск начните выделять периоды, выбирая даты прямо в календаре. Условия, которые необходимо выполнить, чтобы отправить план на согласование:')}
         </div>
-        <Banner type={hasLongSegment ? 'done' : 'danger'} title="Один из периодов отпуска должен быть не меньше 14 дней" />
-        <Banner type={distributedDays >= MIN_PLAN_DAYS ? 'done' : 'danger'} title="Необходимо распределить минимум 28 дней отпуска. Максимум – 40 дней отпуска." />
+        <Banner type={hasLongSegment ? 'done' : 'danger'} title={t('Один из периодов отпуска должен быть не меньше 14 дней')} />
+        <Banner type={distributedDays >= MIN_PLAN_DAYS ? 'done' : 'danger'} title={t('Необходимо распределить минимум 28 дней отпуска. Максимум – 40 дней отпуска.')} />
 
         {/* Segments list */}
         {segments.length > 0 && (
@@ -275,7 +269,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
                         {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
                       </div>
                       <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                        {seg.days} {pluralDays(seg.days)} · Плановый отпуск
+                        {seg.days} {pluralDays(seg.days)} · {t('Плановый отпуск')}
                       </div>
                     </div>
                   </>
@@ -289,7 +283,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
                         {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
                       </div>
                       <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                        {seg.days} {pluralDays(seg.days)} · Плановый отпуск
+                        {seg.days} {pluralDays(seg.days)} · {t('Плановый отпуск')}
                       </div>
                     </div>
                     <StatusBadge type={planStatus} />
@@ -319,7 +313,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
               fontWeight: 700, textTransform: 'uppercase',
               lineHeight: '16px', letterSpacing: 0.6,
             }}>
-              отправить на согласование
+              {t('отправить на согласование')}
             </span>
           </button>
         )}
@@ -329,7 +323,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ paddingTop: 36, paddingBottom: 12 }}>
           <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            Пересечения
+            {t('Пересечения')}
           </span>
         </div>
 
@@ -337,7 +331,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
           <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
           <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            отметка пересечений
+            {t('отметка пересечений')}
           </span>
         </div>
 
@@ -349,7 +343,7 @@ function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, o
             </svg>
           </div>
           <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-            Добавить сотрудника
+            {t('Добавить сотрудника')}
           </span>
         </div>
 
@@ -462,7 +456,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         if (start <= ss && end >= se) {
           encompassed.push(seg)
         } else {
-          setToast('Выбранный период пересекается с существующим')
+          setToast(t('Выбранный период пересекается с существующим'))
           setCalendarKey(k => k + 1)
           return
         }
@@ -473,8 +467,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
     if (distributedDays - encDays + days > MAX_PLAN_DAYS) {
       setToast(distributedDays >= MAX_PLAN_DAYS
-        ? 'У вас больше нет доступных дней отпуска'
-        : 'Выбранный период превышает остаток дней отпуска')
+        ? t('У вас больше нет доступных дней отпуска')
+        : t('Выбранный период превышает остаток дней отпуска'))
       setCalendarKey(k => k + 1)
       return
     }
@@ -514,7 +508,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           {/* Year chips */}
           <div style={{ display: 'flex', gap: 8 }}>
             <Chip active={year === 2026} onClick={() => setYear(2026)}>2026</Chip>
-            <Chip active={year === 2027} onClick={() => setYear(2027)}>2027 – планирование</Chip>
+            <Chip active={year === 2027} onClick={() => setYear(2027)}>{t('2027 – планирование')}</Chip>
           </div>
 
           {year === 2026 ? (
@@ -603,7 +597,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           onClose={closeNewRequest}
           onSubmitted={() => {
             closeNewRequest()
-            setToast('Заявка направлена на согласование')
+            setToast(t('Заявка направлена на согласование'))
           }}
         />
       )}
@@ -615,7 +609,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           onSubmit={() => {
             setShowPlanModal(false)
             setPlanStatus('pending')
-            setToast('Заявка направлена на согласование')
+            setToast(t('Заявка направлена на согласование'))
           }}
         />
       )}

@@ -9,14 +9,17 @@ import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
 import { COLORS, Header, useIsDocked } from './ds/index'
 import WorkAndRestPage from './pages/WorkAndRestPage'
+import { LOCALE } from './i18n/locale'
+import { t } from './i18n/translate'
 
 function AppInner() {
   const { role, setRole, activeTab, setActiveTab } = useApp()
   const isDocked = useIsDocked()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(LOCALE !== 'en')
   const [dashYear, setDashYear] = useState(2026)
 
   useEffect(() => {
+    if (LOCALE === 'en') { setSidebarOpen(false); return }
     if (!isDocked) setSidebarOpen(false)
     else setSidebarOpen(true)
   }, [isDocked])
@@ -42,7 +45,7 @@ function AppInner() {
         role={role}
         onRoleChange={handleRoleChange}
         sidebarOpen={sidebarOpen}
-        onSidebarToggle={() => setSidebarOpen(v => !v)}
+        onSidebarToggle={LOCALE === 'en' ? undefined : () => setSidebarOpen(v => !v)}
         onSidebarClose={() => setSidebarOpen(false)}
         onNavigate={setActiveTab}
         activeTab={activeTab}
@@ -62,7 +65,7 @@ function AppInner() {
               lineHeight: '36px',
               fontFamily: "'MTSWide', sans-serif",
             }}>
-              Отпуск
+              {t('Отпуск')}
             </h1>
             <div style={{ paddingTop: 12 }}>
               <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
