@@ -82,7 +82,7 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, onDeleteRequest }) {
+function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, onDeleteRequest }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
@@ -181,7 +181,7 @@ function YearMonthGrid({ year, month, requests, selStart, effectiveSelEnd, today
                   onClick={() => { if (canClick) onDayClick(d, req) }}
                   onMouseEnter={e => {
                     if (canClick) onDayEnter(d)
-                    if (hasColleagueDot) {
+                    if (hasColleagueDot && !(selStart && !selEnd)) {
                       const rect = e.currentTarget.getBoundingClientRect()
                       onColEnter?.(rect.left + rect.width / 2, rect.top, colleagueMap.get(isoDate))
                     }
@@ -306,7 +306,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
       return
     }
     if (!selStart || selEnd) {
-      setSelStart(d); setSelEnd(null); setHover(null)
+      setSelStart(d); setSelEnd(null); setHover(null); setColTooltip(null)
     } else {
       let s = selStart, e = d
       if (e < s) [s, e] = [e, s]
@@ -335,6 +335,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             month={m}
             requests={requests}
             selStart={selStart}
+            selEnd={selEnd}
             effectiveSelEnd={effectiveSelEnd}
             today={today}
             onDayClick={handleDayClick}
