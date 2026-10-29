@@ -260,7 +260,8 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                       position: 'absolute',
                       top: 0, left: 0, height: ROW_H,
                       width: CELL + (vacJoinRight ? GAP : 0),
-                      background: vacStyle.bg,
+                      // Editable period under the cursor (or being dragged) is highlighted
+                      background: canResize && req.id === activeReqId ? '#EAF1FF' : vacStyle.bg,
                       borderRadius: radius(vacJoinLeft, vacJoinRight),
                       zIndex: 1,
                     }} />
