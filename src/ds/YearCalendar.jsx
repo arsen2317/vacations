@@ -31,7 +31,7 @@ const WEEKS = 6
 // Draggable period edge (rim width and its grip)
 const EDGE_W = 6
 const EDGE_HIT_STYLE = { position: 'absolute', top: 0, width: EDGE_W, height: ROW_H, zIndex: 4, cursor: 'ew-resize' }
-const GRIP_STYLE = { position: 'absolute', top: 12, width: 2, height: 12, borderRadius: 1, background: '#FFFFFF', zIndex: 1, pointerEvents: 'none' }
+const GRIP_STYLE = { position: 'absolute', top: 14, width: 2, height: 8, borderRadius: 1, background: '#FFFFFF', zIndex: 1, pointerEvents: 'none' }
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -229,7 +229,7 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                         position: 'absolute', top: 0, height: ROW_H,
                         left: isReqStart ? -EDGE_W : 0,
                         width: CELL + (isReqStart ? EDGE_W : 0) + (isReqEnd ? EDGE_W : 0),
-                        background: '#1D2023',
+                        background: '#626C77',
                         borderRadius: r,
                         zIndex: 1,
                       }} />
