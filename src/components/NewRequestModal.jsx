@@ -133,8 +133,10 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
       endDate: endDate || startDate,
       days: previewDays,
       status: 'pending',
-      approver: { name: approverName, role: 'Руководитель' },
+      approver: { name: approverName, role: approverOption?.role ?? DEFAULT_APPROVER.role },
       comment: comment || undefined,
+      createdAt: new Date(),
+      substitute: substitute ? APPROVER_OPTIONS.find(o => o.id === substitute)?.name : undefined,
       extraApprover: extraApprover ? APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name : undefined,
     }
     setRequests(prev => [newReq, ...prev])

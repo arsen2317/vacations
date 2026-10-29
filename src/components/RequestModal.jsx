@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays } from '../utils/dateUtils'
 import StatusBadge from './StatusBadge'
-import { Banner, Drawer, DateRangeField } from '../ds/index'
+import { Banner, Drawer, DateRangeField, SelectField } from '../ds/index'
 import { COLLEAGUES } from '../data/mockData'
 import { LOCALE } from '../i18n/locale'
 import { t, tName, MONTH_GEN, pluralDays as pluralDaysWord } from '../i18n/translate'
@@ -18,8 +18,6 @@ function fmtRange(start, end) {
   const s = start instanceof Date ? start : new Date(start)
   const e = end instanceof Date ? end : new Date(end)
   if (s.getFullYear() === e.getFullYear()) {
-    if (s.getMonth() === e.getMonth())
-      return `${s.getDate()} – ${e.getDate()} ${MONTH_GEN[e.getMonth()]} ${e.getFullYear()}${LOCALE === 'en' ? '' : ' г.'}`
     return `${s.getDate()} ${MONTH_GEN[s.getMonth()]} – ${e.getDate()} ${MONTH_GEN[e.getMonth()]} ${e.getFullYear()}${LOCALE === 'en' ? '' : ' г.'}`
   }
   return `${fmtDateRu(s)} – ${fmtDateRu(e)}`
@@ -74,36 +72,22 @@ function InfoCell({ label, value }) {
   )
 }
 
-function SectionHeader({ label }) {
+// Read-only person: label + grey card (avatar, name, role), «Не указан» when empty
+function PersonInfo({ label, name, role }) {
+  const colleague = name ? COLLEAGUES.find(c => c.name === name) : null
+  const option = name ? { id: 'p', name: tName(name), role: role ?? colleague?.position, avatar: colleague?.avatar } : null
   return (
-    <div style={{ paddingTop: 20, paddingBottom: 8 }}>
-      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, textTransform: 'uppercase', lineHeight: '20px' }}>
-        {label}
-      </div>
+    <div style={{ padding: '10px 0' }}>
+      <SelectField person readOnly label={label} value={option ? 'p' : ''} options={option ? [option] : []} />
     </div>
   )
 }
 
-function PersonRow({ name, role, avatar }) {
-  if (!name) return null
-  const initials = name.trim().split(' ').slice(0, 2).map(w => w[0]).join('')
-  return (
-    <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        {avatar
-          ? <img src={avatar} alt="" style={{ width: 52, height: 52, borderRadius: 16, objectFit: 'cover', display: 'block' }} />
-          : <div style={{ width: 52, height: 52, borderRadius: 16, background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>
-              {initials}
-            </div>
-        }
-        <div style={{ position: 'absolute', inset: 0, borderRadius: 16, border: '1px rgba(188,195,208,0.50) solid', pointerEvents: 'none' }} />
-      </div>
-      <div style={{ flex: '1 1 0', overflow: 'hidden' }}>
-        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{formatNameShort(name)}</div>
-        {role && <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{role}</div>}
-      </div>
-    </div>
-  )
+function fmtCreated(d) {
+  const date = d instanceof Date ? d : new Date(d)
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${date.getDate()} ${MONTH_GEN[date.getMonth()]} ${date.getFullYear()}, ${hh}:${mm}`
 }
 
 export default function RequestModal({ request, onClose, onAction, initialReschedule = false }) {
@@ -252,7 +236,7 @@ export default function RequestModal({ request, onClose, onAction, initialResche
         ) : (
           <>
             <InfoCell label={t('Тип отпуска')} value={t(request.typeLabel || 'Ежегодный основной оплачиваемый')} />
-            <InfoCell label={t('Период')} value={fmtRange(request.startDate, request.endDate)} />
+            <InfoCell label={pluralDays(request.days)} value={fmtRange(request.startDate, request.endDate)} />
             {overlaps.length > 0 && (
               <div style={{ paddingBottom: 4 }}>
                 <Banner
@@ -261,7 +245,7 @@ export default function RequestModal({ request, onClose, onAction, initialResche
                 />
               </div>
             )}
-            <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
+            {request.createdAt && <InfoCell label={t('Заявка создана')} value={fmtCreated(request.createdAt)} />}
             {isPlanned && status === 'approved' && (
               <InfoCell label={t('Доступно переносов')} value={`${rescheduleLeft} ${t('из')} ${request.rescheduleLimit ?? 2}`} />
             )}
@@ -289,20 +273,19 @@ export default function RequestModal({ request, onClose, onAction, initialResche
           </div>
         )}
 
-        {/* Approver */}
-        {approverName && (
-          <>
-            <SectionHeader label={t('Согласующий')} />
-            <PersonRow name={tName(approverName)} role={t(approverRole)} />
-          </>
+        {/* People */}
+        {!isPlanned && !isReschedule && (
+          <PersonInfo label={t('Заместитель')} name={request.substitute} />
         )}
+        <PersonInfo label={t('Согласующий')} name={approverName} role={t(approverRole)} />
+        <PersonInfo label={t('Дополнительный согласующий')} name={extraApproverName} />
 
-        {/* Extra approver */}
-        {extraApproverName && (
-          <>
-            <SectionHeader label={t('Дополнительный согласующий')} />
-            <PersonRow name={tName(extraApproverName)} />
-          </>
+        {/* Comment */}
+        {request.comment && (
+          <div style={{ marginTop: 8, padding: '12px 16px', background: '#F2F3F7', borderRadius: 16, fontFamily: "'MTSCompact', sans-serif" }}>
+            <div style={{ fontSize: 14, lineHeight: '20px', color: '#626C77' }}>{t('Комментарий')}</div>
+            <div style={{ fontSize: 17, lineHeight: '24px', color: '#1D2023' }}>{request.comment}</div>
+          </div>
         )}
       </div>
     </Drawer>
