@@ -19,10 +19,19 @@ export function AppProvider({ children }) {
   const [requests, setRequests] = useState(MY_REQUESTS)
   const [subordinates, setSubordinates] = useState(SUBORDINATES)
   const [incomingRequests, setIncomingRequests] = useState(INCOMING_REQUESTS)
-  const [balance, setBalance] = useState({
+  const [balanceState, setBalance] = useState({
     main: CURRENT_USER.balanceDays,
     extra: CURRENT_USER.balanceExtra,
   })
+  // Prototype switch: view as a user with or without extra (additional) vacation days
+  const [hasExtraLeave, setHasExtraLeaveState] = useState(true)
+  const balance = hasExtraLeave ? balanceState : { ...balanceState, extra: 0 }
+
+  function setHasExtraLeave(value) {
+    setHasExtraLeaveState(value)
+    // Without extra leave all plan periods are paid from the main balance
+    if (!value) setSegments(prev => prev.map(seg => seg.extraDays ? { ...seg, extraDays: 0 } : seg))
+  }
 
   return (
     <AppContext.Provider value={{
@@ -38,6 +47,7 @@ export function AppProvider({ children }) {
       subordinates, setSubordinates,
       incomingRequests, setIncomingRequests,
       balance, setBalance,
+      hasExtraLeave, setHasExtraLeave,
     }}>
       {children}
     </AppContext.Provider>

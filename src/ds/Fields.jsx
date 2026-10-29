@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { CalendarIcon } from "./icons";
+import { CalendarIcon, MinusIcon, PlusIcon } from "./icons";
 import { CalendarRange } from "./CalendarRange";
 
 const FONT = "'MTSCompact', sans-serif";
@@ -29,7 +29,7 @@ export function FieldBox({ label, value, placeholder, active, error, onClick, ri
       <div style={{ flex: 1, minWidth: 0, paddingRight: 4, display: "flex", flexDirection: "column" }}>
         {children ?? (filled || active ? (
           <>
-            <div style={FIELD_LABEL}>{label}</div>
+            <div style={{ ...FIELD_LABEL, color: error ? "#E30611" : FIELD_LABEL.color }}>{label}</div>
             <div style={{ color: filled ? "#1D2023" : "#626C77", fontSize: 17, fontFamily: FONT, lineHeight: "24px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {filled ? value : placeholder}
             </div>
@@ -117,6 +117,36 @@ export function TextAreaField({ label, value, onChange, placeholder, maxLength, 
         }}
       />
       {error ? <div style={FIELD_ERROR}>{error}</div> : description && <div style={FIELD_DESCRIPTION}>{description}</div>}
+    </div>
+  );
+}
+
+// Row with a title/caption and a −/+ counter (e.g. extra vacation days to use)
+export function CounterField({ title, caption, value, min = 0, max, onChange }) {
+  const canDec = value > min;
+  const canInc = max === undefined || value < max;
+  const btn = (enabled) => ({
+    width: 36, height: 36, padding: 2, border: "none", borderRadius: 12,
+    background: enabled ? "transparent" : "rgba(188, 195, 208, 0.50)",
+    cursor: enabled ? "pointer" : "default",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    opacity: enabled ? 1 : 0.8,
+  });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ color: "#1D2023", fontSize: 17, fontFamily: FONT, lineHeight: "24px" }}>{title}</div>
+        {caption && <div style={{ color: "#626C77", fontSize: 14, fontFamily: FONT, lineHeight: "20px" }}>{caption}</div>}
+      </div>
+      <div style={{
+        height: 44, padding: 4, boxSizing: "border-box", borderRadius: 16,
+        background: "#F2F3F7", outline: `1px ${STROKE} solid`, outlineOffset: "-1px",
+        display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+      }}>
+        <button style={btn(canDec)} disabled={!canDec} onClick={() => canDec && onChange(value - 1)}><MinusIcon /></button>
+        <span style={{ minWidth: 32, textAlign: "center", color: "#1D2023", fontSize: 17, fontFamily: FONT, lineHeight: "24px" }}>{value}</span>
+        <button style={{ ...btn(true), opacity: canInc ? 1 : 0.3, cursor: canInc ? "pointer" : "default" }} disabled={!canInc} onClick={() => canInc && onChange(value + 1)}><PlusIcon /></button>
+      </div>
     </div>
   );
 }

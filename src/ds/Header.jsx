@@ -79,7 +79,7 @@ const ROLES = [
   { value: 'hr_admin', label: 'HR-админ' },
 ];
 
-function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
+function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange, extraLeave, onExtraLeaveChange }) {
   return (
     <>
       {!isDocked && (
@@ -176,6 +176,17 @@ function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
               </button>
             ))}
           </div>
+          {onExtraLeaveChange && (
+            <label style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#626C77', fontFamily: "'MTSCompact', sans-serif" }}>
+              <input
+                type="checkbox"
+                checked={!!extraLeave}
+                onChange={e => onExtraLeaveChange(e.target.checked)}
+                style={{ width: 16, height: 16, margin: 0, accentColor: '#1D2023', cursor: 'pointer' }}
+              />
+              Доп. отпуск (3 дня)
+            </label>
+          )}
         </div>
 
         <div style={{ paddingTop: 17, paddingBottom: 16, paddingLeft: 24, paddingRight: 24, borderTop: '1px solid #CECECE', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -189,14 +200,14 @@ function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
   );
 }
 
-export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, onNavigate, activeTab }) {
+export function Header({ role, onRoleChange, extraLeave, onExtraLeaveChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, onNavigate, activeTab }) {
   const isDocked = useIsDocked();
   // На широких экранах меню всегда раскрыто и не сворачивается
   const sidebarShown = sidebarOpen || (isDocked && LOCALE !== 'en');
 
   return (
     <>
-      <Sidebar open={sidebarShown} isDocked={isDocked} onClose={isDocked ? undefined : onSidebarClose} onNavigate={onNavigate} role={role} onRoleChange={onRoleChange} />
+      <Sidebar open={sidebarShown} isDocked={isDocked} onClose={isDocked ? undefined : onSidebarClose} onNavigate={onNavigate} role={role} onRoleChange={onRoleChange} extraLeave={extraLeave} onExtraLeaveChange={onExtraLeaveChange} />
 
       <div style={{ position: 'sticky', top: 0, zIndex: 100, width: '100%' }}>
         <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', ...(isDocked && sidebarShown ? { marginLeft: 280 } : null) }}>

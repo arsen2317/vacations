@@ -1,6 +1,6 @@
 export { FONT_CSS } from "./fonts";
 export { COLORS, BTN_STYLE } from "./tokens";
-export { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon, SearchIcon, ChevronUp, ChevronDown, BreadChevron, WarningIcon, CalculatorIcon, DoneIcon, FaqIcon, MoreIcon, CrossIcon, CalendarIcon } from "./icons";
+export { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon, SearchIcon, ChevronUp, ChevronDown, BreadChevron, WarningIcon, CalculatorIcon, DoneIcon, FaqIcon, MoreIcon, CrossIcon, CalendarIcon, MinusIcon, PlusIcon } from "./icons";
 export { Banner } from "./Banner";
 export { StatusBadge, Tag, Chip, PersonAvatar } from "./Chip";
 export { SelectField } from "./Select";
@@ -11,4 +11,4 @@ export { Tabs } from "./Tabs";
 export { Header } from "./Header";
 export { useIsDocked } from "./useIsDocked";
 export { Drawer } from "./Drawer";
-export { FieldBox, DateRangeField, TextAreaField } from "./Fields";
+export { FieldBox, DateRangeField, TextAreaField, CounterField } from "./Fields";

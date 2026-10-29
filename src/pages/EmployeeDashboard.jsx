@@ -5,7 +5,7 @@ import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
 import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
-import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, Drawer, DateRangeField } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, Drawer, DateRangeField, CounterField, SelectField } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 import { t, tName, tTeam, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
@@ -27,6 +27,33 @@ function formatDateRange(startDate, endDate) {
 function formatSegmentDate(isoStr) {
   const d = new Date(isoStr + 'T00:00:00')
   return `${d.getDate()} ${MONTH_GEN_SHORT[d.getMonth()]}`
+}
+
+// Plan period split: `extraDays` of `days` are paid from the additional leave balance
+const extraOf = seg => seg.extraDays ?? 0
+const mainOf  = seg => seg.days - extraOf(seg)
+
+// «из 31 дня», «из 28 дней»
+function daysGenitive(n) {
+  if (LOCALE === 'en') return pluralDays(n)
+  return n % 10 === 1 && n % 100 !== 11 ? 'дня' : 'дней'
+}
+
+function periodCaption(days, extraDays) {
+  if (!extraDays) return `${days} ${pluralDays(days)}`
+  if (extraDays === days) return `${days} ${pluralDays(days)} ${t('доп. отпуска')}`
+  return `${days} ${pluralDays(days)}, ${t('из них')} ${extraDays} ${pluralDays(extraDays)} ${t('доп. отпуска')}`
+}
+
+const PERIOD_KINDS = [
+  { id: 'main',     name: 'Основной отпуск' },
+  { id: 'extra',    name: 'Дополнительный отпуск' },
+  { id: 'combined', name: 'Основной и дополнительный отпуск' },
+]
+
+function kindOf(days, extraDays) {
+  if (!extraDays) return 'main'
+  return extraDays >= days ? 'extra' : 'combined'
 }
 
 // Icon inside a 16px slot (DS icons are drawn on a 24px grid)
@@ -268,20 +295,42 @@ function SegmentMenu({ onEdit, onRemove }) {
   )
 }
 
-function EditSegmentDrawer({ segment, onClose, onSave }) {
-  const [range, setRange] = useState({
-    start: new Date(segment.startDate + 'T00:00:00'),
-    end:   new Date(segment.endDate + 'T00:00:00'),
-  })
+// Create / edit a plan period. With extra leave the user also picks the leave kind;
+// `validate(start, end, extraDays)` returns an error text or null.
+function PeriodDrawer({ mode, initial, withKinds, extraFree, onClose, onSubmit, validate }) {
+  const [range, setRange] = useState({ start: initial.start, end: initial.end })
+  const [kind, setKind] = useState(initial.kind ?? (withKinds ? '' : 'main'))
+  const [extraCount, setExtraCount] = useState(Math.max(1, initial.extraDays ?? 1))
+  const [submitted, setSubmitted] = useState(false)
+
   const days = countVacationDays(range.start, range.end)
+  const comboMax = Math.min(extraFree, days - 1)
+  const comboExtra = Math.max(1, Math.min(extraCount, Math.max(1, comboMax)))
+  const extraDays = kind === 'extra' ? days : kind === 'combined' ? comboExtra : 0
+
+  let periodError = null
+  if (kind === 'extra' && days > extraFree) {
+    periodError = `${t('Выбрано')} ${days} ${pluralDays(days)} ${t('доп. отпуска')}. ${t('Вам доступно только')} ${extraFree} ${pluralDays(extraFree)} ${t('доп. отпуска')}`
+  } else if (kind === 'combined' && comboMax < 1) {
+    periodError = extraFree < 1 ? t('Нет свободных дней доп. отпуска') : t('В периоде должен быть хотя бы один день основного отпуска')
+  } else if (submitted && kind) {
+    periodError = validate(range.start, range.end, extraDays)
+  }
+
+  function submit() {
+    setSubmitted(true)
+    if (!kind || periodError) return
+    const err = validate(range.start, range.end, extraDays)
+    if (err) return
+    onSubmit(range.start, range.end, extraDays)
+  }
 
   return (
     <Drawer
-      title={t('Изменить период')}
-      subtitle={`${formatSegmentDate(segment.startDate)} – ${formatSegmentDate(segment.endDate)} · ${segment.days} ${pluralDays(segment.days)}`}
+      title={t('Период отпуска')}
       onClose={onClose}
       actions={[
-        { label: t('сохранить'), type: 'primary', onClick: () => onSave(range.start, range.end) },
+        { label: mode === 'add' ? t('добавить период') : t('сохранить'), type: 'primary', onClick: submit },
         { label: t('отмена'), type: 'secondary', onClick: onClose },
       ]}
     >
@@ -289,9 +338,30 @@ function EditSegmentDrawer({ segment, onClose, onSave }) {
         label={t('Период отпуска')}
         start={range.start}
         end={range.end}
-        description={`${t('Выбрано')} ${days} ${pluralDays(days)} ${t('отпуска')}`}
-        onChange={(start, end) => setRange({ start, end })}
+        error={periodError}
+        description={`${t('Выбрано')} ${periodCaption(days, kind === 'combined' ? comboExtra : 0)} ${kind === 'combined' ? '' : t('отпуска')}`.trim()}
+        onChange={(start, end) => { setRange({ start, end }); setSubmitted(false) }}
       />
+      {withKinds && (
+        <SelectField
+          size="L"
+          label={t('Вид отпуска')}
+          value={kind}
+          options={PERIOD_KINDS.map(k => ({ ...k, name: t(k.name) }))}
+          onChange={v => { setKind(v); setSubmitted(false) }}
+          error={submitted && !kind ? t('Выберите вид отпуска') : undefined}
+        />
+      )}
+      {kind === 'combined' && comboMax >= 1 && (
+        <CounterField
+          title={t('Списать дни дополнительного отпуска')}
+          caption={`${t('Всего доступно')} ${extraFree} ${pluralDays(extraFree)}`}
+          value={comboExtra}
+          min={1}
+          max={comboMax}
+          onChange={v => { setExtraCount(v); setSubmitted(false) }}
+        />
+      )}
     </Drawer>
   )
 }
@@ -306,12 +376,14 @@ function ConditionRow({ done, children }) {
 }
 
 // Left panel for 2027: planning view
-function Panel2027({ totalDays, segments, onRemoveSegment, onEditSegment, planStatus, onOpenPlanModal, onSegmentClick, intersections }) {
-  const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
-  const hasLongSegment  = segments.some(s => s.days >= 14)
-  const hasMinDays      = distributedDays >= MIN_PLAN_DAYS
-  const canSubmit       = hasMinDays && hasLongSegment
-  const progress        = Math.min(1, distributedDays / totalDays)
+function Panel2027({ totalDays, extraTotal, segments, onRemoveSegment, onEditSegment, planStatus, onOpenPlanModal, onSegmentClick, intersections }) {
+  const mainDistributed  = segments.reduce((s, seg) => s + mainOf(seg), 0)
+  const distributedDays  = segments.reduce((s, seg) => s + seg.days, 0)
+  const available        = totalDays + extraTotal
+  const hasLongSegment   = segments.some(s => s.days >= 14)
+  const hasMinDays       = mainDistributed >= MIN_PLAN_DAYS
+  const canSubmit        = hasMinDays && hasLongSegment
+  const progress         = Math.min(1, distributedDays / available)
 
   return (
     <>
@@ -319,11 +391,12 @@ function Panel2027({ totalDays, segments, onRemoveSegment, onEditSegment, planSt
       <div style={{ background: '#F2F3F7', borderRadius: 24, padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ ...CELL_CAPTION, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {t('Всего доступно:')} {totalDays} {pluralDays(totalDays)}
+            {t('Всего доступно:')} {available} {pluralDays(available)}
+            {extraTotal > 0 && <>, {t('из них')} {extraTotal} {pluralDays(extraTotal)} {t('доп. отпуска')}</>}
           </div>
           <div style={{ height: 32, paddingTop: 6, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 4, fontSize: 17, fontFamily: FONT, fontWeight: 500, lineHeight: '24px', whiteSpace: 'nowrap' }}>
             <span style={{ color: '#1D2023' }}>{distributedDays}</span>
-            <span style={{ color: '#969FA8' }}>{t('из')} {totalDays} {pluralDays(totalDays)}</span>
+            <span style={{ color: '#969FA8' }}>{t('из')} {available} {daysGenitive(available)}</span>
           </div>
           <div style={{ height: 8, borderRadius: 4, background: 'rgba(188,195,208,0.5)', overflow: 'hidden' }}>
             <div style={{ height: 8, borderRadius: 4, background: '#26CD58', width: `${progress * 100}%`, transition: 'width 0.2s ease' }} />
@@ -353,7 +426,7 @@ function Panel2027({ totalDays, segments, onRemoveSegment, onEditSegment, planSt
                 >
                   <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={CELL_TITLE}>{formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}</div>
-                    <div style={CELL_CAPTION}>{seg.days} {pluralDays(seg.days)}</div>
+                    <div style={CELL_CAPTION}>{periodCaption(seg.days, extraOf(seg))}</div>
                   </div>
                   <StatusBadge type={planStatus} />
                 </button>
@@ -400,13 +473,13 @@ const INITIAL_TRACKED_IDS = COLLEAGUES
   .map(c => c.id)
 
 export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR, onGoToRequests, initialYear }) {
-  const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign } = useApp()
+  const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign, hasExtraLeave } = useApp()
   const [year, setYear] = useState(initialYear ?? 2026)
   useEffect(() => { if (initialYear) setYear(initialYear) }, [initialYear])
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [newRequestRange, setNewRequestRange] = useState(null)
   const [calendarKey, setCalendarKey] = useState(0)
-  const [editingSegment, setEditingSegment] = useState(null)
+  const [periodDraft, setPeriodDraft] = useState(null) // { mode: 'add' | 'edit', segment?, start, end, kind?, extraDays? }
   const [resizePreview, setResizePreview] = useState(null) // { id, start, end } while dragging a period edge
   const [toast, setToast] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
@@ -514,40 +587,101 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     setCalendarKey(k => k + 1)
   }
 
-  // Change dates of an existing draft segment (calendar drag or «Редактировать»)
-  function handleUpdateSegment(id, start, end) {
-    if (start.getFullYear() !== campaign.year || end.getFullYear() !== campaign.year) {
-      setToast(t('Период должен быть в пределах планируемого года'))
-      return false
+  const extraTotal = hasExtraLeave ? balance.extra : 0
+
+  // Days already used by other periods: main and extra are counted separately
+  function usageExcept(id) {
+    const others = segments.filter(seg => seg.id !== id)
+    return {
+      main:  others.reduce((sum, seg) => sum + mainOf(seg), 0),
+      extra: others.reduce((sum, seg) => sum + extraOf(seg), 0),
     }
-    const current = segments.find(s => s.id === id)
-    if (!current) return false
+  }
+
+  // Validation shared by the period drawer and drag: year, overlaps, main/extra limits
+  function validatePeriod(id, start, end, extraDays) {
+    if (start.getFullYear() !== campaign.year || end.getFullYear() !== campaign.year) return t('Период должен быть в пределах планируемого года')
     const overlapsOther = segments.some(seg => {
       if (seg.id === id) return false
       const ss = new Date(seg.startDate + 'T00:00:00')
       const se = new Date(seg.endDate   + 'T00:00:00')
       return start <= se && end >= ss
     })
-    if (overlapsOther) {
-      setToast(t('Выбранный период пересекается с существующим'))
-      return false
-    }
+    if (overlapsOther) return t('Выбранный период пересекается с существующим')
     const days = countVacationDays(start, end)
-    const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
-    if (distributedDays - current.days + days > planTotalDays) {
-      setToast(t('Выбранный период превышает остаток дней отпуска'))
-      return false
+    const used = usageExcept(id)
+    if (used.main + (days - extraDays) > planTotalDays) return t('Выбранный период превышает остаток дней отпуска')
+    if (used.extra + extraDays > extraTotal) return t('Выбранный период превышает остаток дней доп. отпуска')
+    return null
+  }
+
+  // Resizing a period by drag: added days come from the main balance first, then from
+  // extra days; removed days are taken from main days first. Returns null if impossible.
+  function splitOnResize(seg, newDays) {
+    const used = usageExcept(seg.id)
+    const main = mainOf(seg)
+    const extra = extraOf(seg)
+    const delta = newDays - seg.days
+    if (delta > 0) {
+      const addMain = Math.min(delta, Math.max(0, planTotalDays - used.main - main))
+      const addExtra = delta - addMain
+      if (used.extra + extra + addExtra > extraTotal) return null
+      return extra + addExtra
     }
+    const removeMain = Math.min(-delta, main)
+    return extra - (-delta - removeMain)
+  }
+
+  function savePeriod(id, start, end, extraDays) {
+    const days = countVacationDays(start, end)
     setSegments(prev => prev
-      .map(seg => seg.id === id ? { ...seg, startDate: toISODate(start), endDate: toISODate(end), days } : seg)
+      .map(seg => seg.id === id ? { ...seg, startDate: toISODate(start), endDate: toISODate(end), days, extraDays } : seg)
       .sort((a, b) => a.startDate.localeCompare(b.startDate)))
+  }
+
+  function addPeriod(start, end, extraDays) {
+    const days = countVacationDays(start, end)
+    setSegments(prev => [...prev, { id: Date.now(), startDate: toISODate(start), endDate: toISODate(end), days, extraDays }]
+      .sort((a, b) => a.startDate.localeCompare(b.startDate)))
+  }
+
+  // Change dates of an existing draft segment by dragging its edge in the calendar
+  function handleResizeSegment(id, start, end) {
+    const seg = segments.find(s => s.id === id)
+    if (!seg) return false
+    const extraDays = splitOnResize(seg, countVacationDays(start, end))
+    const err = extraDays === null
+      ? t('Выбранный период превышает остаток дней отпуска')
+      : validatePeriod(id, start, end, extraDays)
+    if (err) { setToast(err); return false }
+    savePeriod(id, start, end, extraDays)
     return true
+  }
+
+  function openEditPeriod(seg) {
+    setPeriodDraft({
+      mode: 'edit',
+      segment: seg,
+      start: new Date(seg.startDate + 'T00:00:00'),
+      end: new Date(seg.endDate + 'T00:00:00'),
+      kind: kindOf(seg.days, extraOf(seg)),
+      extraDays: extraOf(seg),
+    })
+  }
+
+  function closePeriodDraft() {
+    setPeriodDraft(null)
+    setCalendarKey(k => k + 1)
   }
 
   // Segments as shown in the left panel: the dragged period follows the calendar live
   const displaySegments = resizePreview
     ? segments.map(seg => seg.id === resizePreview.id
-      ? { ...seg, startDate: toISODate(resizePreview.start), endDate: toISODate(resizePreview.end), days: countVacationDays(resizePreview.start, resizePreview.end) }
+      ? (() => {
+        const days = countVacationDays(resizePreview.start, resizePreview.end)
+        const extraDays = splitOnResize(seg, days) ?? extraOf(seg)
+        return { ...seg, startDate: toISODate(resizePreview.start), endDate: toISODate(resizePreview.end), days, extraDays }
+      })()
       : seg)
     : segments
 
@@ -603,9 +737,10 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           ) : (
             <Panel2027
               totalDays={planTotalDays}
+              extraTotal={extraTotal}
               segments={displaySegments}
               onRemoveSegment={handleRemoveSegment}
-              onEditSegment={setEditingSegment}
+              onEditSegment={openEditPeriod}
               planStatus={planStatus}
               onOpenPlanModal={() => setShowPlanModal(true)}
               intersections={intersections}
@@ -651,11 +786,13 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             }
             onNewRequest={year === 2026
               ? (start, end) => setNewRequestRange({ start, end })
-              : (planStatus === 'draft' ? handleAddSegment : undefined)
+              : (planStatus === 'draft'
+                ? (hasExtraLeave ? (start, end) => setPeriodDraft({ mode: 'add', start, end }) : handleAddSegment)
+                : undefined)
             }
             colleagueMap={year === 2027 ? colleagueMap2027 : colleagueMap2026}
             onResizeRequest={year === 2027 && planStatus === 'draft'
-              ? (req, start, end) => handleUpdateSegment(req.id, start, end)
+              ? (req, start, end) => handleResizeSegment(req.id, start, end)
               : undefined
             }
             onResizePreview={year === 2027 && planStatus === 'draft' ? setResizePreview : undefined}
@@ -693,11 +830,19 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         />
       )}
 
-      {editingSegment && (
-        <EditSegmentDrawer
-          segment={editingSegment}
-          onClose={() => setEditingSegment(null)}
-          onSave={(start, end) => { if (handleUpdateSegment(editingSegment.id, start, end)) setEditingSegment(null) }}
+      {periodDraft && (
+        <PeriodDrawer
+          mode={periodDraft.mode}
+          initial={periodDraft}
+          withKinds={hasExtraLeave}
+          extraFree={extraTotal - usageExcept(periodDraft.segment?.id).extra}
+          validate={(start, end, extraDays) => validatePeriod(periodDraft.segment?.id, start, end, extraDays)}
+          onClose={closePeriodDraft}
+          onSubmit={(start, end, extraDays) => {
+            if (periodDraft.mode === 'add') addPeriod(start, end, extraDays)
+            else savePeriod(periodDraft.segment.id, start, end, extraDays)
+            closePeriodDraft()
+          }}
         />
       )}
 

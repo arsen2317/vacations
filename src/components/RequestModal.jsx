@@ -236,7 +236,14 @@ export default function RequestModal({ request, onClose, onAction, initialResche
         ) : (
           <>
             <InfoCell label={t('Тип отпуска')} value={t(request.typeLabel || 'Ежегодный основной оплачиваемый')} />
-            <InfoCell label={pluralDays(request.days)} value={fmtRange(request.startDate, request.endDate)} />
+            <InfoCell
+              label={request.extraDays
+                ? (request.extraDays === request.days
+                  ? `${pluralDays(request.days)} ${t('доп. отпуска')}`
+                  : `${pluralDays(request.days)}, ${t('из них')} ${pluralDays(request.extraDays)} ${t('доп. отпуска')}`)
+                : pluralDays(request.days)}
+              value={fmtRange(request.startDate, request.endDate)}
+            />
             {overlaps.length > 0 && (
               <div style={{ paddingBottom: 4 }}>
                 <Banner

@@ -12,7 +12,7 @@ import RequestsPage from './pages/RequestsPage'
 import { LOCALE } from './i18n/locale'
 
 function AppInner() {
-  const { role, setRole, activeTab, setActiveTab } = useApp()
+  const { role, setRole, activeTab, setActiveTab, hasExtraLeave, setHasExtraLeave } = useApp()
   const isDocked = useIsDocked()
   const [sidebarOpen, setSidebarOpen] = useState(LOCALE !== 'en')
   const [dashYear, setDashYear] = useState(2026)
@@ -43,6 +43,8 @@ function AppInner() {
       <Header
         role={role}
         onRoleChange={handleRoleChange}
+        extraLeave={hasExtraLeave}
+        onExtraLeaveChange={setHasExtraLeave}
         sidebarOpen={sidebarOpen}
         onSidebarToggle={LOCALE === 'en' ? undefined : () => setSidebarOpen(v => !v)}
         onSidebarClose={isDocked ? undefined : () => setSidebarOpen(false)}

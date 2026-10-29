@@ -2,11 +2,14 @@ import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
-import { SelectField, Banner, Drawer, DateRangeField, TextAreaField } from '../ds/index'
+import { SelectField, Banner, Drawer, DateRangeField, TextAreaField, CounterField } from '../ds/index'
 import { t, tName, MONTH_GEN, pluralDays } from '../i18n/translate'
 
 const REQUEST_TYPES = [
   { id: 'annual',       name: 'Ежегодный основной оплачиваемый',     deductsBalance: true  },
+  // Only for users with extra (additional) leave days
+  { id: 'extra',        name: 'Дополнительный отпуск',               deductsBalance: true, extraOnly: true },
+  { id: 'combined',     name: 'Основной и дополнительный отпуск',    deductsBalance: true, extraOnly: true },
   { id: 'unpaid',       name: 'Отпуск без сохранения з.п.',          desc: 'Не списывается из баланса', deductsBalance: false },
   { id: 'study_paid',   name: 'Учебный оплачиваемый',                desc: 'Не списывается из баланса', deductsBalance: false },
   { id: 'study_unpaid', name: 'Учебный без сохранения з.п.',         desc: 'Не списывается из баланса', deductsBalance: false },
@@ -14,6 +17,8 @@ const REQUEST_TYPES = [
 
 const TYPE_LABEL_MAP = {
   annual:       'Ежегодный основной оплачиваемый',
+  extra:        'Ежегодный дополнительный оплачиваемый',
+  combined:     'Ежегодный основной и дополнительный оплачиваемый',
   unpaid:       'Отпуск без сохранения з.п.',
   study_paid:   'Учебный оплачиваемый',
   study_unpaid: 'Учебный без сохранения з.п.',
@@ -89,6 +94,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const [substitute, setSubstitute] = useState('')
   const [extraApprover, setExtraApprover] = useState('')
   const [errors, setErrors] = useState({})
+  const [extraCount, setExtraCount] = useState(1)
   const selectedType = REQUEST_TYPES.find(rt => rt.id === type)
 
   const previewDays = useMemo(() => {
@@ -116,6 +122,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     if (!type) errs.type = t('Выберите тип отпуска')
     // Days beyond the accrued balance are taken in advance — not an error
     if (!startDate) errs.dates = t('Укажите период')
+    else if (extraError) errs.dates = extraError
     return errs
   }
 
@@ -129,6 +136,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
       startDate,
       endDate: endDate || startDate,
       days: previewDays,
+      extraDays: extraDays || undefined,
       status: 'pending',
       approver: { name: approverName, role: approverOption?.role ?? DEFAULT_APPROVER.role },
       comment: comment || undefined,
@@ -138,15 +146,27 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     }
     setRequests(prev => [newReq, ...prev])
     if (selectedType.deductsBalance) {
-      setBalance(prev => ({ ...prev, main: Math.max(0, prev.main - previewDays) }))
+      setBalance(prev => ({ ...prev, main: Math.max(0, prev.main - (previewDays - extraDays)), extra: prev.extra - extraDays }))
     }
     onSubmitted ? onSubmitted() : onClose()
   }
 
+  // Extra leave: «extra» uses only extra days, «combined» takes a chosen number of them
+  const comboMax = previewDays !== null ? Math.min(balance.extra, previewDays - 1) : 0
+  const comboExtra = Math.max(1, Math.min(extraCount, Math.max(1, comboMax)))
+  const extraDays = previewDays === null ? 0 : type === 'extra' ? previewDays : type === 'combined' ? comboExtra : 0
+  let extraError = null
+  if (previewDays !== null && type === 'extra' && previewDays > balance.extra) {
+    extraError = `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('доп. отпуска')}. ${t('Вам доступно только')} ${balance.extra} ${pluralDays(balance.extra)} ${t('доп. отпуска')}`
+  } else if (previewDays !== null && type === 'combined' && comboMax < 1) {
+    extraError = t('В периоде должен быть хотя бы один день основного отпуска')
+  }
+
   // Paid annual leave beyond the accrued balance is granted in advance
-  const advanceDays = previewDays !== null && (!selectedType || selectedType.deductsBalance)
-    ? Math.max(0, previewDays - balance.main)
+  const advanceDays = previewDays !== null && (!selectedType || selectedType.deductsBalance) && type !== 'extra'
+    ? Math.max(0, previewDays - extraDays - balance.main)
     : 0
+  const requestTypes = REQUEST_TYPES.filter(rt => !rt.extraOnly || balance.extra > 0)
   const approverOption = APPROVER_OPTIONS.find(o => o.id === approver)
   const approverName = approverOption?.name ?? DEFAULT_APPROVER.name
   const personOptions = APPROVER_OPTIONS.map(o => ({ ...o, name: tName(o.name), role: o.role ? t(o.role) : undefined }))
@@ -166,10 +186,12 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
         label={t('Период отпуска')}
         start={startDate}
         end={endDate}
-        error={errors.dates}
+        error={extraError || errors.dates}
         description={previewDays !== null
-          ? `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('отпуска')}`
-            + (advanceDays > 0 ? `, ${t('из них')} ${advanceDays} ${pluralDays(advanceDays)} ${t('авансом')}` : '')
+          ? (type === 'combined'
+            ? `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('отпуска')}, ${t('из них')} ${comboExtra} ${pluralDays(comboExtra)} ${t('доп. отпуска')}`
+            : `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('отпуска')}`)
+            + (advanceDays > 0 ? `, ${type === 'combined' ? '' : t('из них') + ' '}${advanceDays} ${pluralDays(advanceDays)} ${t('авансом')}` : '')
           : undefined}
         onChange={(s, e) => { setStartDate(s); setEndDate(e); setErrors(prev => ({ ...prev, dates: undefined })) }}
       />
@@ -187,11 +209,22 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
         size="L"
         label={t('Вид отпуска')}
         value={type}
-        options={REQUEST_TYPES.map(rt => ({ ...rt, name: t(rt.name), desc: rt.desc ? t(rt.desc) : rt.desc }))}
+        options={requestTypes.map(rt => ({ ...rt, name: t(rt.name), desc: rt.desc ? t(rt.desc) : rt.desc }))}
         onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
         error={errors.type}
         description={t('Если нужен отпуск на завтра, выбирайте вид отпуска «Без сохранения заработной платы»')}
       />
+
+      {type === 'combined' && comboMax >= 1 && (
+        <CounterField
+          title={t('Списать дни дополнительного отпуска')}
+          caption={`${t('Всего доступно')} ${balance.extra} ${pluralDays(balance.extra)}`}
+          value={comboExtra}
+          min={1}
+          max={comboMax}
+          onChange={setExtraCount}
+        />
+      )}
 
       <SelectField
         person
