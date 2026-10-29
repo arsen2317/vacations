@@ -114,11 +114,8 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   function validate() {
     const errs = {}
     if (!type) errs.type = t('Выберите тип отпуска')
-    if (!startDate) {
-      errs.dates = t('Укажите период')
-    } else if (selectedType?.deductsBalance && previewDays !== null && previewDays > balance.main) {
-      errs.dates = `${t('Недостаточно дней: нужно')} ${previewDays} ${pluralDays(previewDays)}${t(', доступно')} ${balance.main} ${pluralDays(balance.main)}`
-    }
+    // Days beyond the accrued balance are taken in advance — not an error
+    if (!startDate) errs.dates = t('Укажите период')
     return errs
   }
 
@@ -146,6 +143,10 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
     onSubmitted ? onSubmitted() : onClose()
   }
 
+  // Paid annual leave beyond the accrued balance is granted in advance
+  const advanceDays = previewDays !== null && (!selectedType || selectedType.deductsBalance)
+    ? Math.max(0, previewDays - balance.main)
+    : 0
   const approverOption = APPROVER_OPTIONS.find(o => o.id === approver)
   const approverName = approverOption?.name ?? DEFAULT_APPROVER.name
   const personOptions = APPROVER_OPTIONS.map(o => ({ ...o, name: tName(o.name), role: o.role ? t(o.role) : undefined }))
@@ -166,7 +167,10 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
         start={startDate}
         end={endDate}
         error={errors.dates}
-        description={previewDays !== null ? `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('отпуска')}` : undefined}
+        description={previewDays !== null
+          ? `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('отпуска')}`
+            + (advanceDays > 0 ? `, ${t('из них')} ${advanceDays} ${pluralDays(advanceDays)} ${t('авансом')}` : '')
+          : undefined}
         onChange={(s, e) => { setStartDate(s); setEndDate(e); setErrors(prev => ({ ...prev, dates: undefined })) }}
       />
       {overlap && (

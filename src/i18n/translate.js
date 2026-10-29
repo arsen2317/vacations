@@ -45,6 +45,8 @@ const T = {
   'Удалить': 'Delete',
   'Редактировать': 'Edit',
   'Изменить период': 'Change period',
+  'из них': 'of which',
+  'авансом': 'in advance',
   'Не указан': 'Not specified',
   'Поиск': 'Search',
   'Заявка создана': 'Request created',
