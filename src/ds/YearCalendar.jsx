@@ -83,6 +83,12 @@ function getMonthWeeks(year, month) {
   return weeks
 }
 
+function shiftDay(d, n) {
+  const c = new Date(d)
+  c.setDate(c.getDate() + n)
+  return c
+}
+
 function getRequestForDay(d, requests) {
   const t = d.getTime()
   let best = null
@@ -99,7 +105,7 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, canResize, activeReqId, dragging, onEdgeDown, onDragEnter, onReqHover }) {
+function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, canResize, activeReqId, dragging, dragAnchor, onEdgeDown, onDragEnter, onReqHover }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
@@ -177,8 +183,17 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               // Draggable period edges (resizing draft periods)
               const isReqStart = !!req && sameDay(d, dayOnly(req.startDate))
               const isReqEnd   = !!req && sameDay(d, dayOnly(req.endDate))
+              // An edge pressed right against another period can't move — it gets no rim
+              // While dragging, the moving edge keeps its rim (it may end up next to a neighbour)
+              const isDragged = !!dragAnchor && req?.id === activeReqId
+              const edgeStart = canResize && isReqStart && (isDragged
+                ? !sameDay(d, dragAnchor) || isReqEnd
+                : !getRequestForDay(shiftDay(d, -1), requests))
+              const edgeEnd   = canResize && isReqEnd && (isDragged
+                ? !sameDay(d, dragAnchor) || isReqStart
+                : !getRequestForDay(shiftDay(d, 1), requests))
               // Edges are shown only for the hovered (or dragged) period
-              const resizable  = canResize && req?.id === activeReqId && (isReqStart || isReqEnd)
+              const resizable  = req?.id === activeReqId && (edgeStart || edgeEnd)
               const cursor = dragging || resizable ? 'ew-resize' : canClick ? 'pointer' : 'default'
 
               const inAnyHighlight = isSelected || showStripBg
@@ -196,7 +211,7 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                   onMouseDown={e => {
                     if (!resizable) return
                     e.preventDefault()
-                    onEdgeDown(req, isReqStart && !isReqEnd ? 'start' : 'end')
+                    onEdgeDown(req, edgeStart && !edgeEnd ? 'start' : 'end')
                   }}
                   onMouseEnter={e => {
                     if (dragging) { onDragEnter(d); return }
@@ -230,17 +245,17 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                     <>
                       <div style={{
                         position: 'absolute', top: 0, height: ROW_H,
-                        left: isReqStart ? -EDGE_W : 0,
-                        width: CELL + (isReqStart ? EDGE_W : 0) + (isReqEnd ? EDGE_W : 0),
+                        left: edgeStart ? -EDGE_W : 0,
+                        width: CELL + (edgeStart ? EDGE_W : 0) + (edgeEnd ? EDGE_W : 0),
                         background: '#626C77',
                         borderRadius: r,
                         zIndex: 1,
                       }} />
-                      {isReqStart && <div style={{ ...GRIP_STYLE, left: -EDGE_W / 2 - GRIP_W / 2 }} />}
-                      {isReqEnd && <div style={{ ...GRIP_STYLE, left: CELL + EDGE_W / 2 - GRIP_W / 2 }} />}
+                      {edgeStart && <div style={{ ...GRIP_STYLE, left: -EDGE_W / 2 - GRIP_W / 2 }} />}
+                      {edgeEnd && <div style={{ ...GRIP_STYLE, left: CELL + EDGE_W / 2 - GRIP_W / 2 }} />}
                       {/* Hit area over the part of the rim that sticks into the neighbouring cell */}
-                      {isReqStart && <div style={{ ...EDGE_HIT_STYLE, left: -EDGE_W }} />}
-                      {isReqEnd && <div style={{ ...EDGE_HIT_STYLE, left: CELL }} />}
+                      {edgeStart && <div style={{ ...EDGE_HIT_STYLE, left: -EDGE_W }} />}
+                      {edgeEnd && <div style={{ ...EDGE_HIT_STYLE, left: CELL }} />}
                     </>
                   )}
 
@@ -409,7 +424,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
         columnGap: COL_GAP,
         rowGap: ROW_GAP,
         width: calendarWidth(cols),
-        userSelect: drag ? 'none' : undefined,
+        userSelect: 'none',
       }}
         onMouseLeave={() => { if (!drag) setHoverReqId(null) }}
       >
@@ -433,6 +448,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             activeReqId={drag ? drag.id : hoverReqId}
             onReqHover={setHoverReqId}
             dragging={!!drag}
+            dragAnchor={drag?.anchor ?? null}
             onEdgeDown={handleEdgeDown}
             onDragEnter={handleDragEnter}
           />
