@@ -6,6 +6,7 @@ const T = {
   'главная': 'Home',
   'отпуск': 'Vacation',
   'уведомления раздела': 'Notifications',
+  'частые вопросы': 'FAQ',
   'Мой отпуск': 'My vacation',
   'Планы коллег': "Colleagues' plans",
 
@@ -32,6 +33,18 @@ const T = {
   'Мои отпуска': 'My vacations',
   'Для создания заявки выделите период, выбирая даты прямо в календаре.':
     'To create a request, select a period by choosing dates directly in the calendar.',
+  'Баланс отпуска': 'Vacation balance',
+  'Все заявки': 'All requests',
+  'Для создания заявки выделите период, выбирая даты прямо в календаре':
+    'To create a request, select a period by choosing dates directly in the calendar',
+  'отметка пересечений в календаре': 'overlap marker in the calendar',
+  'Выберите сотрудников': 'Select employees',
+  'Всего доступно:': 'Total available:',
+  'Распределите минимум 28 дней': 'Distribute at least 28 days',
+  'Один из периодов должен быть не меньше 14 дней': 'One of the periods must be at least 14 days',
+  'План отпуска': 'Vacation plan',
+  'Для создания плана отпуска начните выделять периоды, выбирая даты прямо в календаре':
+    'To create a vacation plan, start selecting periods by choosing dates directly in the calendar',
   'Пересечения': 'Overlaps',
   'отметка пересечений': 'overlap marker',
   'Добавить сотрудника': 'Add employee',
@@ -202,6 +215,11 @@ export const MONTH_NAMES = LOCALE === 'en'
 export const MONTH_GEN = LOCALE === 'en'
   ? MONTH_NAMES
   : ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+
+// Short genitive month names for date ranges («13 апр – 17 апр»)
+export const MONTH_GEN_SHORT = LOCALE === 'en'
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['янв', 'фев', 'мар', 'апр', 'мая', 'июня', 'июля', 'авг', 'сент', 'окт', 'нояб', 'дек']
 
 export const MONTHS_SHORT = LOCALE === 'en'
   ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

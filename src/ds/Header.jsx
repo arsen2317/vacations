@@ -43,13 +43,6 @@ const ChevronRightIcon = () => (
   </svg>
 );
 
-const BellIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="17" height="19" viewBox="0 0 17 19" fill="none" style={{ flexShrink: 0 }}>
-    <path fillRule="evenodd" clipRule="evenodd" d="M10.949 8.606C11.383 10.127 11.651 10.939 12.757 11.375C13.573 11.699 14.09 12.439 13.987 13.18C13.956 13.443 13.76 14.315 12.447 14.538L2.062 16.333C1.897 16.363 1.742 16.373 1.597 16.373C0.636999 16.373 0.253999 15.765 0.149999 15.563C-0.180001 14.903 0.0469992 14.031 0.707999 13.453C1.587 12.673 1.566 11.821 1.442 10.249C1.39115 9.66567 1.3638 9.08053 1.36 8.495C1.38 6.122 2.858 4.621 4.439 4.053L4.046 1.893C4.02885 1.79366 4.03158 1.69189 4.05403 1.59361C4.07649 1.49533 4.11823 1.40248 4.17682 1.32045C4.23542 1.23841 4.30971 1.16882 4.3954 1.1157C4.48109 1.06258 4.57646 1.02699 4.676 1.011C4.87738 0.97418 5.08515 1.01864 5.25382 1.13465C5.4225 1.25066 5.53834 1.42877 5.576 1.63L5.968 3.79C7.652 3.79 9.564 4.702 10.412 6.923C10.639 7.521 10.804 8.099 10.949 8.606ZM1.814 14.832L12.2 13.038C12.314 13.018 12.386 12.998 12.417 12.987C12.3526 12.898 12.2626 12.8307 12.159 12.794C10.304 12.056 9.888 10.592 9.445 9.036L9.441 9.022L9.42 8.947C9.282 8.464 9.142 7.971 8.945 7.46C8.284 5.716 6.672 5.148 5.452 5.351C4.243 5.554 2.921 6.639 2.911 8.505C2.911 9.083 2.951 9.62 2.993 10.137C3.127 11.75 3.241 13.271 1.753 14.589C1.67093 14.6589 1.60999 14.7504 1.577 14.853C1.629 14.853 1.712 14.853 1.815 14.833L1.814 14.832ZM8.861 16.617C8.831 17.753 7.962 18.747 6.753 18.96C5.534 19.173 4.377 18.524 3.953 17.469L8.862 16.617H8.861Z" fill="#292929"/>
-    <path d="M14 6C15.6569 6 17 4.65685 17 3C17 1.34315 15.6569 0 14 0C12.3431 0 11 1.34315 11 3C11 4.65685 12.3431 6 14 6Z" fill="#3385FF"/>
-  </svg>
-);
-
 const FAVORITES = [
   { label: 'работа и отпуск', icon: <NavImg name="rabota-i-otdyh" /> },
   { label: 'делегирование',  icon: <NavImg name="delegirovanie" /> },
@@ -241,10 +234,7 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
             </div>
 
             <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}>
-              <div style={{ paddingLeft: 4, paddingRight: 8, display: 'flex', alignItems: 'center' }}>
-                <BellIcon />
-              </div>
-              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>{t('уведомления раздела')}</span>
+              <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>{t('частые вопросы')}</span>
             </div>
           </div>
         </div>

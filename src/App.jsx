@@ -6,10 +6,9 @@ import PlanningPage from './pages/PlanningPage'
 import ColleaguesPage from './pages/ColleaguesPage'
 import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
-import { COLORS, Header, useIsDocked } from './ds/index'
+import { Header, useIsDocked } from './ds/index'
 import WorkAndRestPage from './pages/WorkAndRestPage'
 import { LOCALE } from './i18n/locale'
-import { t } from './i18n/translate'
 
 function AppInner() {
   const { role, setRole, activeTab, setActiveTab } = useApp()
@@ -38,7 +37,7 @@ function AppInner() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'MTSCompact', sans-serif" }}>
-      <style>{`.modal-scroll::-webkit-scrollbar { width: 3px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 0; } .modal-scroll::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; } .mts-textarea::placeholder { color: #8C9BAB !important; } .sidebar-scroll { overflow-y: auto; scrollbar-width: none; } .sidebar-scroll::-webkit-scrollbar { width: 0; } .sidebar-scroll:hover { scrollbar-width: thin; scrollbar-color: #D0D5DC transparent; } .sidebar-scroll:hover::-webkit-scrollbar { width: 3px; } .sidebar-scroll:hover::-webkit-scrollbar-track { background: transparent; } .sidebar-scroll:hover::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; }`}</style>
+      <style>{`.modal-scroll::-webkit-scrollbar { width: 3px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 0; } .modal-scroll::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; } .mts-textarea::placeholder { color: #8C9BAB !important; } .mts-search-input::placeholder { color: #626C77; } .sidebar-scroll { overflow-y: auto; scrollbar-width: none; } .sidebar-scroll::-webkit-scrollbar { width: 0; } .sidebar-scroll:hover { scrollbar-width: thin; scrollbar-color: #D0D5DC transparent; } .sidebar-scroll:hover::-webkit-scrollbar { width: 3px; } .sidebar-scroll:hover::-webkit-scrollbar-track { background: transparent; } .sidebar-scroll:hover::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; }`}</style>
 
       <Header
         role={role}
@@ -53,17 +52,7 @@ function AppInner() {
       {activeTab !== 'work' && (
         <div style={{ background: '#fff', ...shellStyle }}>
           <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 88px' }}>
-            <h1 style={{
-              margin: '36px 0 0',
-              fontSize: 32,
-              fontWeight: 500,
-              color: COLORS.text,
-              lineHeight: '36px',
-              fontFamily: "'MTSWide', sans-serif",
-            }}>
-              {t('Отпуск')}
-            </h1>
-            <div style={{ paddingTop: 12 }}>
+            <div>
               <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
           </div>
