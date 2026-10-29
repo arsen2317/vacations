@@ -379,6 +379,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [newRequestRange, setNewRequestRange] = useState(null)
   const [calendarKey, setCalendarKey] = useState(0)
   const [editingSegment, setEditingSegment] = useState(null)
+  const [resizePreview, setResizePreview] = useState(null) // { id, start, end } while dragging a period edge
   const [toast, setToast] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [showCalculator, setShowCalculator] = useState(false)
@@ -515,6 +516,13 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     return true
   }
 
+  // Segments as shown in the left panel: the dragged period follows the calendar live
+  const displaySegments = resizePreview
+    ? segments.map(seg => seg.id === resizePreview.id
+      ? { ...seg, startDate: toISODate(resizePreview.start), endDate: toISODate(resizePreview.end), days: countVacationDays(resizePreview.start, resizePreview.end) }
+      : seg)
+    : segments
+
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
 
   const yearRequests = requests
@@ -567,7 +575,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           ) : (
             <Panel2027
               totalDays={planTotalDays}
-              segments={segments}
+              segments={displaySegments}
               onRemoveSegment={handleRemoveSegment}
               onEditSegment={setEditingSegment}
               planStatus={planStatus}
@@ -622,6 +630,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               ? (req, start, end) => handleUpdateSegment(req.id, start, end)
               : undefined
             }
+            onResizePreview={year === 2027 && planStatus === 'draft' ? setResizePreview : undefined}
           />
         </div>
       </div>

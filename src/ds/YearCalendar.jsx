@@ -309,7 +309,7 @@ const MONTH_W = (832 - COL_GAP * 2) / 3  // 261.33
 export function calendarWidth(cols) { return cols * MONTH_W + (cols - 1) * COL_GAP }
 export const YEAR_CALENDAR_WIDTH = calendarWidth(3)  // 832
 
-export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onResizeRequest }) {
+export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onResizeRequest, onResizePreview }) {
   const today = dayOnly(new Date())
   const [selStart, setSelStart] = useState(null)
   const [selEnd,   setSelEnd]   = useState(null)
@@ -330,6 +330,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
       const orig = requests.find(r => r.id === drag.id)
       const changed = orig && (!sameDay(dayOnly(orig.startDate), drag.start) || !sameDay(dayOnly(orig.endDate), drag.end))
       setDrag(null)
+      onResizePreview?.(null)
       // The click that follows mouseup must not start a new selection
       suppressClick.current = true
       setTimeout(() => { suppressClick.current = false }, 0)
@@ -337,21 +338,23 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
     }
     window.addEventListener('mouseup', handleUp)
     return () => window.removeEventListener('mouseup', handleUp)
-  }, [drag, requests, onResizeRequest])
+  }, [drag, requests, onResizeRequest, onResizePreview])
 
   function handleEdgeDown(req, edge) {
     const s = dayOnly(req.startDate)
     const e = dayOnly(req.endDate)
     setSelStart(null); setSelEnd(null); setHover(null); setColTooltip(null)
     setDrag({ id: req.id, anchor: edge === 'start' ? e : s, start: s, end: e })
+    onResizePreview?.({ id: req.id, start: s, end: e })
   }
 
+  // Live range while dragging; reported to the parent so it can update counters
   function handleDragEnter(d) {
-    setDrag(prev => prev && ({
-      ...prev,
-      start: d < prev.anchor ? d : prev.anchor,
-      end:   d < prev.anchor ? prev.anchor : d,
-    }))
+    if (!drag) return
+    const start = d < drag.anchor ? d : drag.anchor
+    const end   = d < drag.anchor ? drag.anchor : d
+    setDrag({ ...drag, start, end })
+    onResizePreview?.({ id: drag.id, start, end })
   }
 
   const effectiveSelEnd = selEnd
