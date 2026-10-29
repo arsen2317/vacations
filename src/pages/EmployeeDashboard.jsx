@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
 import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
-import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 import { t, tName, tTeam, MONTH_GEN, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
@@ -39,7 +39,7 @@ function SmallIcon({ children }) {
 }
 
 // Left panel for 2026: balance + vacation list
-function Panel2026({ balance, yearRequests, setSelectedRequest, onOpenCalculator, intersections }) {
+function Panel2026({ balance, yearRequests, setSelectedRequest, onOpenCalculator, onGoToRequests, intersections }) {
   const total = balance.main + balance.extra
   return (
     <>
@@ -75,7 +75,7 @@ function Panel2026({ balance, yearRequests, setSelectedRequest, onOpenCalculator
         <div style={{ paddingBottom: 16 }}>
           <div style={{ padding: '24px 0 12px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
             <h3 style={{ ...SECTION_TITLE, flex: 1 }}>{t('Мои отпуска')}</h3>
-            <span style={{ color: '#0070E5', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '24px', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+            <span onClick={onGoToRequests} style={{ color: '#0070E5', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '24px', whiteSpace: 'nowrap', cursor: 'pointer' }}>
               {t('Все заявки')}
             </span>
           </div>
@@ -225,6 +225,45 @@ function IntersectionsSection({ trackedColleagues, onAddColleague, onRemoveColle
   )
 }
 
+function SegmentMenu({ onRemove }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0, display: 'flex' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ padding: 0, border: 'none', borderRadius: 8, background: '#F2F3F7', cursor: 'pointer', display: 'flex' }}
+      >
+        <MoreIcon />
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
+          padding: 6, background: '#fff', borderRadius: 16,
+          boxShadow: '0px 12px 20px rgba(0,0,0,0.14), 0px 4px 24px rgba(0,0,0,0.12)',
+        }}>
+          <div
+            onClick={() => { setOpen(false); onRemove() }}
+            style={{ padding: '10px 6px', borderRadius: 12, cursor: 'pointer', color: '#D8400C', fontSize: 17, fontFamily: FONT, lineHeight: '24px', whiteSpace: 'nowrap' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#F5F6F8' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+          >
+            {t('Удалить')}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ConditionRow({ done, children }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
@@ -287,15 +326,7 @@ function Panel2027({ totalDays, segments, onRemoveSegment, planStatus, onOpenPla
                   <StatusBadge type={planStatus} />
                 </button>
                 {planStatus === 'draft' && (
-                  <button
-                    onClick={() => onRemoveSegment(seg.id)}
-                    style={{ width: 24, height: 24, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path fillRule="evenodd" clipRule="evenodd" d="M3.04351 3.04351C1.47611 4.6109 1.3538 6.18347 1.10916 9.32861C1.04148 10.1987 1 11.0993 1 12C1 12.9007 1.04148 13.8013 1.10916 14.6714C1.3538 17.8165 1.47611 19.3891 3.04351 20.9565C4.6109 22.5239 6.18347 22.6462 9.32861 22.8908C10.1987 22.9585 11.0994 23 12 23C12.9007 23 13.8013 22.9585 14.6714 22.8908C17.8165 22.6462 19.3891 22.5239 20.9565 20.9565C22.5239 19.3891 22.6462 17.8165 22.8908 14.6714C22.9585 13.8013 23 12.9007 23 12C23 11.0993 22.9585 10.1987 22.8908 9.32861C22.6462 6.18347 22.5239 4.6109 20.9565 3.04351C19.3891 1.47611 17.8165 1.3538 14.6714 1.10916C13.8013 1.04148 12.9007 1 12 1C11.0994 1 10.1987 1.04148 9.32861 1.10916C6.18347 1.3538 4.6109 1.47611 3.04351 3.04351Z" fill="#F95721"/>
-                      <path d="M16 10.9985C16.5523 10.9985 17 11.4463 17 11.9985C17 12.5508 16.5523 12.9985 16 12.9985H8C7.44771 12.9985 7 12.5508 7 11.9985C7 11.4463 7.44771 10.9985 8 10.9985H16Z" fill="white"/>
-                    </svg>
-                  </button>
+                  <SegmentMenu onRemove={() => onRemoveSegment(seg.id)} />
                 )}
               </div>
             ))}
@@ -336,7 +367,7 @@ const INITIAL_TRACKED_IDS = COLLEAGUES
   .filter(c => !c.me && c.team === CURRENT_USER.team)
   .map(c => c.id)
 
-export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR, initialYear }) {
+export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR, onGoToRequests, initialYear }) {
   const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign } = useApp()
   const [year, setYear] = useState(initialYear ?? 2026)
   useEffect(() => { if (initialYear) setYear(initialYear) }, [initialYear])
@@ -495,6 +526,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               yearRequests={yearRequests}
               setSelectedRequest={setSelectedRequest}
               onOpenCalculator={() => setShowCalculator(true)}
+              onGoToRequests={onGoToRequests}
               intersections={intersections}
             />
           ) : (

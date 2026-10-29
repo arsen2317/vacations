@@ -34,7 +34,16 @@ const T = {
   'Для создания заявки выделите период, выбирая даты прямо в календаре.':
     'To create a request, select a period by choosing dates directly in the calendar.',
   'Баланс отпуска': 'Vacation balance',
-  'Все заявки': 'All requests',
+  'Все': 'All',
+  'все заявки': 'all requests',
+  'Вид отпуска': 'Vacation type',
+  'Всего дней': 'Total days',
+  'Осталось переносов': 'Reschedules left',
+  'Отклонены': 'Rejected',
+  'Перенести': 'Reschedule',
+  'Подробнее': 'Details',
+  'Удалить': 'Delete',
+  'Заявок не найдено': 'No requests found',
   'Для создания заявки выделите период, выбирая даты прямо в календаре':
     'To create a request, select a period by choosing dates directly in the calendar',
   'отметка пересечений в календаре': 'overlap marker in the calendar',
@@ -220,6 +229,11 @@ export const MONTH_GEN = LOCALE === 'en'
 export const MONTH_GEN_SHORT = LOCALE === 'en'
   ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   : ['янв', 'фев', 'мар', 'апр', 'мая', 'июня', 'июля', 'авг', 'сент', 'окт', 'нояб', 'дек']
+
+// Month abbreviations for table dates («13 февр 2026»)
+export const MONTHS_TABLE = LOCALE === 'en'
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['янв', 'февр', 'март', 'апр', 'май', 'июнь', 'июль', 'авг', 'сент', 'окт', 'нояб', 'дек']
 
 export const MONTHS_SHORT = LOCALE === 'en'
   ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

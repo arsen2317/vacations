@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { BTN_STYLE, Banner, Chip, SearchIcon, SelectField } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, SearchIcon, SelectField, MoreIcon, ChevronUp } from '../ds/index'
 import StatusBadge from '../components/StatusBadge'
 import Toast from '../components/Toast'
 import { t, tName, tTeam, tPosition, pluralDays as unitDays, MONTH_NAMES, MONTHS_SHORT } from '../i18n/translate'
@@ -447,14 +447,9 @@ function ActionsDropdown({ request, onApprove, onReject }) {
           border: 'none', background: open ? '#F2F3F7' : 'transparent', cursor: 'pointer',
           padding: 4, borderRadius: 8,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 32, height: 32,
         }}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="4" viewBox="0 0 18 4" fill="none">
-          <circle cx="2" cy="2" r="2" fill="#1D2023"/>
-          <circle cx="9" cy="2" r="2" fill="#1D2023"/>
-          <circle cx="16" cy="2" r="2" fill="#1D2023"/>
-        </svg>
+        <MoreIcon />
       </button>
       {open && (
         <div
@@ -525,13 +520,13 @@ function Pagination({ page, total, onPage }) {
   })
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 24, gap: 8 }}>
-      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btn(false, page === 1), fontSize: 20 }}>‹</button>
+      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btn(false, page === 1), opacity: page === 1 ? 0.3 : 1 }}><span style={{ display: 'flex', transform: 'rotate(-90deg)' }}><ChevronUp /></span></button>
       {items.map(item =>
         typeof item === 'string'
           ? <span key={item} style={{ color: '#626C77', padding: '0 4px', fontSize: 17 }}>...</span>
           : <button key={item} onClick={() => onPage(item)} style={btn(item === page, false)}>{item}</button>
       )}
-      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btn(false, page === totalPages), fontSize: 20 }}>›</button>
+      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btn(false, page === totalPages), opacity: page === totalPages ? 0.3 : 1 }}><span style={{ display: 'flex', transform: 'rotate(90deg)' }}><ChevronUp /></span></button>
     </div>
   )
 }

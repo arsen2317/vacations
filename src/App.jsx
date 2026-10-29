@@ -8,6 +8,7 @@ import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
 import { Header, useIsDocked } from './ds/index'
 import WorkAndRestPage from './pages/WorkAndRestPage'
+import RequestsPage from './pages/RequestsPage'
 import { LOCALE } from './i18n/locale'
 
 function AppInner() {
@@ -24,7 +25,7 @@ function AppInner() {
 
   function handleRoleChange(value) {
     setRole(value)
-    const tabsAlwaysAccessible = ['work', 'home', 'planning', 'colleagues']
+    const tabsAlwaysAccessible = ['work', 'home', 'planning', 'colleagues', 'requests']
     if (!tabsAlwaysAccessible.includes(activeTab)) {
       setActiveTab('home')
     }
@@ -49,7 +50,7 @@ function AppInner() {
         activeTab={activeTab}
       />
 
-      {activeTab !== 'work' && (
+      {activeTab !== 'work' && activeTab !== 'requests' && (
         <div style={{ background: '#fff', ...shellStyle }}>
           <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 88px' }}>
             <div>
@@ -69,6 +70,7 @@ function AppInner() {
             onGoToPlanning={() => setActiveTab('planning')}
             onGoToTeam={() => setActiveTab('team')}
             onGoToHR={() => setActiveTab('hr')}
+            onGoToRequests={() => setActiveTab('requests')}
             initialYear={dashYear}
           />
         )}
@@ -76,6 +78,7 @@ function AppInner() {
           <PlanningPage onGoToRequests={() => setActiveTab('home')} />
         )}
         {activeTab === 'colleagues' && <ColleaguesPage />}
+        {activeTab === 'requests' && <RequestsPage />}
         {activeTab === 'team' && (role === 'manager' || role === 'hr_admin') && <ManagerPage />}
         {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
         </div>

@@ -106,9 +106,9 @@ function PersonRow({ name, role, avatar }) {
   )
 }
 
-export default function RequestModal({ request, onClose, onAction }) {
+export default function RequestModal({ request, onClose, onAction, initialReschedule = false }) {
   const { setRequests } = useApp()
-  const [showReschedule, setShowReschedule] = useState(false)
+  const [showReschedule, setShowReschedule] = useState(initialReschedule)
   const [rescheduleError, setRescheduleError] = useState(null)
 
   const overlaps = useMemo(() => {

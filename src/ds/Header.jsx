@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useIsDocked } from "./useIsDocked";
 import { LOCALE } from "../i18n/locale";
 import { t } from "../i18n/translate";
+import { FaqIcon } from "./icons";
 
 const BASE = import.meta.env.BASE_URL;
 const I = (name) => `${BASE}icons/${name}.png`;
@@ -228,12 +229,25 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
                     <span onClick={() => onNavigate?.('work')} style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', cursor: 'pointer' }}>работа и отпуск</span>
                     <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
                   </div>
-                  <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>
+                  {activeTab === 'requests' ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                        <span onClick={() => onNavigate?.('home')} style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', cursor: 'pointer' }}>отпуск</span>
+                        <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
+                      </div>
+                      <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>все заявки</span>
+                    </>
+                  ) : (
+                    <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>
+                  )}
                 </>
               )}
             </div>
 
             <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}>
+              <div style={{ paddingRight: 4, display: 'flex', alignItems: 'center' }}>
+                <FaqIcon />
+              </div>
               <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>{t('частые вопросы')}</span>
             </div>
           </div>
