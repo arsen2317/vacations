@@ -51,7 +51,7 @@ const BellIcon = () => (
 );
 
 const FAVORITES = [
-  { label: 'работа и отдых', icon: <NavImg name="rabota-i-otdyh" /> },
+  { label: 'работа и отпуск', icon: <NavImg name="rabota-i-otdyh" /> },
   { label: 'делегирование',  icon: <NavImg name="delegirovanie" /> },
 ];
 
@@ -112,9 +112,11 @@ function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
         boxShadow: (!isDocked && open) ? '4px 0 24px rgba(0,0,0,0.12)' : 'none',
       }}>
         <div style={{ paddingTop: 24, paddingBottom: 40, paddingLeft: 24, paddingRight: 24, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-          <div onClick={onClose} style={{ cursor: 'pointer', height: 24, display: 'flex', alignItems: 'center', paddingRight: 16, flexShrink: 0 }}>
-            <BurgerLines color="#1D2023" />
-          </div>
+          {!isDocked && (
+            <div onClick={onClose} style={{ cursor: 'pointer', height: 24, display: 'flex', alignItems: 'center', paddingRight: 16, flexShrink: 0 }}>
+              <BurgerLines color="#1D2023" />
+            </div>
+          )}
           <LogoSVG width={142} height={30} />
         </div>
 
@@ -139,7 +141,7 @@ function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
           <div style={{ paddingLeft: 24, paddingRight: 24, ...SECTION_LABEL }}>избранные</div>
           <div style={{ paddingTop: 8, paddingLeft: 24, paddingRight: 16, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {FAVORITES.map(({ label, icon }) => (
-              <div key={label} onClick={() => { if (label === 'работа и отдых') { onNavigate?.('work') } }} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <div key={label} onClick={() => { if (label === 'работа и отпуск') { onNavigate?.('work') } }} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
                 {icon}
                 <span style={NAV_ITEM_TEXT}>{label}</span>
               </div>
@@ -195,11 +197,12 @@ function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange }) {
 
 export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, onNavigate, activeTab }) {
   const isDocked = useIsDocked();
-  const sidebarShown = sidebarOpen;
+  // На широких экранах меню всегда раскрыто и не сворачивается
+  const sidebarShown = sidebarOpen || (isDocked && LOCALE !== 'en');
 
   return (
     <>
-      <Sidebar open={sidebarShown} isDocked={isDocked} onClose={onSidebarClose} onNavigate={onNavigate} role={role} onRoleChange={onRoleChange} />
+      <Sidebar open={sidebarShown} isDocked={isDocked} onClose={isDocked ? undefined : onSidebarClose} onNavigate={onNavigate} role={role} onRoleChange={onRoleChange} />
 
       <div style={{ position: 'sticky', top: 0, zIndex: 100, width: '100%' }}>
         <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
@@ -228,11 +231,11 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
               {LOCALE === 'en' ? (
                 <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>{t('отпуск')}</span>
               ) : activeTab === 'work' ? (
-                <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отдых</span>
+                <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>работа и отпуск</span>
               ) : (
                 <>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                    <span onClick={() => onNavigate?.('work')} style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', cursor: 'pointer' }}>работа и отдых</span>
+                    <span onClick={() => onNavigate?.('work')} style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', cursor: 'pointer' }}>работа и отпуск</span>
                     <div style={{ display: 'flex', alignItems: 'center', height: 20 }}><ChevronRightIcon /></div>
                   </div>
                   <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>отпуск</span>

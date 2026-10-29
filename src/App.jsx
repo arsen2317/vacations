@@ -45,7 +45,7 @@ function AppInner() {
         onRoleChange={handleRoleChange}
         sidebarOpen={sidebarOpen}
         onSidebarToggle={LOCALE === 'en' ? undefined : () => setSidebarOpen(v => !v)}
-        onSidebarClose={() => setSidebarOpen(false)}
+        onSidebarClose={isDocked ? undefined : () => setSidebarOpen(false)}
         onNavigate={setActiveTab}
         activeTab={activeTab}
       />
