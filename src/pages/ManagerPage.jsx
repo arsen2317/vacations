@@ -444,10 +444,10 @@ function ActionsDropdown({ request, onApprove, onReject }) {
       <button
         onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
         style={{
-          border: 'none', background: '#F2F3F7', cursor: 'pointer',
-          padding: 4, borderRadius: 12,
+          border: 'none', background: open ? '#F2F3F7' : 'transparent', cursor: 'pointer',
+          padding: 4, borderRadius: 8,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 44, height: 44,
+          width: 32, height: 32,
         }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="4" viewBox="0 0 18 4" fill="none">
@@ -516,15 +516,15 @@ function Pagination({ page, total, onPage }) {
     items.push(p); prev = p
   }
   const btn = (active, disabled) => ({
-    height: 44, minWidth: 44, borderRadius: 16, border: 'none',
+    height: 32, minWidth: 32, borderRadius: 12, border: 'none',
     background: active ? '#F2F3F7' : 'transparent',
     color: disabled ? '#BCC3D0' : '#1D2023',
-    fontSize: active ? 20 : 17, fontFamily: "'MTSCompact', sans-serif",
+    fontSize: 17, fontFamily: "'MTSCompact', sans-serif",
     fontWeight: active ? 500 : 400, cursor: disabled ? 'default' : 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px',
   })
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 4 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 24, gap: 8 }}>
       <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btn(false, page === 1), fontSize: 20 }}>‹</button>
       {items.map(item =>
         typeof item === 'string'
@@ -715,13 +715,14 @@ export default function ManagerPage() {
     setToast(t('Заявка отклонена'))
   }
 
+  // Table style: rounded outline, grey header, 17px rows
   const TH = {
-    padding: '12px 16px', fontSize: 13, fontWeight: 400, color: '#626C77',
+    padding: '10px 16px', fontSize: 14, fontWeight: 500, lineHeight: '20px', color: '#626C77',
     textAlign: 'left', fontFamily: "'MTSCompact', sans-serif",
-    background: '#F2F3F7', borderBottom: DIVIDER, whiteSpace: 'nowrap',
+    background: '#F2F3F7', whiteSpace: 'nowrap',
   }
   const TD = {
-    padding: '16px', fontSize: 14, color: '#1D2023',
+    padding: '10px 16px', fontSize: 17, lineHeight: '24px', color: '#1D2023',
     fontFamily: "'MTSCompact', sans-serif", verticalAlign: 'middle',
   }
 
@@ -739,7 +740,7 @@ export default function ManagerPage() {
         <div style={{ flex: '0 0 280px', position: 'relative' }}>
           <div style={{
             height: 44, paddingLeft: 12, paddingRight: 12,
-            background: '#F2F3F7', borderRadius: 12,
+            background: '#F2F3F7', borderRadius: 16,
             display: 'flex', alignItems: 'center', gap: 8,
             outline: '1px rgba(188,195,208,0.5) solid', outlineOffset: '-1px',
           }}>
@@ -800,24 +801,24 @@ export default function ManagerPage() {
       {/* ── TABLE VIEW ── */}
       {view === 'table' && (
         <>
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', border: '1px solid rgba(188,195,208,0.5)', borderRadius: 16 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
                 <col style={{ width: 120 }} />
                 <col style={{ width: 280 }} />
                 <col />
-                <col style={{ width: 220 }} />
+                <col style={{ width: 250 }} />
                 <col style={{ width: 180 }} />
                 <col style={{ width: 80 }} />
               </colgroup>
               <thead>
                 <tr>
                   <th style={TH}>{t('№ заявки')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Сотрудник')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Подразделение')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Период отпуска')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Статус')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset', textAlign: 'center' }}>{t('Действия')}</th>
+                  <th style={TH}>{t('Сотрудник')}</th>
+                  <th style={TH}>{t('Подразделение')}</th>
+                  <th style={TH}>{t('Период отпуска')}</th>
+                  <th style={TH}>{t('Статус')}</th>
+                  <th style={{ ...TH, textAlign: 'center' }} aria-label={t('Действия')} />
                 </tr>
               </thead>
               <tbody>
@@ -831,18 +832,18 @@ export default function ManagerPage() {
                       key={req.id}
                       onClick={() => setSelectedRequest(req)}
                       style={{ cursor: 'pointer' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F8F8FA'}
                       onMouseLeave={e => e.currentTarget.style.background = ''}
                     >
-                      <td style={{ ...TD, borderBottom: rowBorder, color: '#626C77' }}>{req.reqNum}</td>
+                      <td style={{ ...TD, borderBottom: rowBorder }}>{req.reqNum}</td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
-                        <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px' }}>{tName(req.name)}</div>
-                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{tPosition(req.position)}</div>
+                        <div>{tName(req.name)}</div>
+                        <div style={{ fontSize: 14, color: '#626C77', lineHeight: '20px' }}>{tPosition(req.position)}</div>
                       </td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>{tTeam(req.team)}</td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
-                        <div style={{ fontSize: 14, lineHeight: '20px' }}>{fmtPeriod(req.startDate, req.endDate)}</div>
-                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{pluralDays(req.days)}</div>
+                        <div>{fmtPeriod(req.startDate, req.endDate)}</div>
+                        <div style={{ fontSize: 14, color: '#626C77', lineHeight: '20px' }}>{pluralDays(req.days)}</div>
                       </td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
                         <StatusBadge status={req.status} />
