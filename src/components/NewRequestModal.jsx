@@ -186,11 +186,7 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
         options={REQUEST_TYPES.map(rt => ({ ...rt, name: t(rt.name), desc: rt.desc ? t(rt.desc) : rt.desc }))}
         onChange={v => { setType(v); setErrors(e => ({ ...e, type: undefined })) }}
         error={errors.type}
-        description={selectedType
-          ? (selectedType.id === 'annual'
-            ? `${t('За счёт накопленного ежегодного основного оплачиваемого отпуска:')} ${balance.main} ${pluralDays(balance.main)}`
-            : t(selectedType.desc))
-          : t('Если нужен отпуск на завтра, выбирайте вид отпуска «Без сохранения заработной платы»')}
+        description={t('Если нужен отпуск на завтра, выбирайте вид отпуска «Без сохранения заработной платы»')}
       />
 
       <SelectField
