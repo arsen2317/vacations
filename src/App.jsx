@@ -38,7 +38,7 @@ function AppInner() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'MTSCompact', sans-serif" }}>
-      <style>{`.modal-scroll::-webkit-scrollbar { width: 3px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 0; } .modal-scroll::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; } .mts-textarea::placeholder { color: #8C9BAB !important; } .mts-search-input::placeholder { color: #626C77; } .sidebar-scroll { overflow-y: auto; scrollbar-width: none; } .sidebar-scroll::-webkit-scrollbar { width: 0; } .sidebar-scroll:hover { scrollbar-width: thin; scrollbar-color: #D0D5DC transparent; } .sidebar-scroll:hover::-webkit-scrollbar { width: 3px; } .sidebar-scroll:hover::-webkit-scrollbar-track { background: transparent; } .sidebar-scroll:hover::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; }`}</style>
+      <style>{`.modal-scroll::-webkit-scrollbar { width: 3px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 0; } .modal-scroll::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; } .mts-textarea::placeholder { color: #626C77 !important; } .mts-search-input::placeholder { color: #626C77; } .sidebar-scroll { overflow-y: auto; scrollbar-width: none; } .sidebar-scroll::-webkit-scrollbar { width: 0; } .sidebar-scroll:hover { scrollbar-width: thin; scrollbar-color: #D0D5DC transparent; } .sidebar-scroll:hover::-webkit-scrollbar { width: 3px; } .sidebar-scroll:hover::-webkit-scrollbar-track { background: transparent; } .sidebar-scroll:hover::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; }`}</style>
 
       <Header
         role={role}

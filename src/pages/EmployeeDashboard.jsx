@@ -5,7 +5,7 @@ import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
 import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
-import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, CalendarRange } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, Drawer, DateRangeField } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 import { t, tName, tTeam, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
@@ -265,6 +265,34 @@ function SegmentMenu({ onEdit, onRemove }) {
         </div>
       )}
     </div>
+  )
+}
+
+function EditSegmentDrawer({ segment, onClose, onSave }) {
+  const [range, setRange] = useState({
+    start: new Date(segment.startDate + 'T00:00:00'),
+    end:   new Date(segment.endDate + 'T00:00:00'),
+  })
+  const days = countVacationDays(range.start, range.end)
+
+  return (
+    <Drawer
+      title={t('Изменить период')}
+      subtitle={`${formatSegmentDate(segment.startDate)} – ${formatSegmentDate(segment.endDate)} · ${segment.days} ${pluralDays(segment.days)}`}
+      onClose={onClose}
+      actions={[
+        { label: t('сохранить'), type: 'primary', onClick: () => onSave(range.start, range.end) },
+        { label: t('отмена'), type: 'secondary', onClick: onClose },
+      ]}
+    >
+      <DateRangeField
+        label={t('Период отпуска')}
+        start={range.start}
+        end={range.end}
+        description={`${t('Выбрано')} ${days} ${pluralDays(days)} ${t('отпуска')}`}
+        onChange={(start, end) => setRange({ start, end })}
+      />
+    </Drawer>
   )
 }
 
@@ -666,28 +694,11 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       )}
 
       {editingSegment && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setEditingSegment(null)}
-        >
-          <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: 24, padding: '24px 32px', width: 760, boxSizing: 'border-box' }}>
-              <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '24px', marginBottom: 4 }}>
-                {t('Изменить период')}
-              </div>
-              <div style={CELL_CAPTION}>
-                {formatSegmentDate(editingSegment.startDate)} – {formatSegmentDate(editingSegment.endDate)} · {editingSegment.days} {pluralDays(editingSegment.days)}. {t('Выберите новые даты периода')}
-              </div>
-            </div>
-            <CalendarRange
-              initialStart={new Date(editingSegment.startDate + 'T00:00:00')}
-              initialEnd={new Date(editingSegment.endDate + 'T00:00:00')}
-              applyLabel={t('Сохранить')}
-              onApply={(start, end) => { if (handleUpdateSegment(editingSegment.id, start, end)) setEditingSegment(null) }}
-              onClose={() => setEditingSegment(null)}
-            />
-          </div>
-        </div>
+        <EditSegmentDrawer
+          segment={editingSegment}
+          onClose={() => setEditingSegment(null)}
+          onSave={(start, end) => { if (handleUpdateSegment(editingSegment.id, start, end)) setEditingSegment(null) }}
+        />
       )}
 
       {showCalculator && <VacationCalculatorModal onClose={() => setShowCalculator(false)} />}

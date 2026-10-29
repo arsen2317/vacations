@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import { countVacationDays } from '../utils/dateUtils'
 import StatusBadge from './StatusBadge'
-import { CalendarRange, BTN_STYLE, Banner } from '../ds/index'
+import { Banner, Drawer, DateRangeField } from '../ds/index'
 import { COLLEAGUES } from '../data/mockData'
 import { LOCALE } from '../i18n/locale'
 import { t, tName, MONTH_GEN, pluralDays as pluralDaysWord } from '../i18n/translate'
@@ -110,6 +110,7 @@ export default function RequestModal({ request, onClose, onAction, initialResche
   const { setRequests } = useApp()
   const [showReschedule, setShowReschedule] = useState(initialReschedule)
   const [rescheduleError, setRescheduleError] = useState(null)
+  const [newRange, setNewRange] = useState({ start: null, end: null })
 
   const overlaps = useMemo(() => {
     if (!request) return []
@@ -134,7 +135,6 @@ export default function RequestModal({ request, onClose, onAction, initialResche
   const canReschedule = isPlanned && status === 'approved' && rescheduleLeft > 0 && !tooCloseToReschedule && !isPast
   const canWithdrawReschedule = isReschedule && status === 'rescheduling'
   const showRescheduleInfo = isPlanned && status === 'approved' && tooCloseToReschedule && !isPast
-  const hasActions = canWithdraw || canCancel || canReschedule || canWithdrawReschedule
 
   function handleWithdraw() {
     setRequests(prev => prev.filter(r => r.id !== request.id))
@@ -181,34 +181,31 @@ export default function RequestModal({ request, onClose, onAction, initialResche
     onAction?.(t('Заявка на перенос направлена'))
   }
 
-  // Reschedule calendar view
+  // Reschedule view
   if (showReschedule) {
+    const newDays = newRange.start ? countVacationDays(newRange.start, newRange.end || newRange.start) : null
+    const closeReschedule = () => { if (initialReschedule) onClose(); else setShowReschedule(false) }
     return (
-      <div
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        onClick={() => setShowReschedule(false)}
+      <Drawer
+        title={t('Перенести плановый отпуск')}
+        subtitle={`${t('Количество дней нового периода должно совпадать с текущим —')} ${pluralDays(request.days)}`}
+        onClose={closeReschedule}
+        actions={[
+          { label: t('отправить на согласование'), type: 'primary', disabled: !newRange.start, onClick: () => handleRescheduleApply(newRange.start, newRange.end || newRange.start) },
+          { label: t('отмена'), type: 'secondary', onClick: closeReschedule },
+        ]}
       >
-        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 24, padding: '24px 32px', width: 760 }}>
-            <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", marginBottom: 4 }}>
-              {t('Перенести плановый отпуск')}
-            </div>
-            <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-              {t('Количество дней нового периода должно совпадать с текущим —')} {pluralDays(request.days)}
-            </div>
-            {rescheduleError && (
-              <div style={{ marginTop: 8, fontSize: 13, color: '#E30611', fontFamily: "'MTSCompact', sans-serif" }}>
-                {rescheduleError}
-              </div>
-            )}
-          </div>
-          <CalendarRange
-            applyLabel={t('Отправить на согласование')}
-            onApply={handleRescheduleApply}
-            onClose={() => setShowReschedule(false)}
-          />
-        </div>
-      </div>
+        <InfoCell label={t('Текущий период')} value={fmtRange(request.startDate, request.endDate)} />
+        <DateRangeField
+          label={t('Новый период')}
+          start={newRange.start}
+          end={newRange.end}
+          initialViewMonth={request.startDate}
+          error={rescheduleError}
+          description={newDays !== null ? `${t('Выбрано')} ${pluralDays(newDays)} ${t('отпуска')}` : undefined}
+          onChange={(start, end) => { setNewRange({ start, end }); setRescheduleError(null) }}
+        />
+      </Drawer>
     )
   }
 
@@ -220,156 +217,94 @@ export default function RequestModal({ request, onClose, onAction, initialResche
     ? t('Заявка на перенос планового отпуска')
     : isPlanned ? t('Плановый отпуск') : t('Внеплановый отпуск')
 
+  const actions = [
+    ...(canReschedule ? [{ label: t('перенести отпуск'), type: 'secondary', onClick: () => setShowReschedule(true) }] : []),
+    ...(canWithdraw ? [{ label: t('отозвать заявку'), type: 'danger', onClick: handleWithdraw }] : []),
+    ...(canCancel ? [{ label: t('отменить отпуск'), type: 'danger', onClick: handleCancelVacation }] : []),
+    ...(canWithdrawReschedule ? [{ label: t('отозвать заявку'), type: 'danger', onClick: handleWithdrawReschedule }] : []),
+  ]
+
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}
-      >
-        {/* Header */}
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              {modalTitle}
-            </div>
-            <button
-              onClick={onClose}
-              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-              </svg>
-            </button>
-          </div>
-          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            № {request.id}
-          </div>
+    <Drawer title={modalTitle} subtitle={`№ ${request.id}`} onClose={onClose} actions={actions}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: 12 }}>
+          <StatusBadge status={status} />
         </div>
 
-        {/* Body */}
-        <div className="modal-scroll" style={{ paddingLeft: 20, paddingRight: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {isReschedule ? (
+          <>
+            <InfoCell label={t('Тип отпуска')} value={t('Плановый')} />
+            <InfoCell
+              label={t('Старый период')}
+              value={fmtRange(request.originalRequest.startDate, request.originalRequest.endDate)}
+            />
+            <InfoCell label={t('Новый период')} value={fmtRange(request.startDate, request.endDate)} />
+            {overlaps.length > 0 && (
+              <div style={{ paddingBottom: 4 }}>
+                <Banner
+                  type="warning"
+                  title={`${t('Период отпуска пересекается с')} ${formatNameShort(tName(overlaps[0].colleague.name))}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
+                />
+              </div>
+            )}
+            <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
+          </>
+        ) : (
+          <>
+            <InfoCell label={t('Тип отпуска')} value={t(request.typeLabel || 'Ежегодный основной оплачиваемый')} />
+            <InfoCell label={t('Период')} value={fmtRange(request.startDate, request.endDate)} />
+            {overlaps.length > 0 && (
+              <div style={{ paddingBottom: 4 }}>
+                <Banner
+                  type="warning"
+                  title={`${t('Период отпуска пересекается с')} ${formatNameShort(tName(overlaps[0].colleague.name))}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
+                />
+              </div>
+            )}
+            <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
+            {isPlanned && status === 'approved' && (
+              <InfoCell label={t('Доступно переносов')} value={`${rescheduleLeft} ${t('из')} ${request.rescheduleLimit ?? 2}`} />
+            )}
+          </>
+        )}
 
-          <div style={{ marginBottom: 12 }}>
-            <StatusBadge status={status} />
-          </div>
-
-          {isReschedule ? (
-            <>
-              <InfoCell label={t('Тип отпуска')} value={t('Плановый')} />
-              <InfoCell
-                label={t('Старый период')}
-                value={fmtRange(request.originalRequest.startDate, request.originalRequest.endDate)}
-              />
-              <InfoCell label={t('Новый период')} value={fmtRange(request.startDate, request.endDate)} />
-              {overlaps.length > 0 && (
-                <div style={{ paddingBottom: 4 }}>
-                  <Banner
-                    type="warning"
-                    title={`${t('Период отпуска пересекается с')} ${formatNameShort(tName(overlaps[0].colleague.name))}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
-                  />
-                </div>
-              )}
-              <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
-            </>
-          ) : (
-            <>
-              <InfoCell label={t('Тип отпуска')} value={t(request.typeLabel || 'Ежегодный основной оплачиваемый')} />
-              <InfoCell label={t('Период')} value={fmtRange(request.startDate, request.endDate)} />
-              {overlaps.length > 0 && (
-                <div style={{ paddingBottom: 4 }}>
-                  <Banner
-                    type="warning"
-                    title={`${t('Период отпуска пересекается с')} ${formatNameShort(tName(overlaps[0].colleague.name))}: ${formatOverlapRange(overlaps[0].start, overlaps[0].end)}`}
-                  />
-                </div>
-              )}
-              <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
-              {isPlanned && status === 'approved' && (
-                <InfoCell label={t('Доступно переносов')} value={`${rescheduleLeft} ${t('из')} ${request.rescheduleLimit ?? 2}`} />
-              )}
-            </>
-          )}
-
-          {/* Rejection comment */}
-          {status === 'rejected' && request.rejectionComment && (
-            <div style={{ paddingTop: 8, paddingBottom: 8 }}>
-              <div style={{ padding: '12px 16px', background: '#FFF3F0', borderRadius: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#AD3400', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: "'MTSCompact', sans-serif" }}>
-                  {t('Причина отклонения')}
-                </div>
-                <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px', fontFamily: "'MTSCompact', sans-serif" }}>
-                  {request.rejectionComment}
-                </div>
+        {/* Rejection comment */}
+        {status === 'rejected' && request.rejectionComment && (
+          <div style={{ paddingTop: 8, paddingBottom: 8 }}>
+            <div style={{ padding: '12px 16px', background: '#FFF3F0', borderRadius: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#AD3400', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, fontFamily: "'MTSCompact', sans-serif" }}>
+                {t('Причина отклонения')}
+              </div>
+              <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px', fontFamily: "'MTSCompact', sans-serif" }}>
+                {request.rejectionComment}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Reschedule info banner (≤10 days) */}
-          {showRescheduleInfo && (
-            <div style={{ padding: '12px 16px', background: '#F2F3F7', borderRadius: 16, marginTop: 8, fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-              {t('До начала отпуска осталось менее 10 дней — перенос недоступен')}
-            </div>
-          )}
+        {/* Reschedule info banner (≤10 days) */}
+        {showRescheduleInfo && (
+          <div style={{ padding: '12px 16px', background: '#F2F3F7', borderRadius: 16, marginTop: 8, fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
+            {t('До начала отпуска осталось менее 10 дней — перенос недоступен')}
+          </div>
+        )}
 
-          {/* Approver */}
-          {approverName && (
-            <>
-              <SectionHeader label={t('Согласующий')} />
-              <PersonRow name={tName(approverName)} role={t(approverRole)} />
-            </>
-          )}
+        {/* Approver */}
+        {approverName && (
+          <>
+            <SectionHeader label={t('Согласующий')} />
+            <PersonRow name={tName(approverName)} role={t(approverRole)} />
+          </>
+        )}
 
-          {/* Extra approver */}
-          {extraApproverName && (
-            <>
-              <SectionHeader label={t('Дополнительный согласующий')} />
-              <PersonRow name={tName(extraApproverName)} />
-            </>
-          )}
-
-          {/* Actions */}
-          {hasActions && (
-            <div style={{ paddingTop: 12, paddingBottom: 20, display: 'flex', gap: 10 }}>
-              {canReschedule && (
-                <button
-                  onClick={() => setShowReschedule(true)}
-                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#1D2023' }}
-                >
-                  {t('ПЕРЕНЕСТИ ОТПУСК')}
-                </button>
-              )}
-              {canWithdraw && (
-                <button
-                  onClick={handleWithdraw}
-                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
-                >
-                  {t('ОТОЗВАТЬ ЗАЯВКУ')}
-                </button>
-              )}
-              {canCancel && (
-                <button
-                  onClick={handleCancelVacation}
-                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
-                >
-                  {t('ОТМЕНИТЬ ОТПУСК')}
-                </button>
-              )}
-              {canWithdrawReschedule && (
-                <button
-                  onClick={handleWithdrawReschedule}
-                  style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
-                >
-                  {t('ОТОЗВАТЬ ЗАЯВКУ')}
-                </button>
-              )}
-            </div>
-          )}
-          {!hasActions && <div style={{ paddingBottom: 20 }} />}
-        </div>
+        {/* Extra approver */}
+        {extraApproverName && (
+          <>
+            <SectionHeader label={t('Дополнительный согласующий')} />
+            <PersonRow name={tName(extraApproverName)} />
+          </>
+        )}
       </div>
-    </div>
+    </Drawer>
   )
 }

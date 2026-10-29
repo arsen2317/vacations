@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { BTN_STYLE, Banner, Chip, SearchIcon, SelectField, MoreIcon, ChevronUp } from '../ds/index'
+import { Banner, Chip, SearchIcon, SelectField, MoreIcon, ChevronUp, Drawer, TextAreaField } from '../ds/index'
 import StatusBadge from '../components/StatusBadge'
 import Toast from '../components/Toast'
 import { t, tName, tTeam, tPosition, pluralDays as unitDays, MONTH_NAMES, MONTHS_SHORT } from '../i18n/translate'
@@ -257,94 +257,53 @@ function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenRe
   const title = t(request.type === 'unplanned' ? 'Заявка на внеплановый отпуск' : 'Заявка на плановый отпуск')
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
+    <Drawer
+      title={title}
+      subtitle={`№ ${request.reqNum}`}
+      onClose={onClose}
+      actions={canApprove ? [
+        { label: t('согласовать'), type: 'primary', onClick: () => { onApprove(request.id); onClose() } },
+        { label: t('отклонить'), type: 'danger', onClick: () => { onOpenReject(request); onClose() } },
+      ] : []}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}
-      >
-        {/* Header */}
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              {title}
-            </div>
-            <button
-              onClick={onClose}
-              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-              </svg>
-            </button>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: 12 }}>
+          <StatusBadge status={request.status} />
+        </div>
+
+        {/* Employee row */}
+        <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 16, flexShrink: 0,
+            background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
+          }}>
+            {tName(request.name).trim().split(' ').slice(0, 2).map(w => w[0]).join('')}
           </div>
-          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            № {request.reqNum}
+          <div style={{ flex: '1 1 0' }}>
+            <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{tName(request.name)}</div>
+            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{tPosition(request.position)}</div>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="modal-scroll" style={{ paddingLeft: 20, paddingRight: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: 12 }}>
-            <StatusBadge status={request.status} />
+        <InfoCell label={t('Подразделение')} value={tTeam(request.team)} />
+        <InfoCell label={t('Тип отпуска')}   value={t(request.typeLabel)} />
+        <InfoCell label={t('Период')} value={fmtRangeRu(request.startDate, request.endDate)} />
+        <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
+
+        {overlaps.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12 }}>
+            {overlaps.map(r => (
+              <Banner
+                key={r.id}
+                type="warning"
+                title={`${t('Период отпуска пересекается с')} ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
+              />
+            ))}
           </div>
-
-          {/* Employee row */}
-          <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 16, flexShrink: 0,
-              background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
-            }}>
-              {tName(request.name).trim().split(' ').slice(0, 2).map(w => w[0]).join('')}
-            </div>
-            <div style={{ flex: '1 1 0' }}>
-              <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{tName(request.name)}</div>
-              <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{tPosition(request.position)}</div>
-            </div>
-          </div>
-
-          <InfoCell label={t('Подразделение')} value={tTeam(request.team)} />
-          <InfoCell label={t('Тип отпуска')}   value={t(request.typeLabel)} />
-          <InfoCell label={t('Период')} value={fmtRangeRu(request.startDate, request.endDate)} />
-          <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
-
-          {/* Overlap banners — above action buttons */}
-          {overlaps.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12 }}>
-              {overlaps.map(r => (
-                <Banner
-                  key={r.id}
-                  type="warning"
-                  title={`${t('Период отпуска пересекается с')} ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Actions */}
-          {canApprove && (
-            <div style={{ paddingTop: 12, paddingBottom: 20, display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => { onApprove(request.id); onClose() }}
-                style={{ flex: 1, height: 44, background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#FFFFFF' }}
-              >
-                {t('СОГЛАСОВАТЬ')}
-              </button>
-              <button
-                onClick={() => { onOpenReject(request); onClose() }}
-                style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
-              >
-                {t('ОТКЛОНИТЬ')}
-              </button>
-            </div>
-          )}
-          {!canApprove && <div style={{ paddingBottom: 20 }} />}
-        </div>
+        )}
       </div>
-    </div>
+    </Drawer>
   )
 }
 
@@ -369,59 +328,24 @@ function RejectModal({ request, onClose, onConfirm }) {
   }
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1010, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
+    <Drawer
+      title={t('Отклонить заявку')}
+      subtitle={`${tName(request.name)} · ${fmtPeriod(request.startDate, request.endDate)}`}
+      onClose={onClose}
+      zIndex={1010}
+      actions={[
+        { label: t('отклонить'), type: 'danger', onClick: confirm },
+        { label: t('отмена'), type: 'secondary', onClick: onClose },
+      ]}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ background: '#fff', borderRadius: 32, padding: 32, width: 440, display: 'flex', flexDirection: 'column', gap: 20, fontFamily: "'MTSCompact', sans-serif" }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
-              {t('Отклонить заявку')}
-            </div>
-            <div style={{ fontSize: 14, color: '#626C77', marginTop: 4 }}>
-              {tName(request.name)} · {fmtPeriod(request.startDate, request.endDate)}
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: '#F2F3F7', border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, flexShrink: 0 }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-            </svg>
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ fontSize: 14, color: '#626C77' }}>
-            {t('Причина отклонения')} <span style={{ color: '#E30611' }}>*</span>
-          </label>
-          <textarea
-            value={comment}
-            onChange={e => { setComment(e.target.value); setError('') }}
-            placeholder={t('Введите комментарий')}
-            className="mts-textarea"
-            style={{
-              width: '100%', height: 96, boxSizing: 'border-box',
-              background: '#F2F3F7', border: 'none',
-              outline: `1px ${error ? '#E30611' : 'rgba(188,195,208,0.50)'} solid`,
-              outlineOffset: '-1px', borderRadius: 16,
-              padding: '10px 12px', fontSize: 15, lineHeight: '22px',
-              color: '#1D2023', fontFamily: "'MTSCompact', sans-serif", resize: 'none',
-            }}
-          />
-          {error && <span style={{ fontSize: 12, color: '#E30611' }}>{error}</span>}
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={onClose} style={{ ...BTN_STYLE, flex: 1, height: 44, background: '#F2F3F7', color: '#1D2023', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-            {t('Отмена')}
-          </button>
-          <button onClick={confirm} style={{ ...BTN_STYLE, flex: 2, height: 44, background: '#F2F3F7', color: '#E30611', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-            {t('Отклонить')}
-          </button>
-        </div>
-      </div>
-    </div>
+      <TextAreaField
+        label={t('Причина отклонения')}
+        value={comment}
+        onChange={v => { setComment(v); setError('') }}
+        placeholder={t('Введите комментарий')}
+        error={error}
+      />
+    </Drawer>
   )
 }
 
@@ -539,50 +463,22 @@ function ReportStatsModal({ onClose, onDownload, requests, subordinates }) {
   const noPlanCount   = subordinates.filter(s => s.planStatus === 'draft').length
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
+    <Drawer
+      title={`${t('Статистика по кампании')} ${CAMPAIGN.year}`}
+      subtitle={t('Скачайте подробный отчет по планированию отпусков ваших сотрудников.')}
+      onClose={onClose}
+      actions={[
+        { label: t('скачать отчёт'), type: 'primary', onClick: onDownload },
+        { label: t('отмена'), type: 'secondary', onClick: onClose },
+      ]}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-      >
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              {t('Статистика по кампании')} {CAMPAIGN.year}
-            </div>
-            <button
-              onClick={onClose}
-              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-              </svg>
-            </button>
-          </div>
-          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            {t('Скачайте подробный отчет по планированию отпусков ваших сотрудников.')}
-          </div>
-        </div>
-
-        <div style={{ paddingLeft: 20, paddingRight: 20 }}>
-          <InfoCell label={t('Подано заявок')}          value={String(totalCount)} />
-          <InfoCell label={t('На согласовании')}         value={String(pendingCount)} />
-          <InfoCell label={t('Согласованы')}             value={String(approvedCount)} />
-          <InfoCell label={t('Не создан план отпуска')}  value={String(noPlanCount)} />
-        </div>
-
-        <div style={{ padding: 20 }}>
-          <button
-            onClick={onDownload}
-            style={{ width: '100%', height: 44, background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#FFFFFF' }}
-          >
-            {t('СКАЧАТЬ ОТЧЁТ')}
-          </button>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <InfoCell label={t('Подано заявок')}          value={String(totalCount)} />
+        <InfoCell label={t('На согласовании')}         value={String(pendingCount)} />
+        <InfoCell label={t('Согласованы')}             value={String(approvedCount)} />
+        <InfoCell label={t('Не создан план отпуска')}  value={String(noPlanCount)} />
       </div>
-    </div>
+    </Drawer>
   )
 }
 
