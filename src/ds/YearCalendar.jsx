@@ -99,7 +99,7 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, canResize, dragging, onEdgeDown, onDragEnter }) {
+function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, canResize, activeReqId, dragging, onEdgeDown, onDragEnter, onReqHover }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
@@ -177,7 +177,8 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               // Draggable period edges (resizing draft periods)
               const isReqStart = !!req && sameDay(d, dayOnly(req.startDate))
               const isReqEnd   = !!req && sameDay(d, dayOnly(req.endDate))
-              const resizable  = canResize && (isReqStart || isReqEnd)
+              // Edges are shown only for the hovered (or dragged) period
+              const resizable  = canResize && req?.id === activeReqId && (isReqStart || isReqEnd)
               const cursor = dragging || resizable ? 'ew-resize' : canClick ? 'pointer' : 'default'
 
               const inAnyHighlight = isSelected || showStripBg
@@ -199,6 +200,7 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                   }}
                   onMouseEnter={e => {
                     if (dragging) { onDragEnter(d); return }
+                    onReqHover(req?.id ?? null)
                     if (canClick) onDayEnter(d)
                     if (hasColleagueMark && !(selStart && !selEnd)) {
                       const rect = e.currentTarget.getBoundingClientRect()
@@ -317,8 +319,9 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
   const [hover,    setHover]    = useState(null)
   const [colTooltip, setColTooltip] = useState(null) // { x, y, entries }
 
-  // Dragging a period edge: { id, anchor, start, end }
+  // Dragging a period edge: { id, anchor, min, max, start, end }
   const [drag, setDrag] = useState(null)
+  const [hoverReqId, setHoverReqId] = useState(null)
   const suppressClick = useRef(false)
 
   const viewRequests = drag
@@ -344,14 +347,31 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
   function handleEdgeDown(req, edge) {
     const s = dayOnly(req.startDate)
     const e = dayOnly(req.endDate)
+    const anchor = edge === 'start' ? e : s
+    // A period can't be dragged onto its neighbours: limit to the free days around it
+    let min = null, max = null
+    for (const other of requests) {
+      if (other.id === req.id || other.status === 'rejected') continue
+      const os = dayOnly(other.startDate)
+      const oe = dayOnly(other.endDate)
+      if (oe < anchor) {
+        const next = new Date(oe); next.setDate(next.getDate() + 1)
+        if (!min || next > min) min = next
+      } else if (os > anchor) {
+        const prev = new Date(os); prev.setDate(prev.getDate() - 1)
+        if (!max || prev < max) max = prev
+      }
+    }
     setSelStart(null); setSelEnd(null); setHover(null); setColTooltip(null)
-    setDrag({ id: req.id, anchor: edge === 'start' ? e : s, start: s, end: e })
+    setDrag({ id: req.id, anchor, min, max, start: s, end: e })
     onResizePreview?.({ id: req.id, start: s, end: e })
   }
 
   // Live range while dragging; reported to the parent so it can update counters
   function handleDragEnter(d) {
     if (!drag) return
+    if (drag.min && d < drag.min) d = drag.min
+    if (drag.max && d > drag.max) d = drag.max
     const start = d < drag.anchor ? d : drag.anchor
     const end   = d < drag.anchor ? drag.anchor : d
     setDrag({ ...drag, start, end })
@@ -390,7 +410,9 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
         rowGap: ROW_GAP,
         width: calendarWidth(cols),
         userSelect: drag ? 'none' : undefined,
-      }}>
+      }}
+        onMouseLeave={() => { if (!drag) setHoverReqId(null) }}
+      >
         {Array.from({ length: 12 }, (_, m) => (
           <YearMonthGrid
             key={m}
@@ -408,6 +430,8 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             onColEnter={(x, y, entries) => setColTooltip({ x, y, entries })}
             onColLeave={() => setColTooltip(null)}
             canResize={!!onResizeRequest}
+            activeReqId={drag ? drag.id : hoverReqId}
+            onReqHover={setHoverReqId}
             dragging={!!drag}
             onEdgeDown={handleEdgeDown}
             onDragEnter={handleDragEnter}
