@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
 import { t, tName, MONTH_NAMES, MONTH_GEN, WEEKDAYS } from '../i18n/translate'
 
@@ -94,7 +94,7 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, onDeleteRequest }) {
+function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, onDeleteRequest, canResize, dragging, onEdgeDown, onDragEnter }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
@@ -169,6 +169,12 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
 
               const canClick = !isPast || req !== null
 
+              // Draggable period edges (resizing draft periods)
+              const isReqStart = !!req && sameDay(d, dayOnly(req.startDate))
+              const isReqEnd   = !!req && sameDay(d, dayOnly(req.endDate))
+              const resizable  = canResize && (isReqStart || isReqEnd)
+              const cursor = dragging || resizable ? 'ew-resize' : canClick ? 'pointer' : 'default'
+
               const inAnyHighlight = isSelected || showStripBg
               let textColor = isToday ? '#0066FF' : isNonWorking ? '#FF0032' : '#1D2023'
               if (isPast) textColor = '#969FA8'
@@ -184,9 +190,15 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               return (
                 <div
                   key={di}
-                  style={{ position: 'relative', width: CELL, height: ROW_H, flexShrink: 0, cursor: canClick ? 'pointer' : 'default' }}
+                  style={{ position: 'relative', width: CELL, height: ROW_H, flexShrink: 0, cursor }}
                   onClick={() => { if (canClick) onDayClick(d, req) }}
+                  onMouseDown={e => {
+                    if (!resizable) return
+                    e.preventDefault()
+                    onEdgeDown(req, isReqStart && !isReqEnd ? 'start' : 'end')
+                  }}
                   onMouseEnter={e => {
+                    if (dragging) { onDragEnter(d); return }
                     if (canClick) onDayEnter(d)
                     if (hasColleagueMark && !(selStart && !selEnd)) {
                       const rect = e.currentTarget.getBoundingClientRect()
@@ -261,6 +273,7 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                         borderRadius: '50%',
                         boxShadow: '0 0 0 1px rgba(0,0,0,0.08)',
                       }}
+                      onMouseDown={e => e.stopPropagation()}
                       onClick={e => { e.stopPropagation(); onDeleteRequest(reqEndingHere) }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none">
@@ -300,17 +313,56 @@ const MONTH_W = (832 - COL_GAP * 2) / 3  // 261.33
 export function calendarWidth(cols) { return cols * MONTH_W + (cols - 1) * COL_GAP }
 export const YEAR_CALENDAR_WIDTH = calendarWidth(3)  // 832
 
-export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onDeleteRequest }) {
+export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onDeleteRequest, onResizeRequest }) {
   const today = dayOnly(new Date())
   const [selStart, setSelStart] = useState(null)
   const [selEnd,   setSelEnd]   = useState(null)
   const [hover,    setHover]    = useState(null)
   const [colTooltip, setColTooltip] = useState(null) // { x, y, entries }
 
+  // Dragging a period edge: { id, anchor, start, end }
+  const [drag, setDrag] = useState(null)
+  const suppressClick = useRef(false)
+
+  const viewRequests = drag
+    ? requests.map(r => r.id === drag.id ? { ...r, startDate: drag.start, endDate: drag.end } : r)
+    : requests
+
+  useEffect(() => {
+    if (!drag) return
+    function handleUp() {
+      const orig = requests.find(r => r.id === drag.id)
+      const changed = orig && (!sameDay(dayOnly(orig.startDate), drag.start) || !sameDay(dayOnly(orig.endDate), drag.end))
+      setDrag(null)
+      // The click that follows mouseup must not start a new selection
+      suppressClick.current = true
+      setTimeout(() => { suppressClick.current = false }, 0)
+      if (changed) onResizeRequest?.(orig, drag.start, drag.end)
+    }
+    window.addEventListener('mouseup', handleUp)
+    return () => window.removeEventListener('mouseup', handleUp)
+  }, [drag, requests, onResizeRequest])
+
+  function handleEdgeDown(req, edge) {
+    const s = dayOnly(req.startDate)
+    const e = dayOnly(req.endDate)
+    setSelStart(null); setSelEnd(null); setHover(null); setColTooltip(null)
+    setDrag({ id: req.id, anchor: edge === 'start' ? e : s, start: s, end: e })
+  }
+
+  function handleDragEnter(d) {
+    setDrag(prev => prev && ({
+      ...prev,
+      start: d < prev.anchor ? d : prev.anchor,
+      end:   d < prev.anchor ? prev.anchor : d,
+    }))
+  }
+
   const effectiveSelEnd = selEnd
     || (selStart && hover && hover > selStart ? hover : null)
 
   function handleDayClick(d, req) {
+    if (suppressClick.current) return
     if (req && !selStart) {
       onRequestClick?.(req)
       return
@@ -337,13 +389,14 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
         columnGap: COL_GAP,
         rowGap: ROW_GAP,
         width: calendarWidth(cols),
+        userSelect: drag ? 'none' : undefined,
       }}>
         {Array.from({ length: 12 }, (_, m) => (
           <YearMonthGrid
             key={m}
             year={year}
             month={m}
-            requests={requests}
+            requests={viewRequests}
             selStart={selStart}
             selEnd={selEnd}
             effectiveSelEnd={effectiveSelEnd}
@@ -355,6 +408,10 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             onColEnter={(x, y, entries) => setColTooltip({ x, y, entries })}
             onColLeave={() => setColTooltip(null)}
             onDeleteRequest={onDeleteRequest}
+            canResize={!!onResizeRequest}
+            dragging={!!drag}
+            onEdgeDown={handleEdgeDown}
+            onDragEnter={handleDragEnter}
           />
         ))}
       </div>

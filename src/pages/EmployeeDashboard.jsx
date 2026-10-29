@@ -5,10 +5,10 @@ import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
 import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
-import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, CalendarRange } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
-import { t, tName, tTeam, MONTH_GEN, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
+import { t, tName, tTeam, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
 import { LOCALE } from '../i18n/locale'
 
 const MIN_PLAN_DAYS = 28
@@ -26,7 +26,7 @@ function formatDateRange(startDate, endDate) {
 
 function formatSegmentDate(isoStr) {
   const d = new Date(isoStr + 'T00:00:00')
-  return `${d.getDate()} ${MONTH_GEN[d.getMonth()]}`
+  return `${d.getDate()} ${MONTH_GEN_SHORT[d.getMonth()]}`
 }
 
 // Icon inside a 16px slot (DS icons are drawn on a 24px grid)
@@ -131,9 +131,7 @@ function ColleagueRow({ col, onRemove }) {
         onClick={onRemove}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6L18 18" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
+        <CrossIcon />
       </button>
     </div>
   )
@@ -225,7 +223,7 @@ function IntersectionsSection({ trackedColleagues, onAddColleague, onRemoveColle
   )
 }
 
-function SegmentMenu({ onRemove }) {
+function SegmentMenu({ onEdit, onRemove }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -250,14 +248,20 @@ function SegmentMenu({ onRemove }) {
           padding: 6, background: '#fff', borderRadius: 16,
           boxShadow: '0px 12px 20px rgba(0,0,0,0.14), 0px 4px 24px rgba(0,0,0,0.12)',
         }}>
-          <div
-            onClick={() => { setOpen(false); onRemove() }}
-            style={{ padding: '10px 6px', borderRadius: 12, cursor: 'pointer', color: '#D8400C', fontSize: 17, fontFamily: FONT, lineHeight: '24px', whiteSpace: 'nowrap' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#F5F6F8' }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
-          >
-            {t('Удалить')}
-          </div>
+          {[
+            { label: t('Редактировать'), color: '#1D2023', onClick: onEdit },
+            { label: t('Удалить'),       color: '#D8400C', onClick: onRemove },
+          ].map(item => (
+            <div
+              key={item.label}
+              onClick={() => { setOpen(false); item.onClick() }}
+              style={{ padding: '10px 6px', borderRadius: 12, cursor: 'pointer', color: item.color, fontSize: 17, fontFamily: FONT, lineHeight: '24px', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#F5F6F8' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+            >
+              {item.label}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -274,7 +278,7 @@ function ConditionRow({ done, children }) {
 }
 
 // Left panel for 2027: planning view
-function Panel2027({ totalDays, segments, onRemoveSegment, planStatus, onOpenPlanModal, onSegmentClick, intersections }) {
+function Panel2027({ totalDays, segments, onRemoveSegment, onEditSegment, planStatus, onOpenPlanModal, onSegmentClick, intersections }) {
   const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
   const hasLongSegment  = segments.some(s => s.days >= 14)
   const hasMinDays      = distributedDays >= MIN_PLAN_DAYS
@@ -326,7 +330,7 @@ function Panel2027({ totalDays, segments, onRemoveSegment, planStatus, onOpenPla
                   <StatusBadge type={planStatus} />
                 </button>
                 {planStatus === 'draft' && (
-                  <SegmentMenu onRemove={() => onRemoveSegment(seg.id)} />
+                  <SegmentMenu onEdit={() => onEditSegment(seg)} onRemove={() => onRemoveSegment(seg.id)} />
                 )}
               </div>
             ))}
@@ -374,6 +378,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [newRequestRange, setNewRequestRange] = useState(null)
   const [calendarKey, setCalendarKey] = useState(0)
+  const [editingSegment, setEditingSegment] = useState(null)
   const [toast, setToast] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [showCalculator, setShowCalculator] = useState(false)
@@ -480,6 +485,36 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     setCalendarKey(k => k + 1)
   }
 
+  // Change dates of an existing draft segment (calendar drag or «Редактировать»)
+  function handleUpdateSegment(id, start, end) {
+    if (start.getFullYear() !== campaign.year || end.getFullYear() !== campaign.year) {
+      setToast(t('Период должен быть в пределах планируемого года'))
+      return false
+    }
+    const current = segments.find(s => s.id === id)
+    if (!current) return false
+    const overlapsOther = segments.some(seg => {
+      if (seg.id === id) return false
+      const ss = new Date(seg.startDate + 'T00:00:00')
+      const se = new Date(seg.endDate   + 'T00:00:00')
+      return start <= se && end >= ss
+    })
+    if (overlapsOther) {
+      setToast(t('Выбранный период пересекается с существующим'))
+      return false
+    }
+    const days = countVacationDays(start, end)
+    const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
+    if (distributedDays - current.days + days > planTotalDays) {
+      setToast(t('Выбранный период превышает остаток дней отпуска'))
+      return false
+    }
+    setSegments(prev => prev
+      .map(seg => seg.id === id ? { ...seg, startDate: toISODate(start), endDate: toISODate(end), days } : seg)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate)))
+    return true
+  }
+
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
 
   const yearRequests = requests
@@ -534,6 +569,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               totalDays={planTotalDays}
               segments={segments}
               onRemoveSegment={handleRemoveSegment}
+              onEditSegment={setEditingSegment}
               planStatus={planStatus}
               onOpenPlanModal={() => setShowPlanModal(true)}
               intersections={intersections}
@@ -586,6 +622,10 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               ? (req) => handleRemoveSegment(req.id)
               : undefined
             }
+            onResizeRequest={year === 2027 && planStatus === 'draft'
+              ? (req, start, end) => handleUpdateSegment(req.id, start, end)
+              : undefined
+            }
           />
         </div>
       </div>
@@ -618,6 +658,31 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             setToast(t('Заявка направлена на согласование'))
           }}
         />
+      )}
+
+      {editingSegment && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setEditingSegment(null)}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+            <div style={{ background: '#fff', borderRadius: 24, padding: '24px 32px', width: 760, boxSizing: 'border-box' }}>
+              <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '24px', marginBottom: 4 }}>
+                {t('Изменить период')}
+              </div>
+              <div style={CELL_CAPTION}>
+                {formatSegmentDate(editingSegment.startDate)} – {formatSegmentDate(editingSegment.endDate)} · {editingSegment.days} {pluralDays(editingSegment.days)}. {t('Выберите новые даты периода')}
+              </div>
+            </div>
+            <CalendarRange
+              initialStart={new Date(editingSegment.startDate + 'T00:00:00')}
+              initialEnd={new Date(editingSegment.endDate + 'T00:00:00')}
+              applyLabel={t('Сохранить')}
+              onApply={(start, end) => { if (handleUpdateSegment(editingSegment.id, start, end)) setEditingSegment(null) }}
+              onClose={() => setEditingSegment(null)}
+            />
+          </div>
+        </div>
       )}
 
       {showCalculator && <VacationCalculatorModal onClose={() => setShowCalculator(false)} />}

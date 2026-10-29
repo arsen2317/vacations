@@ -43,6 +43,11 @@ const T = {
   'Перенести': 'Reschedule',
   'Подробнее': 'Details',
   'Удалить': 'Delete',
+  'Редактировать': 'Edit',
+  'Изменить период': 'Change period',
+  'Сохранить': 'Save',
+  'Выберите новые даты периода': 'Select new period dates',
+  'Период должен быть в пределах планируемого года': 'The period must be within the planned year',
   'Заявок не найдено': 'No requests found',
   'Для создания заявки выделите период, выбирая даты прямо в календаре':
     'To create a request, select a period by choosing dates directly in the calendar',
@@ -225,10 +230,10 @@ export const MONTH_GEN = LOCALE === 'en'
   ? MONTH_NAMES
   : ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 
-// Short genitive month names for date ranges («13 апр – 17 апр»)
+// Abbreviated genitive month names per Russian orthography («13 апр.», «18 мая», «7 сент.»)
 export const MONTH_GEN_SHORT = LOCALE === 'en'
   ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  : ['янв', 'фев', 'мар', 'апр', 'мая', 'июня', 'июля', 'авг', 'сент', 'окт', 'нояб', 'дек']
+  : ['янв.', 'февр.', 'марта', 'апр.', 'мая', 'июня', 'июля', 'авг.', 'сент.', 'окт.', 'нояб.', 'дек.']
 
 // Month abbreviations for table dates («13 февр 2026»)
 export const MONTHS_TABLE = LOCALE === 'en'
