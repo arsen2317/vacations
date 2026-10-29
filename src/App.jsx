@@ -32,9 +32,9 @@ function AppInner() {
   }
 
   const sidebarShown = isDocked && sidebarOpen
-  const contentStyle = sidebarShown
-    ? { marginLeft: 280, padding: '0 88px 88px' }
-    : { maxWidth: 1440, margin: '0 auto', padding: '0 88px 88px' }
+  // Зона контента фиксирована: 1440 с полями 88. При росте экрана растут боковые поля.
+  const shellStyle = sidebarShown ? { marginLeft: 280 } : undefined
+  const contentStyle = { maxWidth: 1440, margin: '0 auto', padding: '0 88px 88px' }
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'MTSCompact', sans-serif" }}>
@@ -51,11 +51,8 @@ function AppInner() {
       />
 
       {activeTab !== 'work' && (
-        <div style={{ background: '#fff' }}>
-          <div style={sidebarShown
-            ? { marginLeft: 280, padding: '0 88px' }
-            : { maxWidth: 1440, margin: '0 auto', padding: '0 88px' }
-          }>
+        <div style={{ background: '#fff', ...shellStyle }}>
+          <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 88px' }}>
             <h1 style={{
               margin: '36px 0 0',
               fontSize: 32,
@@ -73,7 +70,7 @@ function AppInner() {
         </div>
       )}
 
-      <div style={{ background: '#fff' }}>
+      <div style={{ background: '#fff', ...shellStyle }}>
         <div style={contentStyle}>
         {activeTab === 'work' && (
           <WorkAndRestPage onGoTo={(tab, year) => { if (year) setDashYear(year); setActiveTab(tab) }} />

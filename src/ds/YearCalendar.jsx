@@ -3,19 +3,31 @@ import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
 import { t, tName, MONTH_NAMES, MONTH_GEN, WEEKDAYS } from '../i18n/translate'
 
 const STATUS_STYLES = {
-  pending:      { bg: '#C7E1FF', color: '#005CBD' },
-  rescheduling: { bg: '#C7E1FF', color: '#005CBD' },
+  pending:      { bg: '#D6E4FF', color: '#0964A5' },
+  rescheduling: { bg: '#D6E4FF', color: '#0964A5' },
   reviewing:    { bg: '#E3CCFF', color: '#7936C9' },
-  approved:     { bg: '#BEF4BD', color: '#007502' },
+  approved:     { bg: '#D0FBD5', color: '#236E31' },
   rejected:     { bg: '#FCD4C9', color: '#AD3400' },
   cancelled:    { bg: '#F2F3F7', color: '#626C77' },
   draft:        { bg: '#F2F3F7', color: '#1D2023' },
+}
+
+// Прошедшие отпуска: фон с прозрачностью 50%, приглушённый текст
+const PAST_STATUS_STYLES = {
+  pending:      { bg: '#EBF2FF', color: '#80ADE0' },
+  rescheduling: { bg: '#EBF2FF', color: '#80ADE0' },
+  reviewing:    { bg: '#F1E6FF', color: '#BC9BE4' },
+  approved:     { bg: '#E7FDEA', color: '#85B58D' },
+  cancelled:    { bg: '#F8F9FB', color: '#B0B4BE' },
+  draft:        { bg: '#F8F9FB', color: '#B0B4BE' },
 }
 
 const REQ_PRIORITY = ['approved', 'reviewing', 'pending', 'rejected', 'cancelled', 'draft']
 
 const CELL = 36
 const ROW_H = 36
+const GAP = 1
+const WEEKS = 6
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -60,7 +72,7 @@ function getMonthWeeks(year, month) {
   const grid = []
   for (let i = 0; i < firstDow; i++) grid.push(null)
   for (let d = 1; d <= daysInMonth; d++) grid.push(new Date(year, month, d))
-  while (grid.length % 7 !== 0) grid.push(null)
+  while (grid.length < WEEKS * 7) grid.push(null)
   const weeks = []
   for (let i = 0; i < grid.length; i += 7) weeks.push(grid.slice(i, i + 7))
   return weeks
@@ -86,22 +98,25 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
+  const inSelection = d => !!(d && selStart && effectiveSelEnd && d >= selStart && d <= effectiveSelEnd)
+
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
       <div style={{
+        alignSelf: 'stretch',
+        padding: '12px 20px',
         textAlign: 'center',
         color: '#1D2023',
-        fontSize: 18,
+        fontSize: 20,
         fontFamily: "'MTSCompact', sans-serif",
         fontWeight: 500,
-        lineHeight: '21px',
-        marginBottom: 12,
+        lineHeight: '24px',
       }}>
         {MONTH_NAMES[month]}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)`, marginBottom: 4 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', gap: GAP }}>
         {WEEKDAYS.map(wd => (
           <div key={wd} style={{
             width: CELL,
@@ -118,56 +133,48 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {weeks.map((week, wi) => (
-          <div key={wi} style={{ display: 'grid', gridTemplateColumns: `repeat(7, ${CELL}px)` }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+        {weeks.map((week, wi) => {
+          const days = week.map(date => date ? dayOnly(date) : null)
+          const reqs = days.map(d => d ? getRequestForDay(d, requests) : null)
+          return (
+          <div key={wi} style={{ display: 'flex', gap: GAP }}>
             {week.map((date, di) => {
-              if (!date) return <div key={di} style={{ width: CELL, height: ROW_H }} />
+              if (!date) return <div key={di} style={{ width: CELL, height: ROW_H, flexShrink: 0 }} />
 
-              const d = dayOnly(date)
+              const d = days[di]
               const isPast = d < today && !sameDay(d, today)
               const isNonWorking = isWeekendOrHoliday(d)
               const isToday = sameDay(d, today)
-              const req = getRequestForDay(d, requests)
-              const vacStyle = req ? (STATUS_STYLES[req.status] || STATUS_STYLES.cancelled) : null
+              const req = reqs[di]
+              const vacStyle = req
+                ? (isPast ? PAST_STATUS_STYLES[req.status] : null) || STATUS_STYLES[req.status] || STATUS_STYLES.cancelled
+                : null
               const isoDate = toISODate(d)
-              const hasColleagueDot = colleagueMap?.has(isoDate) ?? false
+              const hasColleagueMark = colleagueMap?.has(isoDate) ?? false
 
               const isStart = sameDay(d, selStart)
               const isEnd   = sameDay(d, effectiveSelEnd)
-              const inRange = selStart && effectiveSelEnd && d > selStart && d < effectiveSelEnd
               const isSelected = isStart || isEnd
+              const isSingleSel = isStart && (!effectiveSelEnd || selStart.getTime() === effectiveSelEnd.getTime())
+              const showStripBg = inSelection(d) && !isSingleSel
 
-              const rangeHalfStart = isStart && effectiveSelEnd && selStart.getTime() !== effectiveSelEnd.getTime()
-              const rangeHalfEnd   = isEnd   && selStart       && selStart.getTime() !== effectiveSelEnd.getTime()
-              const showStripBg    = inRange || rangeHalfStart || rangeHalfEnd
+              // Фон отпуска и выделения — сплошная полоса внутри недели
+              const vacJoinLeft  = !!req && di > 0 && reqs[di - 1] === req
+              const vacJoinRight = !!req && di < 6 && reqs[di + 1] === req
+              const selJoinLeft  = showStripBg && !isStart && di > 0 && inSelection(days[di - 1])
+              const selJoinRight = showStripBg && !isEnd   && di < 6 && inSelection(days[di + 1])
 
-              const isRowStart = di === 0
-              const isRowEnd   = di === 6
-
-              const stripLeft  = rangeHalfStart ? 'calc(50% - 6px)' : 0
-              const stripRight = rangeHalfEnd   ? 'calc(50% - 6px)' : 0
-              const stripBr    = rangeHalfStart
-                ? `0 ${isRowEnd   ? r : 0}px ${isRowEnd   ? r : 0}px 0`
-                : rangeHalfEnd
-                  ? `${isRowStart ? r : 0}px 0 0 ${isRowStart ? r : 0}px`
-                  : `${isRowStart ? r : 0}px ${isRowEnd ? r : 0}px ${isRowEnd ? r : 0}px ${isRowStart ? r : 0}px`
+              const radius = (joinL, joinR) => `${joinL ? 0 : r}px ${joinR ? 0 : r}px ${joinR ? 0 : r}px ${joinL ? 0 : r}px`
 
               const canClick = !isPast || req !== null
 
               const inAnyHighlight = isSelected || showStripBg
-              let textColor = isToday ? '#0066FF' : isNonWorking ? '#F95721' : '#1D2023'
+              let textColor = isToday ? '#0066FF' : isNonWorking ? '#FF0032' : '#1D2023'
+              if (isPast) textColor = '#969FA8'
+              if (vacStyle && !inAnyHighlight) textColor = vacStyle.color
               if (isSelected) textColor = '#FAFAFA'
-              else if (vacStyle && !inAnyHighlight) textColor = vacStyle.color
-              if (isPast) {
-                if (vacStyle && !inAnyHighlight) {
-                  const MUTED = { approved: '#80BA81', pending: '#80ADE0', rescheduling: '#80ADE0', reviewing: '#BC9BE4', cancelled: '#B0B4BE', draft: '#B0B4BE' }
-                  textColor = MUTED[req?.status] ?? '#BCC3D0'
-                } else {
-                  textColor = '#BCC3D0'
-                }
-              }
-              const fontWeight = (isSelected || (vacStyle && !inAnyHighlight)) ? 500 : 400
+              const isMedium = isSelected || (vacStyle && !inAnyHighlight)
 
               // Delete button: show on end date of each request when onDeleteRequest is provided
               const reqEndingHere = onDeleteRequest
@@ -177,38 +184,40 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               return (
                 <div
                   key={di}
-                  style={{ position: 'relative', width: CELL, height: ROW_H, cursor: canClick ? 'pointer' : 'default' }}
+                  style={{ position: 'relative', width: CELL, height: ROW_H, flexShrink: 0, cursor: canClick ? 'pointer' : 'default' }}
                   onClick={() => { if (canClick) onDayClick(d, req) }}
                   onMouseEnter={e => {
                     if (canClick) onDayEnter(d)
-                    if (hasColleagueDot && !(selStart && !selEnd)) {
+                    if (hasColleagueMark && !(selStart && !selEnd)) {
                       const rect = e.currentTarget.getBoundingClientRect()
                       onColEnter?.(rect.left + rect.width / 2, rect.top, colleagueMap.get(isoDate))
                     }
                   }}
                   onMouseLeave={() => {
                     onDayLeave()
-                    if (hasColleagueDot) onColLeave?.()
+                    if (hasColleagueMark) onColLeave?.()
                   }}
                 >
                   {showStripBg && (
                     <div style={{
                       position: 'absolute',
-                      top: 0, bottom: 1,
-                      left: stripLeft,
-                      right: stripRight,
+                      top: 0, height: ROW_H,
+                      left: isStart ? CELL / 2 : 0,
+                      right: isEnd ? CELL / 2 : (selJoinRight ? -GAP : 0),
                       background: '#F2F3F7',
-                      borderRadius: stripBr,
+                      borderRadius: isStart || isEnd
+                        ? (isStart ? radius(true, selJoinRight) : radius(selJoinLeft, true))
+                        : radius(selJoinLeft, selJoinRight),
                     }} />
                   )}
 
                   {vacStyle && !showStripBg && !isSelected && (
                     <div style={{
                       position: 'absolute',
-                      width: CELL, height: CELL,
-                      top: 0, left: 0,
+                      top: 0, left: 0, height: ROW_H,
+                      width: CELL + (vacJoinRight ? GAP : 0),
                       background: vacStyle.bg,
-                      borderRadius: r,
+                      borderRadius: radius(vacJoinLeft, vacJoinRight),
                     }} />
                   )}
 
@@ -223,15 +232,15 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                     }} />
                   )}
 
-                  {/* Colleague vacation dot */}
-                  {hasColleagueDot && (
+                  {/* Отметка пересечения с отпусками коллег */}
+                  {hasColleagueMark && (
                     <div
                       style={{
                         position: 'absolute',
-                        width: 6, height: 6,
-                        borderRadius: '50%',
-                        background: '#FFBB00',
-                        top: 4, right: 4,
+                        width: 20, height: 2,
+                        borderRadius: 100,
+                        background: '#FAC031',
+                        top: 28, left: 8,
                         zIndex: 3,
                         pointerEvents: 'none',
                       }}
@@ -264,11 +273,11 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                   <div style={{
                     position: 'absolute', inset: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12,
+                    fontSize: 17,
                     fontFamily: "'MTSCompact', sans-serif",
-                    fontWeight,
+                    fontWeight: isMedium ? 500 : 400,
                     color: textColor,
-                    lineHeight: '16px',
+                    lineHeight: isMedium ? '20px' : '24px',
                     zIndex: 2,
                   }}>
                     {date.getDate()}
@@ -277,7 +286,8 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               )
             })}
           </div>
-        ))}
+          )
+        })}
       </div>
       </div>
     </div>

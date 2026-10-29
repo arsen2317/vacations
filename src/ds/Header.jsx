@@ -205,12 +205,9 @@ export function Header({ role, onRoleChange, sidebarOpen = true, onSidebarToggle
       <Sidebar open={sidebarShown} isDocked={isDocked} onClose={isDocked ? undefined : onSidebarClose} onNavigate={onNavigate} role={role} onRoleChange={onRoleChange} />
 
       <div style={{ position: 'sticky', top: 0, zIndex: 100, width: '100%' }}>
-        <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)' }}>
+        <div style={{ background: 'rgba(255,255,255,0.70)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', ...(isDocked && sidebarShown ? { marginLeft: 280 } : null) }}>
           <div style={{
-            ...(sidebarShown
-              ? { marginLeft: 280, paddingLeft: 88, paddingRight: 88 }
-              : { maxWidth: 1440, margin: '0 auto', paddingLeft: 88, paddingRight: 88 }
-            ),
+            maxWidth: 1440, margin: '0 auto', paddingLeft: 88, paddingRight: 88,
             height: 72,
             display: 'flex', alignItems: 'center', boxSizing: 'border-box',
           }}>
