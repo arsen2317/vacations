@@ -31,7 +31,8 @@ const WEEKS = 6
 // Draggable period edge (rim width and its grip)
 const EDGE_W = 6
 const EDGE_HIT_STYLE = { position: 'absolute', top: 0, width: EDGE_W, height: ROW_H, zIndex: 4, cursor: 'ew-resize' }
-const GRIP_STYLE = { position: 'absolute', top: 14, width: 2, height: 8, borderRadius: 1, background: '#FFFFFF', zIndex: 1, pointerEvents: 'none' }
+const GRIP_W = 1
+const GRIP_STYLE = { position: 'absolute', top: 14, width: GRIP_W, height: 8, borderRadius: 0.5, background: '#FFFFFF', zIndex: 1, pointerEvents: 'none' }
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -233,8 +234,8 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                         borderRadius: r,
                         zIndex: 1,
                       }} />
-                      {isReqStart && <div style={{ ...GRIP_STYLE, left: -EDGE_W / 2 - 1 }} />}
-                      {isReqEnd && <div style={{ ...GRIP_STYLE, left: CELL + EDGE_W / 2 - 1 }} />}
+                      {isReqStart && <div style={{ ...GRIP_STYLE, left: -EDGE_W / 2 - GRIP_W / 2 }} />}
+                      {isReqEnd && <div style={{ ...GRIP_STYLE, left: CELL + EDGE_W / 2 - GRIP_W / 2 }} />}
                       {/* Hit area over the part of the rim that sticks into the neighbouring cell */}
                       {isReqStart && <div style={{ ...EDGE_HIT_STYLE, left: -EDGE_W }} />}
                       {isReqEnd && <div style={{ ...EDGE_HIT_STYLE, left: CELL }} />}
