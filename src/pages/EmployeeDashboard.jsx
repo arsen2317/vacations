@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
@@ -305,8 +305,8 @@ function formatPeriodFull(start, end) {
 // Create / edit a plan period in a left panel next to the calendar (no overlay).
 // The range is controlled by the calendar: the period's edges are dragged there.
 // `validate(start, end, extraDays)` returns an error text or null.
-function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onSubmit, validate }) {
-  const [kind, setKind] = useState(initial.kind ?? (withKinds ? '' : 'main'))
+function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onSubmit, validate, onExtraDaysChange }) {
+  const [kind, setKind] = useState(initial.kind ?? 'main')
   const [extraCount, setExtraCount] = useState(Math.max(1, initial.extraDays ?? 1))
   const [submitted, setSubmitted] = useState(false)
 
@@ -314,6 +314,9 @@ function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onS
   const comboMax = Math.min(extraFree, days - 1)
   const comboExtra = Math.max(1, Math.min(extraCount, Math.max(1, comboMax)))
   const extraDays = kind === 'extra' ? days : kind === 'combined' ? comboExtra : 0
+
+  // The plan list and counters show the period being edited live
+  useEffect(() => { onExtraDaysChange?.(extraDays) }, [extraDays, onExtraDaysChange])
 
   let periodError = null
   if (kind === 'extra' && days > extraFree) {
@@ -677,6 +680,11 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     })
   }
 
+  const setDraftExtraDays = useCallback(
+    extraDays => setPeriodDraft(p => (p && p.extraDays !== extraDays ? { ...p, extraDays } : p)),
+    [],
+  )
+
   function closePeriodDraft() {
     setPeriodDraft(null)
     setCalendarKey(k => k + 1)
@@ -693,7 +701,11 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         : seg)
 
   // Segments as shown in the left panel: the dragged period follows the calendar live
-  const displaySegments = resizePreview
+  const displaySegments = periodDraft
+    ? planCalendarSegments.map(seg => seg.id === (periodDraft.segment?.id ?? PENDING_PERIOD_ID)
+      ? { ...seg, days: countVacationDays(periodDraft.start, periodDraft.end), extraDays: periodDraft.extraDays ?? 0 }
+      : seg)
+    : resizePreview
     ? segments.map(seg => seg.id === resizePreview.id
       ? (() => {
         const days = countVacationDays(resizePreview.start, resizePreview.end)
@@ -780,8 +792,11 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         {/* Vertical divider */}
         <div style={{ width: 1, background: '#E8EDF2', alignSelf: 'stretch', flexShrink: 0 }} />
 
+        {/* While the period panel is open only the calendar stays interactive */}
+        {periodDraft && <div style={{ position: 'fixed', inset: 0, zIndex: 900 }} />}
+
         {/* Right panel */}
-        <div style={{ flexShrink: 0, paddingLeft: 32, width: calendarWidth(calCols) + 32 }}>
+        <div style={{ flexShrink: 0, paddingLeft: 32, width: calendarWidth(calCols) + 32, ...(periodDraft ? { position: 'relative', zIndex: 950 } : null) }}>
           <YearCalendar
             key={calendarKey}
             cols={calCols}
@@ -864,6 +879,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           extraFree={extraTotal - usageExcept(periodDraft.segment?.id).extra}
           validate={(start, end, extraDays) => validatePeriod(periodDraft.segment?.id, start, end, extraDays)}
           onClose={closePeriodDraft}
+          onExtraDaysChange={setDraftExtraDays}
           onSubmit={extraDays => {
             if (periodDraft.mode === 'add') addPeriod(periodDraft.start, periodDraft.end, extraDays)
             else savePeriod(periodDraft.segment.id, periodDraft.start, periodDraft.end, extraDays)
