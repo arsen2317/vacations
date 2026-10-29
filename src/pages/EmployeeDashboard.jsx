@@ -298,15 +298,6 @@ function SegmentMenu({ onEdit, onRemove }) {
 const PENDING_PERIOD_ID = 'pending-period'
 const LEFT_DRAWER_WIDTH = 487 // up to the divider between the left panel and the calendar (1440 layout)
 
-const PLAN_APPROVER_NAME = 'Дмитрий Соколов'
-const PLAN_PERSON_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({
-  id: String(c.id),
-  name: c.name,
-  avatar: c.avatar,
-  role: c.name === PLAN_APPROVER_NAME ? 'Руководитель' : (c.position ?? c.team),
-}))
-const PLAN_APPROVER_ID = PLAN_PERSON_OPTIONS.find(o => o.name === PLAN_APPROVER_NAME)?.id ?? ''
-
 function formatPeriodFull(start, end) {
   return `${start.getDate()} ${MONTH_GEN[start.getMonth()]} – ${end.getDate()} ${MONTH_GEN[end.getMonth()]} ${end.getFullYear()}`
 }
@@ -317,15 +308,12 @@ function formatPeriodFull(start, end) {
 function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onSubmit, validate }) {
   const [kind, setKind] = useState(initial.kind ?? (withKinds ? '' : 'main'))
   const [extraCount, setExtraCount] = useState(Math.max(1, initial.extraDays ?? 1))
-  const [approver, setApprover] = useState(initial.approverId ?? PLAN_APPROVER_ID)
-  const [extraApprover, setExtraApprover] = useState(initial.extraApproverId ?? '')
   const [submitted, setSubmitted] = useState(false)
 
   const days = countVacationDays(range.start, range.end)
   const comboMax = Math.min(extraFree, days - 1)
   const comboExtra = Math.max(1, Math.min(extraCount, Math.max(1, comboMax)))
   const extraDays = kind === 'extra' ? days : kind === 'combined' ? comboExtra : 0
-  const personOptions = PLAN_PERSON_OPTIONS.map(o => ({ ...o, name: tName(o.name), role: o.role ? t(o.role) : undefined }))
 
   let periodError = null
   if (kind === 'extra' && days > extraFree) {
@@ -340,7 +328,7 @@ function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onS
     setSubmitted(true)
     if (!kind || periodError) return
     if (validate(range.start, range.end, extraDays)) return
-    onSubmit({ extraDays, approverId: approver, extraApproverId: extraApprover || undefined })
+    onSubmit(extraDays)
   }
 
   return (
@@ -382,22 +370,6 @@ function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onS
           onChange={v => { setExtraCount(v); setSubmitted(false) }}
         />
       )}
-      <SelectField
-        person
-        label={t('Согласующий')}
-        value={approver}
-        options={personOptions}
-        onChange={v => setApprover(v || PLAN_APPROVER_ID)}
-        searchable
-      />
-      <SelectField
-        person
-        label={t('Дополнительный согласующий (необязательно)')}
-        value={extraApprover}
-        options={personOptions.filter(o => o.id !== approver)}
-        onChange={setExtraApprover}
-        searchable
-      />
     </Drawer>
   )
 }
@@ -668,16 +640,16 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     return extra - (-delta - removeMain)
   }
 
-  function savePeriod(id, start, end, extraDays, extra = {}) {
+  function savePeriod(id, start, end, extraDays) {
     const days = countVacationDays(start, end)
     setSegments(prev => prev
-      .map(seg => seg.id === id ? { ...seg, ...extra, startDate: toISODate(start), endDate: toISODate(end), days, extraDays } : seg)
+      .map(seg => seg.id === id ? { ...seg, startDate: toISODate(start), endDate: toISODate(end), days, extraDays } : seg)
       .sort((a, b) => a.startDate.localeCompare(b.startDate)))
   }
 
-  function addPeriod(start, end, extraDays, extra = {}) {
+  function addPeriod(start, end, extraDays) {
     const days = countVacationDays(start, end)
-    setSegments(prev => [...prev, { id: Date.now(), ...extra, startDate: toISODate(start), endDate: toISODate(end), days, extraDays }]
+    setSegments(prev => [...prev, { id: Date.now(), startDate: toISODate(start), endDate: toISODate(end), days, extraDays }]
       .sort((a, b) => a.startDate.localeCompare(b.startDate)))
   }
 
@@ -702,8 +674,6 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       end: new Date(seg.endDate + 'T00:00:00'),
       kind: kindOf(seg.days, extraOf(seg)),
       extraDays: extraOf(seg),
-      approverId: seg.approverId,
-      extraApproverId: seg.extraApproverId,
     })
   }
 
@@ -894,9 +864,9 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
           extraFree={extraTotal - usageExcept(periodDraft.segment?.id).extra}
           validate={(start, end, extraDays) => validatePeriod(periodDraft.segment?.id, start, end, extraDays)}
           onClose={closePeriodDraft}
-          onSubmit={({ extraDays, ...extra }) => {
-            if (periodDraft.mode === 'add') addPeriod(periodDraft.start, periodDraft.end, extraDays, extra)
-            else savePeriod(periodDraft.segment.id, periodDraft.start, periodDraft.end, extraDays, extra)
+          onSubmit={extraDays => {
+            if (periodDraft.mode === 'add') addPeriod(periodDraft.start, periodDraft.end, extraDays)
+            else savePeriod(periodDraft.segment.id, periodDraft.start, periodDraft.end, extraDays)
             closePeriodDraft()
           }}
         />
