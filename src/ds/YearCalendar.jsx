@@ -184,14 +184,10 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               const isReqStart = !!req && sameDay(d, dayOnly(req.startDate))
               const isReqEnd   = !!req && sameDay(d, dayOnly(req.endDate))
               // An edge pressed right against another period can't move — it gets no rim
-              // While dragging, the moving edge keeps its rim (it may end up next to a neighbour)
-              const isDragged = !!dragAnchor && req?.id === activeReqId
-              const edgeStart = canResize && isReqStart && (isDragged
-                ? !sameDay(d, dragAnchor) || isReqEnd
-                : !getRequestForDay(shiftDay(d, -1), requests))
-              const edgeEnd   = canResize && isReqEnd && (isDragged
-                ? !sameDay(d, dragAnchor) || isReqStart
-                : !getRequestForDay(shiftDay(d, 1), requests))
+              // Both edges stay visible while dragging; the fixed one still hides when blocked
+              const isMovingEdge = !!dragAnchor && req?.id === activeReqId && !sameDay(d, dragAnchor)
+              const edgeStart = canResize && isReqStart && (isMovingEdge || !getRequestForDay(shiftDay(d, -1), requests))
+              const edgeEnd   = canResize && isReqEnd   && (isMovingEdge || !getRequestForDay(shiftDay(d, 1), requests))
               // Edges are shown only for the hovered (or dragged) period
               const resizable  = req?.id === activeReqId && (edgeStart || edgeEnd)
               const cursor = dragging || resizable ? 'ew-resize' : canClick ? 'pointer' : 'default'
