@@ -433,9 +433,10 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             year={year}
             month={m}
             requests={viewRequests}
-            selStart={selStart}
-            selEnd={selEnd}
-            effectiveSelEnd={effectiveSelEnd}
+            // A locked period replaces the finished selection: hide the range highlight
+            selStart={lockedReqId === null ? selStart : null}
+            selEnd={lockedReqId === null ? selEnd : null}
+            effectiveSelEnd={lockedReqId === null ? effectiveSelEnd : null}
             today={today}
             onDayClick={handleDayClick}
             onDayEnter={handleDayEnter}
