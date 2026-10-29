@@ -618,10 +618,6 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               : (planStatus === 'draft' ? handleAddSegment : undefined)
             }
             colleagueMap={year === 2027 ? colleagueMap2027 : colleagueMap2026}
-            onDeleteRequest={year === 2027 && planStatus === 'draft'
-              ? (req) => handleRemoveSegment(req.id)
-              : undefined
-            }
             onResizeRequest={year === 2027 && planStatus === 'draft'
               ? (req, start, end) => handleUpdateSegment(req.id, start, end)
               : undefined

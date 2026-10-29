@@ -28,6 +28,10 @@ const CELL = 36
 const ROW_H = 36
 const GAP = 1
 const WEEKS = 6
+// Draggable period edge (rim width and its grip)
+const EDGE_W = 6
+const EDGE_HIT_STYLE = { position: 'absolute', top: 0, width: EDGE_W, height: ROW_H, zIndex: 4, cursor: 'ew-resize' }
+const GRIP_STYLE = { position: 'absolute', top: 12, width: 2, height: 12, borderRadius: 1, background: '#FFFFFF', zIndex: 1, pointerEvents: 'none' }
 
 function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -94,7 +98,7 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, onDeleteRequest, canResize, dragging, onEdgeDown, onDragEnter }) {
+function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, canResize, dragging, onEdgeDown, onDragEnter }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
@@ -182,11 +186,6 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               if (isSelected) textColor = '#FAFAFA'
               const isMedium = isSelected || (vacStyle && !inAnyHighlight)
 
-              // Delete button: show on end date of each request when onDeleteRequest is provided
-              const reqEndingHere = onDeleteRequest
-                ? requests.find(r2 => r2.status !== 'rejected' && sameDay(dayOnly(r2.endDate), d))
-                : null
-
               return (
                 <div
                   key={di}
@@ -223,6 +222,25 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                     }} />
                   )}
 
+                  {/* Draggable edge: dark rim with a grip on the outer side of the first/last day */}
+                  {resizable && !showStripBg && !isSelected && (
+                    <>
+                      <div style={{
+                        position: 'absolute', top: 0, height: ROW_H,
+                        left: isReqStart ? -EDGE_W : 0,
+                        width: CELL + (isReqStart ? EDGE_W : 0) + (isReqEnd ? EDGE_W : 0),
+                        background: '#1D2023',
+                        borderRadius: r,
+                        zIndex: 1,
+                      }} />
+                      {isReqStart && <div style={{ ...GRIP_STYLE, left: -EDGE_W / 2 - 1 }} />}
+                      {isReqEnd && <div style={{ ...GRIP_STYLE, left: CELL + EDGE_W / 2 - 1 }} />}
+                      {/* Hit area over the part of the rim that sticks into the neighbouring cell */}
+                      {isReqStart && <div style={{ ...EDGE_HIT_STYLE, left: -EDGE_W }} />}
+                      {isReqEnd && <div style={{ ...EDGE_HIT_STYLE, left: CELL }} />}
+                    </>
+                  )}
+
                   {vacStyle && !showStripBg && !isSelected && (
                     <div style={{
                       position: 'absolute',
@@ -230,6 +248,7 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                       width: CELL + (vacJoinRight ? GAP : 0),
                       background: vacStyle.bg,
                       borderRadius: radius(vacJoinLeft, vacJoinRight),
+                      zIndex: 1,
                     }} />
                   )}
 
@@ -257,29 +276,6 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                         pointerEvents: 'none',
                       }}
                     />
-                  )}
-
-                  {/* Delete button on last date of each request */}
-                  {reqEndingHere && onDeleteRequest && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0, right: 0,
-                        width: 16, height: 16,
-                        zIndex: 4,
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: '#fff',
-                        borderRadius: '50%',
-                        boxShadow: '0 0 0 1px rgba(0,0,0,0.08)',
-                      }}
-                      onMouseDown={e => e.stopPropagation()}
-                      onClick={e => { e.stopPropagation(); onDeleteRequest(reqEndingHere) }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none">
-                        <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-                      </svg>
-                    </div>
                   )}
 
                   {/* Day number */}
@@ -313,7 +309,7 @@ const MONTH_W = (832 - COL_GAP * 2) / 3  // 261.33
 export function calendarWidth(cols) { return cols * MONTH_W + (cols - 1) * COL_GAP }
 export const YEAR_CALENDAR_WIDTH = calendarWidth(3)  // 832
 
-export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onDeleteRequest, onResizeRequest }) {
+export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onResizeRequest }) {
   const today = dayOnly(new Date())
   const [selStart, setSelStart] = useState(null)
   const [selEnd,   setSelEnd]   = useState(null)
@@ -407,7 +403,6 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             colleagueMap={colleagueMap}
             onColEnter={(x, y, entries) => setColTooltip({ x, y, entries })}
             onColLeave={() => setColTooltip(null)}
-            onDeleteRequest={onDeleteRequest}
             canResize={!!onResizeRequest}
             dragging={!!drag}
             onEdgeDown={handleEdgeDown}
