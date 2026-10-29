@@ -10,7 +10,8 @@ const ACTION_STYLES = {
 
 // Right-side drawer (replaces centered modals): overlay, header with title/subtitle/close,
 // scrollable body and a footer with 52px action buttons.
-export function Drawer({ title, subtitle, onClose, actions = [], children, width = 600, zIndex = 1000 }) {
+// side="left" + overlay={false}: docked panel that leaves the rest of the page usable.
+export function Drawer({ title, subtitle, onClose, actions = [], children, width = 600, zIndex = 1000, side = "right", overlay = true }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
     document.addEventListener("keydown", onKey);
@@ -18,18 +19,23 @@ export function Drawer({ title, subtitle, onClose, actions = [], children, width
   }, [onClose]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex, display: "flex", justifyContent: "flex-end" }}>
-      <style>{`@keyframes mts-drawer-in { from { transform: translateX(100%); } to { transform: none; } } @keyframes mts-overlay-in { from { opacity: 0; } to { opacity: 1; } }`}</style>
-      <div
-        onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(29, 32, 35, 0.40)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", animation: "mts-overlay-in 0.2s ease" }}
-      />
+    <div style={{
+      position: "fixed", zIndex, display: "flex", justifyContent: side === "left" ? "flex-start" : "flex-end",
+      ...(overlay ? { inset: 0 } : { top: 0, bottom: 0, [side]: 0 }),
+    }}>
+      <style>{`@keyframes mts-drawer-in { from { transform: translateX(100%); } to { transform: none; } } @keyframes mts-drawer-in-left { from { transform: translateX(-100%); } to { transform: none; } } @keyframes mts-overlay-in { from { opacity: 0; } to { opacity: 1; } }`}</style>
+      {overlay && (
+        <div
+          onClick={onClose}
+          style={{ position: "absolute", inset: 0, background: "rgba(29, 32, 35, 0.40)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", animation: "mts-overlay-in 0.2s ease" }}
+        />
+      )}
       <div style={{
         position: "relative", width, maxWidth: "100vw", height: "100%",
         background: "#FFFFFF",
         boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.08), 0px 4px 24px rgba(0, 0, 0, 0.12)",
         display: "flex", flexDirection: "column", overflow: "hidden",
-        animation: "mts-drawer-in 0.25s ease",
+        animation: `${side === "left" ? "mts-drawer-in-left" : "mts-drawer-in"} 0.25s ease`,
       }}>
         {/* Header */}
         <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>

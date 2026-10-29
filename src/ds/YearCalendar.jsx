@@ -324,7 +324,8 @@ const MONTH_W = (832 - COL_GAP * 2) / 3  // 261.33
 export function calendarWidth(cols) { return cols * MONTH_W + (cols - 1) * COL_GAP }
 export const YEAR_CALENDAR_WIDTH = calendarWidth(3)  // 832
 
-export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onResizeRequest, onResizePreview }) {
+// lockedReqId: only this period is active (highlighted, resizable); new selections and clicks are off
+export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onResizeRequest, onResizePreview, lockedReqId = null }) {
   const today = dayOnly(new Date())
   const [selStart, setSelStart] = useState(null)
   const [selEnd,   setSelEnd]   = useState(null)
@@ -394,6 +395,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
     || (selStart && hover && hover > selStart ? hover : null)
 
   function handleDayClick(d, req) {
+    if (lockedReqId !== null) return
     if (suppressClick.current) return
     if (req && !selStart) {
       onRequestClick?.(req)
@@ -442,7 +444,7 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             onColEnter={(x, y, entries) => setColTooltip({ x, y, entries })}
             onColLeave={() => setColTooltip(null)}
             canResize={!!onResizeRequest}
-            activeReqId={drag ? drag.id : hoverReqId}
+            activeReqId={drag ? drag.id : lockedReqId ?? hoverReqId}
             onReqHover={setHoverReqId}
             dragging={!!drag}
             dragAnchor={drag?.anchor ?? null}

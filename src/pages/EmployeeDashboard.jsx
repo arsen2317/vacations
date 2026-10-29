@@ -5,10 +5,10 @@ import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
 import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
-import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, Drawer, DateRangeField, CounterField, SelectField } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, Drawer, CounterField, SelectField, FieldBox } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
-import { t, tName, tTeam, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
+import { t, tName, tTeam, MONTH_GEN, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
 import { LOCALE } from '../i18n/locale'
 
 const MIN_PLAN_DAYS = 28
@@ -295,18 +295,37 @@ function SegmentMenu({ onEdit, onRemove }) {
   )
 }
 
-// Create / edit a plan period. With extra leave the user also picks the leave kind;
+const PENDING_PERIOD_ID = 'pending-period'
+const LEFT_DRAWER_WIDTH = 487 // up to the divider between the left panel and the calendar (1440 layout)
+
+const PLAN_APPROVER_NAME = 'Дмитрий Соколов'
+const PLAN_PERSON_OPTIONS = COLLEAGUES.filter(c => !c.me).map(c => ({
+  id: String(c.id),
+  name: c.name,
+  avatar: c.avatar,
+  role: c.name === PLAN_APPROVER_NAME ? 'Руководитель' : (c.position ?? c.team),
+}))
+const PLAN_APPROVER_ID = PLAN_PERSON_OPTIONS.find(o => o.name === PLAN_APPROVER_NAME)?.id ?? ''
+
+function formatPeriodFull(start, end) {
+  return `${start.getDate()} ${MONTH_GEN[start.getMonth()]} – ${end.getDate()} ${MONTH_GEN[end.getMonth()]} ${end.getFullYear()}`
+}
+
+// Create / edit a plan period in a left panel next to the calendar (no overlay).
+// The range is controlled by the calendar: the period's edges are dragged there.
 // `validate(start, end, extraDays)` returns an error text or null.
-function PeriodDrawer({ mode, initial, withKinds, extraFree, onClose, onSubmit, validate }) {
-  const [range, setRange] = useState({ start: initial.start, end: initial.end })
+function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onSubmit, validate }) {
   const [kind, setKind] = useState(initial.kind ?? (withKinds ? '' : 'main'))
   const [extraCount, setExtraCount] = useState(Math.max(1, initial.extraDays ?? 1))
+  const [approver, setApprover] = useState(initial.approverId ?? PLAN_APPROVER_ID)
+  const [extraApprover, setExtraApprover] = useState(initial.extraApproverId ?? '')
   const [submitted, setSubmitted] = useState(false)
 
   const days = countVacationDays(range.start, range.end)
   const comboMax = Math.min(extraFree, days - 1)
   const comboExtra = Math.max(1, Math.min(extraCount, Math.max(1, comboMax)))
   const extraDays = kind === 'extra' ? days : kind === 'combined' ? comboExtra : 0
+  const personOptions = PLAN_PERSON_OPTIONS.map(o => ({ ...o, name: tName(o.name), role: o.role ? t(o.role) : undefined }))
 
   let periodError = null
   if (kind === 'extra' && days > extraFree) {
@@ -320,28 +339,29 @@ function PeriodDrawer({ mode, initial, withKinds, extraFree, onClose, onSubmit, 
   function submit() {
     setSubmitted(true)
     if (!kind || periodError) return
-    const err = validate(range.start, range.end, extraDays)
-    if (err) return
-    onSubmit(range.start, range.end, extraDays)
+    if (validate(range.start, range.end, extraDays)) return
+    onSubmit({ extraDays, approverId: approver, extraApproverId: extraApprover || undefined })
   }
 
   return (
     <Drawer
-      title={t('Период отпуска')}
+      side="left"
+      overlay={false}
+      width={LEFT_DRAWER_WIDTH}
+      title={mode === 'add' ? t('Добавление периода отпуска') : t('Редактирование периода отпуска')}
       onClose={onClose}
       actions={[
         { label: mode === 'add' ? t('добавить период') : t('сохранить'), type: 'primary', onClick: submit },
         { label: t('отмена'), type: 'secondary', onClick: onClose },
       ]}
     >
-      <DateRangeField
-        label={t('Период отпуска')}
-        start={range.start}
-        end={range.end}
-        error={periodError}
-        description={`${t('Выбрано')} ${periodCaption(days, kind === 'combined' ? comboExtra : 0)} ${kind === 'combined' ? '' : t('отпуска')}`.trim()}
-        onChange={(start, end) => { setRange({ start, end }); setSubmitted(false) }}
-      />
+      {/* Read-only: the period is changed by dragging its edges in the calendar */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <FieldBox label={t('Период отпуска')} value={formatPeriodFull(range.start, range.end)} error={!!periodError} />
+        <div style={{ fontSize: 12, lineHeight: '16px', fontFamily: FONT, color: periodError ? '#E30611' : '#626C77' }}>
+          {periodError ?? `${t('Выбрано')} ${periodCaption(days, kind === 'combined' ? comboExtra : 0)} ${kind === 'combined' ? '' : t('отпуска')}`.trim()}
+        </div>
+      </div>
       {withKinds && (
         <SelectField
           size="L"
@@ -362,6 +382,22 @@ function PeriodDrawer({ mode, initial, withKinds, extraFree, onClose, onSubmit, 
           onChange={v => { setExtraCount(v); setSubmitted(false) }}
         />
       )}
+      <SelectField
+        person
+        label={t('Согласующий')}
+        value={approver}
+        options={personOptions}
+        onChange={v => setApprover(v || PLAN_APPROVER_ID)}
+        searchable
+      />
+      <SelectField
+        person
+        label={t('Дополнительный согласующий (необязательно)')}
+        value={extraApprover}
+        options={personOptions.filter(o => o.id !== approver)}
+        onChange={setExtraApprover}
+        searchable
+      />
     </Drawer>
   )
 }
@@ -632,16 +668,16 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     return extra - (-delta - removeMain)
   }
 
-  function savePeriod(id, start, end, extraDays) {
+  function savePeriod(id, start, end, extraDays, extra = {}) {
     const days = countVacationDays(start, end)
     setSegments(prev => prev
-      .map(seg => seg.id === id ? { ...seg, startDate: toISODate(start), endDate: toISODate(end), days, extraDays } : seg)
+      .map(seg => seg.id === id ? { ...seg, ...extra, startDate: toISODate(start), endDate: toISODate(end), days, extraDays } : seg)
       .sort((a, b) => a.startDate.localeCompare(b.startDate)))
   }
 
-  function addPeriod(start, end, extraDays) {
+  function addPeriod(start, end, extraDays, extra = {}) {
     const days = countVacationDays(start, end)
-    setSegments(prev => [...prev, { id: Date.now(), startDate: toISODate(start), endDate: toISODate(end), days, extraDays }]
+    setSegments(prev => [...prev, { id: Date.now(), ...extra, startDate: toISODate(start), endDate: toISODate(end), days, extraDays }]
       .sort((a, b) => a.startDate.localeCompare(b.startDate)))
   }
 
@@ -666,6 +702,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       end: new Date(seg.endDate + 'T00:00:00'),
       kind: kindOf(seg.days, extraOf(seg)),
       extraDays: extraOf(seg),
+      approverId: seg.approverId,
+      extraApproverId: seg.extraApproverId,
     })
   }
 
@@ -673,6 +711,16 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     setPeriodDraft(null)
     setCalendarKey(k => k + 1)
   }
+
+  // Calendar view of the plan: the period open in the panel shows its draft range,
+  // a new one is added as a temporary period
+  const planCalendarSegments = !periodDraft
+    ? segments
+    : periodDraft.mode === 'add'
+      ? [...segments, { id: PENDING_PERIOD_ID, startDate: toISODate(periodDraft.start), endDate: toISODate(periodDraft.end), days: countVacationDays(periodDraft.start, periodDraft.end) }]
+      : segments.map(seg => seg.id === periodDraft.segment.id
+        ? { ...seg, startDate: toISODate(periodDraft.start), endDate: toISODate(periodDraft.end) }
+        : seg)
 
   // Segments as shown in the left panel: the dragged period follows the calendar live
   const displaySegments = resizePreview
@@ -768,7 +816,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             key={calendarKey}
             cols={calCols}
             year={year}
-            requests={year === 2026 ? yearRequests : segments.map(s => ({
+            requests={year === 2026 ? yearRequests : planCalendarSegments.map(s => ({
               ...s,
               startDate: new Date(s.startDate + 'T00:00:00'),
               endDate: new Date(s.endDate + 'T00:00:00'),
@@ -786,16 +834,22 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             }
             onNewRequest={year === 2026
               ? (start, end) => setNewRequestRange({ start, end })
-              : (planStatus === 'draft'
+              : (planStatus === 'draft' && !periodDraft
                 ? (hasExtraLeave ? (start, end) => setPeriodDraft({ mode: 'add', start, end }) : handleAddSegment)
                 : undefined)
             }
             colleagueMap={year === 2027 ? colleagueMap2027 : colleagueMap2026}
             onResizeRequest={year === 2027 && planStatus === 'draft'
-              ? (req, start, end) => handleResizeSegment(req.id, start, end)
+              ? (periodDraft
+                // While the period panel is open the calendar edits the panel's range only
+                ? (req, start, end) => { setPeriodDraft(p => ({ ...p, start, end })); return true }
+                : (req, start, end) => handleResizeSegment(req.id, start, end))
               : undefined
             }
-            onResizePreview={year === 2027 && planStatus === 'draft' ? setResizePreview : undefined}
+            onResizePreview={year === 2027 && planStatus === 'draft'
+              ? (periodDraft ? (v => { if (v) setPeriodDraft(p => ({ ...p, start: v.start, end: v.end })) }) : setResizePreview)
+              : undefined}
+            lockedReqId={year === 2027 && periodDraft ? (periodDraft.mode === 'add' ? PENDING_PERIOD_ID : periodDraft.segment.id) : null}
           />
         </div>
       </div>
@@ -832,15 +886,17 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
 
       {periodDraft && (
         <PeriodDrawer
+          key={periodDraft.segment?.id ?? PENDING_PERIOD_ID}
           mode={periodDraft.mode}
+          range={{ start: periodDraft.start, end: periodDraft.end }}
           initial={periodDraft}
           withKinds={hasExtraLeave}
           extraFree={extraTotal - usageExcept(periodDraft.segment?.id).extra}
           validate={(start, end, extraDays) => validatePeriod(periodDraft.segment?.id, start, end, extraDays)}
           onClose={closePeriodDraft}
-          onSubmit={(start, end, extraDays) => {
-            if (periodDraft.mode === 'add') addPeriod(start, end, extraDays)
-            else savePeriod(periodDraft.segment.id, start, end, extraDays)
+          onSubmit={({ extraDays, ...extra }) => {
+            if (periodDraft.mode === 'add') addPeriod(periodDraft.start, periodDraft.end, extraDays, extra)
+            else savePeriod(periodDraft.segment.id, periodDraft.start, periodDraft.end, extraDays, extra)
             closePeriodDraft()
           }}
         />

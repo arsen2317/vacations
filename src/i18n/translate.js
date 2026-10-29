@@ -45,6 +45,8 @@ const T = {
   'Удалить': 'Delete',
   'Редактировать': 'Edit',
   'Изменить период': 'Change period',
+  'Добавление периода отпуска': 'Add vacation period',
+  'Редактирование периода отпуска': 'Edit vacation period',
   'доп. отпуска': 'of extra leave',
   'Основной и дополнительный отпуск': 'Main and extra leave',
   'Вам доступно только': 'You only have',
