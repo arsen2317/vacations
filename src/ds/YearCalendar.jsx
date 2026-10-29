@@ -247,7 +247,7 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                         position: 'absolute', top: 0, height: ROW_H,
                         left: edgeStart ? -EDGE_W : 0,
                         width: CELL + (edgeStart ? EDGE_W : 0) + (edgeEnd ? EDGE_W : 0),
-                        background: '#626C77',
+                        background: '#007CFF',
                         borderRadius: r,
                         zIndex: 1,
                       }} />
