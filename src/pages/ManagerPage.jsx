@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { BTN_STYLE, Banner, Chip, SearchIcon, SelectField } from '../ds/index'
+import { Banner, Chip, SearchIcon, SelectField, MoreIcon, ChevronUp, Drawer, TextAreaField } from '../ds/index'
 import StatusBadge from '../components/StatusBadge'
 import Toast from '../components/Toast'
 import { t, tName, tTeam, tPosition, pluralDays as unitDays, MONTH_NAMES, MONTHS_SHORT } from '../i18n/translate'
@@ -257,94 +257,53 @@ function RequestViewModal({ request, overlaps = [], onClose, onApprove, onOpenRe
   const title = t(request.type === 'unplanned' ? 'Заявка на внеплановый отпуск' : 'Заявка на плановый отпуск')
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
+    <Drawer
+      title={title}
+      subtitle={`№ ${request.reqNum}`}
+      onClose={onClose}
+      actions={canApprove ? [
+        { label: t('согласовать'), type: 'primary', onClick: () => { onApprove(request.id); onClose() } },
+        { label: t('отклонить'), type: 'danger', onClick: () => { onOpenReject(request); onClose() } },
+      ] : []}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden', maxHeight: '90vh' }}
-      >
-        {/* Header */}
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              {title}
-            </div>
-            <button
-              onClick={onClose}
-              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-              </svg>
-            </button>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: 12 }}>
+          <StatusBadge status={request.status} />
+        </div>
+
+        {/* Employee row */}
+        <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 16, flexShrink: 0,
+            background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
+          }}>
+            {tName(request.name).trim().split(' ').slice(0, 2).map(w => w[0]).join('')}
           </div>
-          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            № {request.reqNum}
+          <div style={{ flex: '1 1 0' }}>
+            <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{tName(request.name)}</div>
+            <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{tPosition(request.position)}</div>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="modal-scroll" style={{ paddingLeft: 20, paddingRight: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: 12 }}>
-            <StatusBadge status={request.status} />
+        <InfoCell label={t('Подразделение')} value={tTeam(request.team)} />
+        <InfoCell label={t('Тип отпуска')}   value={t(request.typeLabel)} />
+        <InfoCell label={t('Период')} value={fmtRangeRu(request.startDate, request.endDate)} />
+        <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
+
+        {overlaps.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12 }}>
+            {overlaps.map(r => (
+              <Banner
+                key={r.id}
+                type="warning"
+                title={`${t('Период отпуска пересекается с')} ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
+              />
+            ))}
           </div>
-
-          {/* Employee row */}
-          <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 16, flexShrink: 0,
-              background: '#F2F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 15, fontWeight: 600, color: '#626C77', fontFamily: "'MTSCompact', sans-serif",
-            }}>
-              {tName(request.name).trim().split(' ').slice(0, 2).map(w => w[0]).join('')}
-            </div>
-            <div style={{ flex: '1 1 0' }}>
-              <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>{tName(request.name)}</div>
-              <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{tPosition(request.position)}</div>
-            </div>
-          </div>
-
-          <InfoCell label={t('Подразделение')} value={tTeam(request.team)} />
-          <InfoCell label={t('Тип отпуска')}   value={t(request.typeLabel)} />
-          <InfoCell label={t('Период')} value={fmtRangeRu(request.startDate, request.endDate)} />
-          <InfoCell label={t('Количество дней отпуска')} value={pluralDays(request.days)} />
-
-          {/* Overlap banners — above action buttons */}
-          {overlaps.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12 }}>
-              {overlaps.map(r => (
-                <Banner
-                  key={r.id}
-                  type="warning"
-                  title={`${t('Период отпуска пересекается с')} ${shortName(r.name)}: ${fmtRangeRu(r.startDate, r.endDate)}`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Actions */}
-          {canApprove && (
-            <div style={{ paddingTop: 12, paddingBottom: 20, display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => { onApprove(request.id); onClose() }}
-                style={{ flex: 1, height: 44, background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#FFFFFF' }}
-              >
-                {t('СОГЛАСОВАТЬ')}
-              </button>
-              <button
-                onClick={() => { onOpenReject(request); onClose() }}
-                style={{ flex: 1, height: 44, background: '#F2F3F7', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#D8400C' }}
-              >
-                {t('ОТКЛОНИТЬ')}
-              </button>
-            </div>
-          )}
-          {!canApprove && <div style={{ paddingBottom: 20 }} />}
-        </div>
+        )}
       </div>
-    </div>
+    </Drawer>
   )
 }
 
@@ -369,59 +328,24 @@ function RejectModal({ request, onClose, onConfirm }) {
   }
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1010, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
+    <Drawer
+      title={t('Отклонить заявку')}
+      subtitle={`${tName(request.name)} · ${fmtPeriod(request.startDate, request.endDate)}`}
+      onClose={onClose}
+      zIndex={1010}
+      actions={[
+        { label: t('отклонить'), type: 'danger', onClick: confirm },
+        { label: t('отмена'), type: 'secondary', onClick: onClose },
+      ]}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ background: '#fff', borderRadius: 32, padding: 32, width: 440, display: 'flex', flexDirection: 'column', gap: 20, fontFamily: "'MTSCompact', sans-serif" }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 500, color: '#1D2023', fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
-              {t('Отклонить заявку')}
-            </div>
-            <div style={{ fontSize: 14, color: '#626C77', marginTop: 4 }}>
-              {tName(request.name)} · {fmtPeriod(request.startDate, request.endDate)}
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: '#F2F3F7', border: 'none', borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, flexShrink: 0 }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-            </svg>
-          </button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ fontSize: 14, color: '#626C77' }}>
-            {t('Причина отклонения')} <span style={{ color: '#E30611' }}>*</span>
-          </label>
-          <textarea
-            value={comment}
-            onChange={e => { setComment(e.target.value); setError('') }}
-            placeholder={t('Введите комментарий')}
-            className="mts-textarea"
-            style={{
-              width: '100%', height: 96, boxSizing: 'border-box',
-              background: '#F2F3F7', border: 'none',
-              outline: `1px ${error ? '#E30611' : 'rgba(188,195,208,0.50)'} solid`,
-              outlineOffset: '-1px', borderRadius: 16,
-              padding: '10px 12px', fontSize: 15, lineHeight: '22px',
-              color: '#1D2023', fontFamily: "'MTSCompact', sans-serif", resize: 'none',
-            }}
-          />
-          {error && <span style={{ fontSize: 12, color: '#E30611' }}>{error}</span>}
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={onClose} style={{ ...BTN_STYLE, flex: 1, height: 44, background: '#F2F3F7', color: '#1D2023', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-            {t('Отмена')}
-          </button>
-          <button onClick={confirm} style={{ ...BTN_STYLE, flex: 2, height: 44, background: '#F2F3F7', color: '#E30611', border: 'none', borderRadius: 16, cursor: 'pointer' }}>
-            {t('Отклонить')}
-          </button>
-        </div>
-      </div>
-    </div>
+      <TextAreaField
+        label={t('Причина отклонения')}
+        value={comment}
+        onChange={v => { setComment(v); setError('') }}
+        placeholder={t('Введите комментарий')}
+        error={error}
+      />
+    </Drawer>
   )
 }
 
@@ -444,17 +368,12 @@ function ActionsDropdown({ request, onApprove, onReject }) {
       <button
         onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
         style={{
-          border: 'none', background: '#F2F3F7', cursor: 'pointer',
-          padding: 4, borderRadius: 12,
+          border: 'none', background: open ? '#F2F3F7' : 'transparent', cursor: 'pointer',
+          padding: 4, borderRadius: 8,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 44, height: 44,
         }}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="4" viewBox="0 0 18 4" fill="none">
-          <circle cx="2" cy="2" r="2" fill="#1D2023"/>
-          <circle cx="9" cy="2" r="2" fill="#1D2023"/>
-          <circle cx="16" cy="2" r="2" fill="#1D2023"/>
-        </svg>
+        <MoreIcon />
       </button>
       {open && (
         <div
@@ -516,22 +435,22 @@ function Pagination({ page, total, onPage }) {
     items.push(p); prev = p
   }
   const btn = (active, disabled) => ({
-    height: 44, minWidth: 44, borderRadius: 16, border: 'none',
+    height: 32, minWidth: 32, borderRadius: 12, border: 'none',
     background: active ? '#F2F3F7' : 'transparent',
     color: disabled ? '#BCC3D0' : '#1D2023',
-    fontSize: active ? 20 : 17, fontFamily: "'MTSCompact', sans-serif",
+    fontSize: 17, fontFamily: "'MTSCompact', sans-serif",
     fontWeight: active ? 500 : 400, cursor: disabled ? 'default' : 'pointer',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px',
   })
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 4 }}>
-      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btn(false, page === 1), fontSize: 20 }}>‹</button>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 24, gap: 8 }}>
+      <button onClick={() => page > 1 && onPage(page - 1)} style={{ ...btn(false, page === 1), opacity: page === 1 ? 0.3 : 1 }}><span style={{ display: 'flex', transform: 'rotate(-90deg)' }}><ChevronUp /></span></button>
       {items.map(item =>
         typeof item === 'string'
           ? <span key={item} style={{ color: '#626C77', padding: '0 4px', fontSize: 17 }}>...</span>
           : <button key={item} onClick={() => onPage(item)} style={btn(item === page, false)}>{item}</button>
       )}
-      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btn(false, page === totalPages), fontSize: 20 }}>›</button>
+      <button onClick={() => page < totalPages && onPage(page + 1)} style={{ ...btn(false, page === totalPages), opacity: page === totalPages ? 0.3 : 1 }}><span style={{ display: 'flex', transform: 'rotate(90deg)' }}><ChevronUp /></span></button>
     </div>
   )
 }
@@ -544,50 +463,22 @@ function ReportStatsModal({ onClose, onDownload, requests, subordinates }) {
   const noPlanCount   = subordinates.filter(s => s.planStatus === 'draft').length
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={onClose}
+    <Drawer
+      title={`${t('Статистика по кампании')} ${CAMPAIGN.year}`}
+      subtitle={t('Скачайте подробный отчет по планированию отпусков ваших сотрудников.')}
+      onClose={onClose}
+      actions={[
+        { label: t('скачать отчёт'), type: 'primary', onClick: onDownload },
+        { label: t('отмена'), type: 'secondary', onClick: onClose },
+      ]}
     >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ width: 480, background: '#fff', borderRadius: 32, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-      >
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '24px', paddingTop: 4 }}>
-              {t('Статистика по кампании')} {CAMPAIGN.year}
-            </div>
-            <button
-              onClick={onClose}
-              style={{ padding: 4, background: '#F2F3F7', borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6.29289 16.2929C5.90237 16.6834 5.90237 17.3166 6.29289 17.7071C6.68342 18.0976 7.31658 18.0976 7.70711 17.7071L11.9999 13.4143L16.2929 17.7073C16.6834 18.0978 17.3166 18.0978 17.7071 17.7073C18.0976 17.3167 18.0976 16.6836 17.7071 16.293L13.4141 12.0001L17.7071 7.70711C18.0976 7.31658 18.0976 6.68342 17.7071 6.29289C17.3166 5.90237 16.6834 5.90237 16.2929 6.29289L11.9999 10.5859L7.70711 6.29304C7.31658 5.90252 6.68342 5.90252 6.2929 6.29304C5.90237 6.68357 5.90237 7.31673 6.29289 7.70726L10.5857 12.0001L6.29289 16.2929Z" fill="#1D2023"/>
-              </svg>
-            </button>
-          </div>
-          <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>
-            {t('Скачайте подробный отчет по планированию отпусков ваших сотрудников.')}
-          </div>
-        </div>
-
-        <div style={{ paddingLeft: 20, paddingRight: 20 }}>
-          <InfoCell label={t('Подано заявок')}          value={String(totalCount)} />
-          <InfoCell label={t('На согласовании')}         value={String(pendingCount)} />
-          <InfoCell label={t('Согласованы')}             value={String(approvedCount)} />
-          <InfoCell label={t('Не создан план отпуска')}  value={String(noPlanCount)} />
-        </div>
-
-        <div style={{ padding: 20 }}>
-          <button
-            onClick={onDownload}
-            style={{ width: '100%', height: 44, background: '#0066FF', border: 'none', borderRadius: 16, cursor: 'pointer', ...BTN_STYLE, color: '#FFFFFF' }}
-          >
-            {t('СКАЧАТЬ ОТЧЁТ')}
-          </button>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <InfoCell label={t('Подано заявок')}          value={String(totalCount)} />
+        <InfoCell label={t('На согласовании')}         value={String(pendingCount)} />
+        <InfoCell label={t('Согласованы')}             value={String(approvedCount)} />
+        <InfoCell label={t('Не создан план отпуска')}  value={String(noPlanCount)} />
       </div>
-    </div>
+    </Drawer>
   )
 }
 
@@ -715,13 +606,14 @@ export default function ManagerPage() {
     setToast(t('Заявка отклонена'))
   }
 
+  // Table style: rounded outline, grey header, 17px rows
   const TH = {
-    padding: '12px 16px', fontSize: 13, fontWeight: 400, color: '#626C77',
+    padding: '10px 16px', fontSize: 14, fontWeight: 500, lineHeight: '20px', color: '#626C77',
     textAlign: 'left', fontFamily: "'MTSCompact', sans-serif",
-    background: '#F2F3F7', borderBottom: DIVIDER, whiteSpace: 'nowrap',
+    background: '#F2F3F7', whiteSpace: 'nowrap',
   }
   const TD = {
-    padding: '16px', fontSize: 14, color: '#1D2023',
+    padding: '10px 16px', fontSize: 17, lineHeight: '24px', color: '#1D2023',
     fontFamily: "'MTSCompact', sans-serif", verticalAlign: 'middle',
   }
 
@@ -739,7 +631,7 @@ export default function ManagerPage() {
         <div style={{ flex: '0 0 280px', position: 'relative' }}>
           <div style={{
             height: 44, paddingLeft: 12, paddingRight: 12,
-            background: '#F2F3F7', borderRadius: 12,
+            background: '#F2F3F7', borderRadius: 16,
             display: 'flex', alignItems: 'center', gap: 8,
             outline: '1px rgba(188,195,208,0.5) solid', outlineOffset: '-1px',
           }}>
@@ -800,24 +692,24 @@ export default function ManagerPage() {
       {/* ── TABLE VIEW ── */}
       {view === 'table' && (
         <>
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', border: '1px solid rgba(188,195,208,0.5)', borderRadius: 16 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
                 <col style={{ width: 120 }} />
                 <col style={{ width: 280 }} />
                 <col />
-                <col style={{ width: 220 }} />
+                <col style={{ width: 250 }} />
                 <col style={{ width: 180 }} />
                 <col style={{ width: 80 }} />
               </colgroup>
               <thead>
                 <tr>
                   <th style={TH}>{t('№ заявки')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Сотрудник')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Подразделение')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Период отпуска')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset' }}>{t('Статус')}</th>
-                  <th style={{ ...TH, boxShadow: '-1px 0 0 #E2E5EB inset', textAlign: 'center' }}>{t('Действия')}</th>
+                  <th style={TH}>{t('Сотрудник')}</th>
+                  <th style={TH}>{t('Подразделение')}</th>
+                  <th style={TH}>{t('Период отпуска')}</th>
+                  <th style={TH}>{t('Статус')}</th>
+                  <th style={{ ...TH, textAlign: 'center' }} aria-label={t('Действия')} />
                 </tr>
               </thead>
               <tbody>
@@ -831,18 +723,18 @@ export default function ManagerPage() {
                       key={req.id}
                       onClick={() => setSelectedRequest(req)}
                       style={{ cursor: 'pointer' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F8F8FA'}
                       onMouseLeave={e => e.currentTarget.style.background = ''}
                     >
-                      <td style={{ ...TD, borderBottom: rowBorder, color: '#626C77' }}>{req.reqNum}</td>
+                      <td style={{ ...TD, borderBottom: rowBorder }}>{req.reqNum}</td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
-                        <div style={{ fontSize: 14, color: '#1D2023', lineHeight: '20px' }}>{tName(req.name)}</div>
-                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{tPosition(req.position)}</div>
+                        <div>{tName(req.name)}</div>
+                        <div style={{ fontSize: 14, color: '#626C77', lineHeight: '20px' }}>{tPosition(req.position)}</div>
                       </td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>{tTeam(req.team)}</td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
-                        <div style={{ fontSize: 14, lineHeight: '20px' }}>{fmtPeriod(req.startDate, req.endDate)}</div>
-                        <div style={{ fontSize: 12, color: '#626C77', lineHeight: '16px', marginTop: 2 }}>{pluralDays(req.days)}</div>
+                        <div>{fmtPeriod(req.startDate, req.endDate)}</div>
+                        <div style={{ fontSize: 14, color: '#626C77', lineHeight: '20px' }}>{pluralDays(req.days)}</div>
                       </td>
                       <td style={{ ...TD, borderBottom: rowBorder }}>
                         <StatusBadge status={req.status} />

@@ -6,6 +6,7 @@ const T = {
   'главная': 'Home',
   'отпуск': 'Vacation',
   'уведомления раздела': 'Notifications',
+  'частые вопросы': 'FAQ',
   'Мой отпуск': 'My vacation',
   'Планы коллег': "Colleagues' plans",
 
@@ -32,6 +33,74 @@ const T = {
   'Мои отпуска': 'My vacations',
   'Для создания заявки выделите период, выбирая даты прямо в календаре.':
     'To create a request, select a period by choosing dates directly in the calendar.',
+  'Баланс отпуска': 'Vacation balance',
+  'Все': 'All',
+  'все заявки': 'all requests',
+  'Вид отпуска': 'Vacation type',
+  'Всего дней': 'Total days',
+  'Осталось переносов': 'Reschedules left',
+  'Отклонены': 'Rejected',
+  'Перенести': 'Reschedule',
+  'Подробнее': 'Details',
+  'Удалить': 'Delete',
+  'Редактировать': 'Edit',
+  'Изменить период': 'Change period',
+  'Добавление периода отпуска': 'Add vacation period',
+  'Редактирование периода отпуска': 'Edit vacation period',
+  'доп. отпуска': 'of extra leave',
+  'Основной и дополнительный отпуск': 'Main and extra leave',
+  'Вам доступно только': 'You only have',
+  'Нет свободных дней доп. отпуска': 'No extra leave days left',
+  'В периоде должен быть хотя бы один день основного отпуска': 'The period must include at least one main leave day',
+  'Выберите вид отпуска': 'Select the leave type',
+  'добавить период': 'add period',
+  'Списать дни дополнительного отпуска': 'Use extra leave days',
+  'Всего доступно': 'Available in total',
+  'Выбранный период превышает остаток дней доп. отпуска': 'The selected period exceeds the remaining extra leave days',
+  'отправить заявки': 'submit requests',
+  'праздничный день': 'public holiday',
+  'праздничных дня': 'public holidays',
+  'праздничных дней': 'public holidays',
+  'из них': 'of which',
+  'авансом': 'in advance',
+  'Не указан': 'Not specified',
+  'Поиск': 'Search',
+  'Заявка создана': 'Request created',
+  'Накоплено': 'Accrued',
+  'основного оплачиваемого отпуска': 'of main paid vacation',
+  'создать заявку': 'create request',
+  'отмена': 'cancel',
+  'Выбрано': 'Selected',
+  'Если нужен отпуск на завтра, выбирайте вид отпуска «Без сохранения заработной платы»': 'If you need a day off tomorrow, choose the «Unpaid leave» type',
+  'Заместитель (необязательно)': 'Deputy (optional)',
+  'Дополнительный согласующий (необязательно)': 'Additional approver (optional)',
+  'Комментарий (необязательно)': 'Comment (optional)',
+  'До 60 символов': 'Up to 60 characters',
+  'Выберите из списка': 'Select from the list',
+  'Текущий период': 'Current period',
+  'перенести отпуск': 'reschedule vacation',
+  'отозвать заявку': 'withdraw request',
+  'отменить отпуск': 'cancel vacation',
+  'создать заявки': 'create requests',
+  'закрыть': 'close',
+  'согласовать': 'approve',
+  'отклонить': 'reject',
+  'скачать отчёт': 'download report',
+  'сохранить': 'save',
+  'Сохранить': 'Save',
+  'Выберите новые даты периода': 'Select new period dates',
+  'Период должен быть в пределах планируемого года': 'The period must be within the planned year',
+  'Заявок не найдено': 'No requests found',
+  'Для создания заявки выделите период, выбирая даты прямо в календаре':
+    'To create a request, select a period by choosing dates directly in the calendar',
+  'отметка пересечений в календаре': 'overlap marker in the calendar',
+  'Выберите сотрудников': 'Select employees',
+  'Всего доступно:': 'Total available:',
+  'Распределите минимум 28 дней': 'Distribute at least 28 days',
+  'Один из периодов должен быть не меньше 14 дней': 'One of the periods must be at least 14 days',
+  'План отпуска': 'Vacation plan',
+  'Для создания плана отпуска начните выделять периоды, выбирая даты прямо в календаре':
+    'To create a vacation plan, start selecting periods by choosing dates directly in the calendar',
   'Пересечения': 'Overlaps',
   'отметка пересечений': 'overlap marker',
   'Добавить сотрудника': 'Add employee',
@@ -202,6 +271,16 @@ export const MONTH_NAMES = LOCALE === 'en'
 export const MONTH_GEN = LOCALE === 'en'
   ? MONTH_NAMES
   : ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+
+// Abbreviated genitive month names per Russian orthography («13 апр.», «18 мая», «7 сент.»)
+export const MONTH_GEN_SHORT = LOCALE === 'en'
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['янв.', 'февр.', 'марта', 'апр.', 'мая', 'июня', 'июля', 'авг.', 'сент.', 'окт.', 'нояб.', 'дек.']
+
+// Month abbreviations for table dates («13 февр 2026»)
+export const MONTHS_TABLE = LOCALE === 'en'
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['янв', 'февр', 'март', 'апр', 'май', 'июнь', 'июль', 'авг', 'сент', 'окт', 'нояб', 'дек']
 
 export const MONTHS_SHORT = LOCALE === 'en'
   ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

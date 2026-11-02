@@ -1,161 +1,144 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '../context/AppContext'
 import RequestModal from '../components/RequestModal'
 import NewRequestModal from '../components/NewRequestModal'
 import PlanSubmitModal from '../components/PlanSubmitModal'
 import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
-import { COLORS, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon } from '../ds/index'
+import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, Drawer, CounterField, SelectField, FieldBox } from '../ds/index'
 import { countVacationDays } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
-import { t, tName, tTeam, MONTH_GEN, pluralDays } from '../i18n/translate'
+import { t, tName, tTeam, MONTH_GEN, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
 import { LOCALE } from '../i18n/locale'
 
-const MAX_PLAN_DAYS = 40
 const MIN_PLAN_DAYS = 28
+
+const FONT = "'MTSCompact', sans-serif"
+const SECTION_TITLE = { margin: 0, color: '#1D2023', fontFeatureSettings: "'liga' off, 'clig' off", fontFamily: "'MTSWide', sans-serif", fontSize: 24, fontWeight: 500, lineHeight: '28px' }
+const CELL_TITLE = { color: '#1D2023', fontSize: 17, fontFamily: FONT, fontWeight: 500, lineHeight: '24px' }
+const CELL_CAPTION = { color: '#626C77', fontSize: 14, fontFamily: FONT, fontWeight: 400, lineHeight: '20px' }
 
 function formatDateRange(startDate, endDate) {
   const s = new Date(startDate)
   const e = new Date(endDate)
-  return `${s.getDate()} ${MONTH_GEN[s.getMonth()]} – ${e.getDate()} ${MONTH_GEN[e.getMonth()]}`
+  return `${s.getDate()} ${MONTH_GEN_SHORT[s.getMonth()]} – ${e.getDate()} ${MONTH_GEN_SHORT[e.getMonth()]}`
 }
 
 function formatSegmentDate(isoStr) {
   const d = new Date(isoStr + 'T00:00:00')
-  return `${d.getDate()} ${MONTH_GEN[d.getMonth()]}`
+  return `${d.getDate()} ${MONTH_GEN_SHORT[d.getMonth()]}`
 }
 
+// Plan period split: `extraDays` of `days` are paid from the additional leave balance
+const extraOf = seg => seg.extraDays ?? 0
+const mainOf  = seg => seg.days - extraOf(seg)
+
+// «из 31 дня», «из 28 дней»
+function daysGenitive(n) {
+  if (LOCALE === 'en') return pluralDays(n)
+  return n % 10 === 1 && n % 100 !== 11 ? 'дня' : 'дней'
+}
+
+function periodCaption(days, extraDays) {
+  if (!extraDays) return `${days} ${pluralDays(days)}`
+  if (extraDays === days) return `${days} ${pluralDays(days)} ${t('доп. отпуска')}`
+  return `${days} ${pluralDays(days)}, ${t('из них')} ${extraDays} ${pluralDays(extraDays)} ${t('доп. отпуска')}`
+}
+
+const PERIOD_KINDS = [
+  { id: 'main',     name: 'Основной отпуск' },
+  { id: 'extra',    name: 'Дополнительный отпуск' },
+  { id: 'combined', name: 'Основной и дополнительный отпуск' },
+]
+
+function kindOf(days, extraDays) {
+  if (!extraDays) return 'main'
+  return extraDays >= days ? 'extra' : 'combined'
+}
+
+// Icon inside a 16px slot (DS icons are drawn on a 24px grid)
+function SmallIcon({ children }) {
+  return (
+    <span style={{ width: 16, height: 16, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <span style={{ display: 'flex', transform: 'scale(0.6667)' }}>{children}</span>
+    </span>
+  )
+}
 
 // Left panel for 2026: balance + vacation list
-function Panel2026({ balance, yearRequests, setSelectedRequest, setNewRequestRange, trackedColleagues, onRemoveColleague, onOpenCalculator }) {
+function Panel2026({ balance, yearRequests, setSelectedRequest, onOpenCalculator, onGoToRequests, intersections }) {
+  const total = balance.main + balance.extra
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <>
       {/* Balance */}
-      <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              {t('Основной отпуск')}
+      <div style={{ background: '#F2F3F7', borderRadius: 20, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ height: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: '#626C77', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '20px' }}>
+            {t('Баланс отпуска')}
+          </span>
+          <button
+            onClick={onOpenCalculator}
+            style={{ padding: 4, border: 'none', borderRadius: 8, background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <SmallIcon><CalculatorIcon /></SmallIcon>
+          </button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+          <span style={{ color: '#1D2023', fontSize: 24, fontFamily: FONT, fontWeight: 500, lineHeight: '28px', whiteSpace: 'nowrap' }}>
+            {total} {pluralDays(total)}
+          </span>
+          {balance.extra > 0 && (
+            <span style={{ paddingBottom: 2, color: '#626C77', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '20px' }}>
+              {LOCALE === 'en'
+                ? <>incl. {balance.extra} {pluralDays(balance.extra)} of extra leave</>
+                : <>из них {balance.extra} {pluralDays(balance.extra)} доп.&nbsp;отпуска</>}
             </span>
-            <button
-              onClick={onOpenCalculator}
-              style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <CalculatorIcon />
-            </button>
-          </div>
-          <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-            {balance.main} {pluralDays(balance.main)}
-          </div>
-        </div>
-        {balance.extra > 0 && (
-          <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-            <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              {t('Дополнительный отпуск')}
-            </div>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-              {balance.extra} {pluralDays(balance.extra)}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Vacation list */}
-      <div style={{ marginTop: 16 }}>
-        <h3 style={{
-          margin: '36px 0 12px',
-          color: '#1D2023',
-          fontFeatureSettings: "'liga' off, 'clig' off",
-          fontFamily: "'MTSWide', sans-serif",
-          fontSize: 24,
-          fontWeight: 500,
-          lineHeight: '28px',
-        }}>
-          {t('Мои отпуска')}
-        </h3>
-
-        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          {t('Для создания заявки выделите период, выбирая даты прямо в календаре.')}
-        </div>
-
-        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {yearRequests.length === 0 ? (
-            <div style={{ fontSize: 14, color: '#626C77', fontFamily: "'MTSCompact', sans-serif", padding: '8px 0' }}>
-              {LOCALE === 'en' ? <>No requests for 2026</> : <>Нет&nbsp;заявок за&nbsp;2026 год</>}
-            </div>
-          ) : (
-            yearRequests.map(req => (
-              <button
-                key={req.id}
-                onClick={() => setSelectedRequest(req)}
-                style={{
-                  paddingTop: 10, paddingBottom: 10, paddingLeft: 0, paddingRight: 0,
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  background: 'none', border: 'none',
-                  cursor: 'pointer', textAlign: 'left', width: '100%',
-                }}
-              >
-                <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
-                  <div style={{
-                    alignSelf: 'stretch',
-                    color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif",
-                    fontWeight: 500, lineHeight: '24px', wordWrap: 'break-word',
-                  }}>
-                    {formatDateRange(req.startDate, req.endDate)}
-                  </div>
-                  <div style={{
-                    alignSelf: 'stretch',
-                    color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif",
-                    fontWeight: 400, lineHeight: '20px', wordWrap: 'break-word',
-                  }}>
-                    {req.days} {pluralDays(req.days)} · {t(req.typeLabel)}
-                  </div>
-                </div>
-                <StatusBadge type={req.status} />
-              </button>
-            ))
           )}
         </div>
       </div>
 
-      {/* Пересечения section */}
+      {/* Vacation list */}
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ paddingTop: 36, paddingBottom: 12 }}>
-          <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            {t('Пересечения')}
-          </span>
-        </div>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
-          <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            {t('отметка пересечений')}
-          </span>
-        </div>
-
-        {/* Add colleague row */}
-        <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
-            </svg>
+        <div style={{ paddingBottom: 16 }}>
+          <div style={{ padding: '24px 0 12px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <h3 style={{ ...SECTION_TITLE, flex: 1 }}>{t('Мои отпуска')}</h3>
+            <span onClick={onGoToRequests} style={{ color: '#0070E5', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '24px', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+              {t('Все заявки')}
+            </span>
           </div>
-          <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-            {t('Добавить сотрудника')}
-          </span>
+          <div style={CELL_CAPTION}>
+            {t('Для создания заявки выделите период, выбирая даты прямо в календаре')}
+          </div>
         </div>
 
-        {/* Colleagues list */}
-        {trackedColleagues.map(col => (
-          <ColleagueRow
-            key={col.id}
-            col={col}
-            onRemove={() => onRemoveColleague(col.id)}
-          />
-        ))}
+        {yearRequests.length === 0 ? (
+          <div style={{ ...CELL_CAPTION, padding: '8px 0' }}>
+            {LOCALE === 'en' ? <>No requests for 2026</> : <>Нет&nbsp;заявок за&nbsp;2026 год</>}
+          </div>
+        ) : (
+          yearRequests.map(req => (
+            <button
+              key={req.id}
+              onClick={() => setSelectedRequest(req)}
+              style={{
+                minHeight: 64, padding: '10px 0',
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'none', border: 'none',
+                cursor: 'pointer', textAlign: 'left', width: '100%',
+              }}
+            >
+              <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch' }}>
+                <div style={CELL_TITLE}>{formatDateRange(req.startDate, req.endDate)}</div>
+                <div style={CELL_CAPTION}>{req.days} {pluralDays(req.days)} · {t(req.typeLabel)}</div>
+              </div>
+              <StatusBadge type={req.status} />
+            </button>
+          ))
+        )}
       </div>
-    </div>
+
+      {intersections}
+    </>
   )
 }
 
@@ -164,10 +147,10 @@ function ColleagueRow({ col, onRemove }) {
     <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
       <PersonAvatar src={col.avatar} />
       <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ color: '#1D2023', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {tName(col.name)}
         </div>
-        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
+        <div style={CELL_CAPTION}>
           {col.position ?? tTeam(col.team)}
         </div>
       </div>
@@ -175,188 +158,320 @@ function ColleagueRow({ col, onRemove }) {
         onClick={onRemove}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6L18 18" stroke="#1D2023" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
+        <CrossIcon />
       </button>
     </div>
   )
 }
 
-// Left panel for 2027: planning view
-function Panel2027({ balance, campaign, segments, onRemoveSegment, planStatus, onOpenPlanModal, trackedColleagues, onRemoveColleague, onSegmentClick }) {
-  const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
-  const hasLongSegment  = segments.some(s => s.days >= 14)
-  const canSubmit       = distributedDays >= MIN_PLAN_DAYS && hasLongSegment
+// «Пересечения»: legend, colleague search and tracked colleagues
+function IntersectionsSection({ trackedColleagues, onAddColleague, onRemoveColleague }) {
+  const [query, setQuery] = useState('')
+  const [focused, setFocused] = useState(false)
+
+  const trackedIds = new Set(trackedColleagues.map(c => c.id))
+  const q = query.trim().toLowerCase()
+  const results = COLLEAGUES
+    .filter(c => !c.me && !trackedIds.has(c.id))
+    .filter(c => !q || tName(c.name).toLowerCase().includes(q))
+    .slice(0, 8)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
-      {/* Balance */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-          <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            {t('Основной отпуск')}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-              {campaign.totalDays} {pluralDays(campaign.totalDays)}
-            </div>
-            {balance.accumulated > 0 && (
-              <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                + {balance.accumulated} {t('накопленный')}
-              </div>
-            )}
-          </div>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ paddingTop: 36, paddingBottom: 12 }}>
+        <h3 style={SECTION_TITLE}>{t('Пересечения')}</h3>
+      </div>
 
-        {balance.extra > 0 && (
-          <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-            <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-              {t('Дополнительный отпуск')}
-            </div>
-            <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-              {balance.extra} {pluralDays(balance.extra)}
-            </div>
+      {/* Legend */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
+        <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
+        <span style={{ color: '#626C77', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '20px' }}>
+          {t('отметка пересечений в календаре')}
+        </span>
+      </div>
+
+      {/* Colleague search */}
+      <div style={{ padding: '16px 0', position: 'relative' }}>
+        <div style={{
+          height: 44, boxSizing: 'border-box',
+          background: '#F2F3F7', borderRadius: 16,
+          border: '1px solid rgba(188,195,208,0.5)',
+          display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px 0 12px',
+        }}>
+          <span style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <SearchIcon />
+          </span>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 150)}
+            placeholder={t('Выберите сотрудников')}
+            className="mts-search-input"
+            style={{
+              flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent',
+              fontSize: 17, lineHeight: '24px', color: '#1D2023', fontFamily: FONT,
+            }}
+          />
+        </div>
+        {focused && results.length > 0 && (
+          <div className="modal-scroll" style={{
+            position: 'absolute', top: 64, left: 0, right: 0, zIndex: 200,
+            maxHeight: 320, overflowY: 'auto',
+            background: '#fff', borderRadius: 16,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+            border: '1px solid rgba(188,195,208,0.5)',
+          }}>
+            {results.map(col => (
+              <div
+                key={col.id}
+                onMouseDown={() => { onAddColleague(col.id); setQuery('') }}
+                style={{ padding: '8px 12px', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F2F3F7' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+              >
+                <span style={{ color: '#1D2023', fontSize: 17, fontFamily: FONT, lineHeight: '24px' }}>{tName(col.name)}</span>
+                <span style={CELL_CAPTION}>{col.position ?? tTeam(col.team)}</span>
+              </div>
+            ))}
           </div>
         )}
+      </div>
 
-        <div style={{ height: 56, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-          <div style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            {t('Распределено')}
+      {/* Colleagues list */}
+      {trackedColleagues.map(col => (
+        <ColleagueRow
+          key={col.id}
+          col={col}
+          onRemove={() => onRemoveColleague(col.id)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function SegmentMenu({ onEdit, onRemove }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    function h(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0, display: 'flex' }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ padding: 0, border: 'none', borderRadius: 8, background: '#F2F3F7', cursor: 'pointer', display: 'flex' }}
+      >
+        <MoreIcon />
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
+          padding: 6, background: '#fff', borderRadius: 16,
+          boxShadow: '0px 12px 20px rgba(0,0,0,0.14), 0px 4px 24px rgba(0,0,0,0.12)',
+        }}>
+          {[
+            { label: t('Редактировать'), color: '#1D2023', onClick: onEdit },
+            { label: t('Удалить'),       color: '#D8400C', onClick: onRemove },
+          ].map(item => (
+            <div
+              key={item.label}
+              onClick={() => { setOpen(false); item.onClick() }}
+              style={{ padding: '10px 6px', borderRadius: 12, cursor: 'pointer', color: item.color, fontSize: 17, fontFamily: FONT, lineHeight: '24px', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#F5F6F8' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+            >
+              {item.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const PENDING_PERIOD_ID = 'pending-period'
+const LEFT_DRAWER_WIDTH = 487 // up to the divider between the left panel and the calendar (1440 layout)
+
+function formatPeriodFull(start, end) {
+  return `${start.getDate()} ${MONTH_GEN[start.getMonth()]} – ${end.getDate()} ${MONTH_GEN[end.getMonth()]} ${end.getFullYear()}`
+}
+
+// Create / edit a plan period in a left panel next to the calendar (no overlay).
+// The range is controlled by the calendar: the period's edges are dragged there.
+// `validate(start, end, extraDays)` returns an error text or null.
+function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onSubmit, validate, onExtraDaysChange }) {
+  const [kind, setKind] = useState(initial.kind ?? 'main')
+  const [extraCount, setExtraCount] = useState(Math.max(1, initial.extraDays ?? 1))
+  const [submitted, setSubmitted] = useState(false)
+
+  const days = countVacationDays(range.start, range.end)
+  const comboMax = Math.min(extraFree, days - 1)
+  const comboExtra = Math.max(1, Math.min(extraCount, Math.max(1, comboMax)))
+  const extraDays = kind === 'extra' ? days : kind === 'combined' ? comboExtra : 0
+
+  // The plan list and counters show the period being edited live
+  useEffect(() => { onExtraDaysChange?.(extraDays) }, [extraDays, onExtraDaysChange])
+
+  let periodError = null
+  if (kind === 'extra' && days > extraFree) {
+    periodError = `${t('Выбрано')} ${days} ${pluralDays(days)} ${t('доп. отпуска')}. ${t('Вам доступно только')} ${extraFree} ${pluralDays(extraFree)} ${t('доп. отпуска')}`
+  } else if (kind === 'combined' && comboMax < 1) {
+    periodError = extraFree < 1 ? t('Нет свободных дней доп. отпуска') : t('В периоде должен быть хотя бы один день основного отпуска')
+  } else if (submitted && kind) {
+    periodError = validate(range.start, range.end, extraDays)
+  }
+
+  function submit() {
+    setSubmitted(true)
+    if (!kind || periodError) return
+    if (validate(range.start, range.end, extraDays)) return
+    onSubmit(extraDays)
+  }
+
+  return (
+    <Drawer
+      side="left"
+      overlay={false}
+      width={LEFT_DRAWER_WIDTH}
+      title={mode === 'add' ? t('Добавление периода отпуска') : t('Редактирование периода отпуска')}
+      onClose={onClose}
+      actions={[
+        { label: mode === 'add' ? t('добавить период') : t('сохранить'), type: 'primary', onClick: submit },
+        { label: t('отмена'), type: 'secondary', onClick: onClose },
+      ]}
+    >
+      {/* Read-only: the period is changed by dragging its edges in the calendar */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <FieldBox label={t('Период отпуска')} value={formatPeriodFull(range.start, range.end)} error={!!periodError} />
+        <div style={{ fontSize: 12, lineHeight: '16px', fontFamily: FONT, color: periodError ? '#E30611' : '#626C77' }}>
+          {periodError ?? `${t('Выбрано')} ${periodCaption(days, kind === 'combined' ? comboExtra : 0)} ${kind === 'combined' ? '' : t('отпуска')}`.trim()}
+        </div>
+      </div>
+      {withKinds && (
+        <SelectField
+          size="L"
+          label={t('Вид отпуска')}
+          value={kind}
+          options={PERIOD_KINDS.map(k => ({ ...k, name: t(k.name) }))}
+          onChange={v => { setKind(v); setSubmitted(false) }}
+          error={submitted && !kind ? t('Выберите вид отпуска') : undefined}
+        />
+      )}
+      {kind === 'combined' && comboMax >= 1 && (
+        <CounterField
+          title={t('Списать дни дополнительного отпуска')}
+          caption={`${t('Всего доступно')} ${extraFree} ${pluralDays(extraFree)}`}
+          value={comboExtra}
+          min={1}
+          max={comboMax}
+          onChange={v => { setExtraCount(v); setSubmitted(false) }}
+        />
+      )}
+    </Drawer>
+  )
+}
+
+function ConditionRow({ done, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+      <SmallIcon>{done ? <DoneIcon /> : <WarningIcon />}</SmallIcon>
+      <span style={{ color: '#626C77', fontSize: 12, fontFamily: FONT, fontWeight: 400, lineHeight: '16px' }}>{children}</span>
+    </div>
+  )
+}
+
+// Left panel for 2027: planning view
+function Panel2027({ totalDays, extraTotal, segments, onRemoveSegment, onEditSegment, planStatus, onOpenPlanModal, onSegmentClick, intersections }) {
+  const mainDistributed  = segments.reduce((s, seg) => s + mainOf(seg), 0)
+  const distributedDays  = segments.reduce((s, seg) => s + seg.days, 0)
+  const available        = totalDays + extraTotal
+  const hasLongSegment   = segments.some(s => s.days >= 14)
+  const hasMinDays       = mainDistributed >= MIN_PLAN_DAYS
+  const canSubmit        = hasMinDays && hasLongSegment
+  const progress         = Math.min(1, distributedDays / available)
+
+  return (
+    <>
+      {/* Conditions */}
+      <div style={{ background: '#F2F3F7', borderRadius: 24, padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ ...CELL_CAPTION, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {t('Всего доступно:')} {available} {pluralDays(available)}
+            {extraTotal > 0 && <>, {t('из них')} {extraTotal} {pluralDays(extraTotal)} {t('доп. отпуска')}</>}
           </div>
-          <div style={{ color: '#1D2023', fontSize: 20, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-            {distributedDays} {t('из')} {MAX_PLAN_DAYS} {pluralDays(MAX_PLAN_DAYS)}
+          <div style={{ height: 32, paddingTop: 6, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 4, fontSize: 17, fontFamily: FONT, fontWeight: 500, lineHeight: '24px', whiteSpace: 'nowrap' }}>
+            <span style={{ color: '#1D2023' }}>{distributedDays}</span>
+            <span style={{ color: '#969FA8' }}>{t('из')} {available} {daysGenitive(available)}</span>
           </div>
+          <div style={{ height: 8, borderRadius: 4, background: 'rgba(188,195,208,0.5)', overflow: 'hidden' }}>
+            <div style={{ height: 8, borderRadius: 4, background: '#26CD58', width: `${progress * 100}%`, transition: 'width 0.2s ease' }} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <ConditionRow done={hasMinDays}>{t('Распределите минимум 28 дней')}</ConditionRow>
+          <ConditionRow done={hasLongSegment}>{t('Один из периодов должен быть не меньше 14 дней')}</ConditionRow>
         </div>
       </div>
 
-      {/* Periods section */}
+      {/* Plan */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ paddingTop: 36, paddingBottom: 12 }}>
-          <div style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            {t('Периоды отпуска')}
-          </div>
+        <div style={{ paddingTop: 24 }}>
+          <h3 style={SECTION_TITLE}>{t('План отпуска')}</h3>
         </div>
 
-        <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          {t('Для создания плана на отпуск начните выделять периоды, выбирая даты прямо в календаре. Условия, которые необходимо выполнить, чтобы отправить план на согласование:')}
-        </div>
-        <Banner type={hasLongSegment ? 'done' : 'danger'} title={t('Один из периодов отпуска должен быть не меньше 14 дней')} />
-        <Banner type={distributedDays >= MIN_PLAN_DAYS ? 'done' : 'danger'} title={t('Необходимо распределить минимум 28 дней отпуска. Максимум – 40 дней отпуска.')} />
-
-        {/* Segments list */}
-        {segments.length > 0 && (
+        {segments.length === 0 ? (
+          <Banner title={t('Для создания плана отпуска начните выделять периоды, выбирая даты прямо в календаре')} />
+        ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {segments.map(seg => (
-              <div
-                key={seg.id}
-                style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}
-              >
-                {planStatus === 'draft' ? (
-                  <>
-                    {/* Remove button */}
-                    <button
-                      onClick={() => onRemoveSegment(seg.id)}
-                      style={{ width: 24, height: 24, background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path fillRule="evenodd" clipRule="evenodd" d="M3.04351 3.04351C1.47611 4.6109 1.3538 6.18347 1.10916 9.32861C1.04148 10.1987 1 11.0993 1 12C1 12.9007 1.04148 13.8013 1.10916 14.6714C1.3538 17.8165 1.47611 19.3891 3.04351 20.9565C4.6109 22.5239 6.18347 22.6462 9.32861 22.8908C10.1987 22.9585 11.0994 23 12 23C12.9007 23 13.8013 22.9585 14.6714 22.8908C17.8165 22.6462 19.3891 22.5239 20.9565 20.9565C22.5239 19.3891 22.6462 17.8165 22.8908 14.6714C22.9585 13.8013 23 12.9007 23 12C23 11.0993 22.9585 10.1987 22.8908 9.32861C22.6462 6.18347 22.5239 4.6109 20.9565 3.04351C19.3891 1.47611 17.8165 1.3538 14.6714 1.10916C13.8013 1.04148 12.9007 1 12 1C11.0994 1 10.1987 1.04148 9.32861 1.10916C6.18347 1.3538 4.6109 1.47611 3.04351 3.04351Z" fill="#F95721"/>
-                        <path d="M16 10.9985C16.5523 10.9985 17 11.4463 17 11.9985C17 12.5508 16.5523 12.9985 16 12.9985H8C7.44771 12.9985 7 12.5508 7 11.9985C7 11.4463 7.44771 10.9985 8 10.9985H16Z" fill="white"/>
-                      </svg>
-                    </button>
-                    <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                        {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
-                      </div>
-                      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                        {seg.days} {pluralDays(seg.days)} · {t('Плановый отпуск')}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => onSegmentClick?.(seg)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
-                  >
-                    <div style={{ flex: '1 1 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <div style={{ color: '#1D2023', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 500, lineHeight: '24px' }}>
-                        {formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}
-                      </div>
-                      <div style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-                        {seg.days} {pluralDays(seg.days)} · {t('Плановый отпуск')}
-                      </div>
-                    </div>
-                    <StatusBadge type={planStatus} />
-                  </button>
+              <div key={seg.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={planStatus === 'draft' ? undefined : () => onSegmentClick?.(seg)}
+                  style={{ flex: 1, minWidth: 0, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 12, background: 'none', border: 'none', cursor: planStatus === 'draft' ? 'default' : 'pointer', textAlign: 'left' }}
+                >
+                  <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={CELL_TITLE}>{formatSegmentDate(seg.startDate)} – {formatSegmentDate(seg.endDate)}</div>
+                    <div style={CELL_CAPTION}>{periodCaption(seg.days, extraOf(seg))}</div>
+                  </div>
+                  <StatusBadge type={planStatus} />
+                </button>
+                {planStatus === 'draft' && (
+                  <SegmentMenu onEdit={() => onEditSegment(seg)} onRemove={() => onRemoveSegment(seg.id)} />
                 )}
               </div>
             ))}
           </div>
         )}
-
-        {/* Submit button — only shown when conditions are met */}
-        {planStatus === 'draft' && canSubmit && (
-          <button
-            onClick={onOpenPlanModal}
-            style={{
-              alignSelf: 'stretch', height: 44, padding: 10,
-              background: '#0066FF',
-              overflow: 'hidden', borderRadius: 16, border: 'none',
-              cursor: 'pointer',
-              display: 'flex', justifyContent: 'center', alignItems: 'center',
-            }}
-          >
-            <span style={{
-              paddingLeft: 8, paddingRight: 8,
-              color: '#FFFFFF',
-              fontSize: 12, fontFamily: "'MTSWide', sans-serif",
-              fontWeight: 700, textTransform: 'uppercase',
-              lineHeight: '16px', letterSpacing: 0.6,
-            }}>
-              {t('отправить на согласование')}
-            </span>
-          </button>
-        )}
       </div>
 
-      {/* Пересечения section */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ paddingTop: 36, paddingBottom: 12 }}>
-          <span style={{ color: '#1D2023', fontSize: 24, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: '28px' }}>
-            {t('Пересечения')}
+      {/* Submit button — disabled until conditions are met */}
+      {planStatus === 'draft' && segments.length > 0 && (
+        <button
+          onClick={canSubmit ? onOpenPlanModal : undefined}
+          disabled={!canSubmit}
+          style={{
+            alignSelf: 'stretch', height: 44, padding: 10,
+            background: canSubmit ? '#0066FF' : 'rgba(188,195,208,0.5)',
+            opacity: canSubmit ? 1 : 0.6,
+            overflow: 'hidden', borderRadius: 16, border: 'none',
+            cursor: canSubmit ? 'pointer' : 'default',
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+          }}
+        >
+          <span style={{ ...BTN_STYLE, padding: '4px 8px', color: canSubmit ? '#FFFFFF' : '#969FA8' }}>
+            {t('отправить на согласование')}
           </span>
-        </div>
+        </button>
+      )}
 
-        {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12 }}>
-          <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
-          <span style={{ color: '#626C77', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-            {t('отметка пересечений')}
-          </span>
-        </div>
-
-        {/* Add colleague row */}
-        <div style={{ paddingTop: 10, paddingBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 52, height: 52, background: '#F2F3F7', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M7 15C7 15.5523 7.44772 16 8 16C8.55229 16 9 15.5523 9 15V9H15C15.5523 9 16 8.55229 16 8C16 7.44772 15.5523 7 15 7H9V1C9 0.447715 8.55228 0 8 0C7.44771 0 7 0.447715 7 1L7 7H1C0.447715 7 0 7.44771 0 8C0 8.55228 0.447715 9 1 9H7L7 15Z" fill="#007CFF"/>
-            </svg>
-          </div>
-          <span style={{ color: '#0070E5', fontSize: 17, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '24px' }}>
-            {t('Добавить сотрудника')}
-          </span>
-        </div>
-
-        {/* Colleagues list */}
-        {trackedColleagues.map(col => (
-          <ColleagueRow
-            key={col.id}
-            col={col}
-            onRemove={() => onRemoveColleague(col.id)}
-          />
-        ))}
-      </div>
-    </div>
+      {intersections}
+    </>
   )
 }
 
@@ -368,13 +483,15 @@ const INITIAL_TRACKED_IDS = COLLEAGUES
   .filter(c => !c.me && c.team === CURRENT_USER.team)
   .map(c => c.id)
 
-export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR, initialYear }) {
-  const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign } = useApp()
+export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR, onGoToRequests, initialYear }) {
+  const { requests, balance, segments, setSegments, planStatus, setPlanStatus, campaign, hasExtraLeave } = useApp()
   const [year, setYear] = useState(initialYear ?? 2026)
   useEffect(() => { if (initialYear) setYear(initialYear) }, [initialYear])
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [newRequestRange, setNewRequestRange] = useState(null)
   const [calendarKey, setCalendarKey] = useState(0)
+  const [periodDraft, setPeriodDraft] = useState(null) // { mode: 'add' | 'edit', segment?, start, end, kind?, extraDays? }
+  const [resizePreview, setResizePreview] = useState(null) // { id, start, end } while dragging a period edge
   const [toast, setToast] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [showCalculator, setShowCalculator] = useState(false)
@@ -442,6 +559,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     setCalendarKey(k => k + 1)
   }
 
+  const planTotalDays = campaign.totalDays
+
   function handleAddSegment(start, end) {
     const startStr = toISODate(start)
     const endStr   = toISODate(end)
@@ -465,8 +584,8 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
 
     const encDays = encompassed.reduce((s, seg) => s + seg.days, 0)
     const distributedDays = segments.reduce((s, seg) => s + seg.days, 0)
-    if (distributedDays - encDays + days > MAX_PLAN_DAYS) {
-      setToast(distributedDays >= MAX_PLAN_DAYS
+    if (distributedDays - encDays + days > planTotalDays) {
+      setToast(distributedDays >= planTotalDays
         ? t('У вас больше нет доступных дней отпуска')
         : t('Выбранный период превышает остаток дней отпуска'))
       setCalendarKey(k => k + 1)
@@ -478,6 +597,123 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       .sort((a, b) => a.startDate.localeCompare(b.startDate)))
     setCalendarKey(k => k + 1)
   }
+
+  const extraTotal = hasExtraLeave ? balance.extra : 0
+
+  // Days already used by other periods: main and extra are counted separately
+  function usageExcept(id) {
+    const others = segments.filter(seg => seg.id !== id)
+    return {
+      main:  others.reduce((sum, seg) => sum + mainOf(seg), 0),
+      extra: others.reduce((sum, seg) => sum + extraOf(seg), 0),
+    }
+  }
+
+  // Validation shared by the period drawer and drag: year, overlaps, main/extra limits
+  function validatePeriod(id, start, end, extraDays) {
+    if (start.getFullYear() !== campaign.year || end.getFullYear() !== campaign.year) return t('Период должен быть в пределах планируемого года')
+    const overlapsOther = segments.some(seg => {
+      if (seg.id === id) return false
+      const ss = new Date(seg.startDate + 'T00:00:00')
+      const se = new Date(seg.endDate   + 'T00:00:00')
+      return start <= se && end >= ss
+    })
+    if (overlapsOther) return t('Выбранный период пересекается с существующим')
+    const days = countVacationDays(start, end)
+    const used = usageExcept(id)
+    if (used.main + (days - extraDays) > planTotalDays) return t('Выбранный период превышает остаток дней отпуска')
+    if (used.extra + extraDays > extraTotal) return t('Выбранный период превышает остаток дней доп. отпуска')
+    return null
+  }
+
+  // Resizing a period by drag: added days come from the main balance first, then from
+  // extra days; removed days are taken from main days first. Returns null if impossible.
+  function splitOnResize(seg, newDays) {
+    const used = usageExcept(seg.id)
+    const main = mainOf(seg)
+    const extra = extraOf(seg)
+    const delta = newDays - seg.days
+    if (delta > 0) {
+      const addMain = Math.min(delta, Math.max(0, planTotalDays - used.main - main))
+      const addExtra = delta - addMain
+      if (used.extra + extra + addExtra > extraTotal) return null
+      return extra + addExtra
+    }
+    const removeMain = Math.min(-delta, main)
+    return extra - (-delta - removeMain)
+  }
+
+  function savePeriod(id, start, end, extraDays) {
+    const days = countVacationDays(start, end)
+    setSegments(prev => prev
+      .map(seg => seg.id === id ? { ...seg, startDate: toISODate(start), endDate: toISODate(end), days, extraDays } : seg)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate)))
+  }
+
+  function addPeriod(start, end, extraDays) {
+    const days = countVacationDays(start, end)
+    setSegments(prev => [...prev, { id: Date.now(), startDate: toISODate(start), endDate: toISODate(end), days, extraDays }]
+      .sort((a, b) => a.startDate.localeCompare(b.startDate)))
+  }
+
+  // Change dates of an existing draft segment by dragging its edge in the calendar
+  function handleResizeSegment(id, start, end) {
+    const seg = segments.find(s => s.id === id)
+    if (!seg) return false
+    const extraDays = splitOnResize(seg, countVacationDays(start, end))
+    const err = extraDays === null
+      ? t('Выбранный период превышает остаток дней отпуска')
+      : validatePeriod(id, start, end, extraDays)
+    if (err) { setToast(err); return false }
+    savePeriod(id, start, end, extraDays)
+    return true
+  }
+
+  function openEditPeriod(seg) {
+    setPeriodDraft({
+      mode: 'edit',
+      segment: seg,
+      start: new Date(seg.startDate + 'T00:00:00'),
+      end: new Date(seg.endDate + 'T00:00:00'),
+      kind: kindOf(seg.days, extraOf(seg)),
+      extraDays: extraOf(seg),
+    })
+  }
+
+  const setDraftExtraDays = useCallback(
+    extraDays => setPeriodDraft(p => (p && p.extraDays !== extraDays ? { ...p, extraDays } : p)),
+    [],
+  )
+
+  function closePeriodDraft() {
+    setPeriodDraft(null)
+    setCalendarKey(k => k + 1)
+  }
+
+  // Calendar view of the plan: the period open in the panel shows its draft range,
+  // a new one is added as a temporary period
+  const planCalendarSegments = !periodDraft
+    ? segments
+    : periodDraft.mode === 'add'
+      ? [...segments, { id: PENDING_PERIOD_ID, startDate: toISODate(periodDraft.start), endDate: toISODate(periodDraft.end), days: countVacationDays(periodDraft.start, periodDraft.end) }]
+      : segments.map(seg => seg.id === periodDraft.segment.id
+        ? { ...seg, startDate: toISODate(periodDraft.start), endDate: toISODate(periodDraft.end) }
+        : seg)
+
+  // Segments as shown in the left panel: the dragged period follows the calendar live
+  const displaySegments = periodDraft
+    ? planCalendarSegments.map(seg => seg.id === (periodDraft.segment?.id ?? PENDING_PERIOD_ID)
+      ? { ...seg, days: countVacationDays(periodDraft.start, periodDraft.end), extraDays: periodDraft.extraDays ?? 0 }
+      : seg)
+    : resizePreview
+    ? segments.map(seg => seg.id === resizePreview.id
+      ? (() => {
+        const days = countVacationDays(resizePreview.start, resizePreview.end)
+        const extraDays = splitOnResize(seg, days) ?? extraOf(seg)
+        return { ...seg, startDate: toISODate(resizePreview.start), endDate: toISODate(resizePreview.end), days, extraDays }
+      })()
+      : seg)
+    : segments
 
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
 
@@ -498,12 +734,20 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     })
   }
 
+  const intersections = (
+    <IntersectionsSection
+      trackedColleagues={trackedColleagues}
+      onAddColleague={id => setTrackedColleagueIds(prev => prev.includes(id) ? prev : [...prev, id])}
+      onRemoveColleague={id => setTrackedColleagueIds(prev => prev.filter(x => x !== id))}
+    />
+  )
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 24 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 8 }}>
 
         {/* Left panel */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', paddingRight: 32 }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingRight: 32 }}>
 
           {/* Year chips */}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -516,21 +760,20 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
               balance={balance}
               yearRequests={yearRequests}
               setSelectedRequest={setSelectedRequest}
-              setNewRequestRange={setNewRequestRange}
-              trackedColleagues={trackedColleagues}
-              onRemoveColleague={id => setTrackedColleagueIds(prev => prev.filter(x => x !== id))}
               onOpenCalculator={() => setShowCalculator(true)}
+              onGoToRequests={onGoToRequests}
+              intersections={intersections}
             />
           ) : (
             <Panel2027
-              balance={balance}
-              campaign={campaign}
-              segments={segments}
+              totalDays={planTotalDays}
+              extraTotal={extraTotal}
+              segments={displaySegments}
               onRemoveSegment={handleRemoveSegment}
+              onEditSegment={openEditPeriod}
               planStatus={planStatus}
               onOpenPlanModal={() => setShowPlanModal(true)}
-              trackedColleagues={trackedColleagues}
-              onRemoveColleague={id => setTrackedColleagueIds(prev => prev.filter(x => x !== id))}
+              intersections={intersections}
               onSegmentClick={seg => setSelectedRequest({
                 ...seg,
                 id: seg.id,
@@ -549,13 +792,16 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         {/* Vertical divider */}
         <div style={{ width: 1, background: '#E8EDF2', alignSelf: 'stretch', flexShrink: 0 }} />
 
+        {/* While the period panel is open only the calendar stays interactive */}
+        {periodDraft && <div style={{ position: 'fixed', inset: 0, zIndex: 900 }} />}
+
         {/* Right panel */}
-        <div style={{ flexShrink: 0, paddingLeft: 32, width: calendarWidth(calCols) + 32 }}>
+        <div style={{ flexShrink: 0, paddingLeft: 32, width: calendarWidth(calCols) + 32, ...(periodDraft ? { position: 'relative', zIndex: 950 } : null) }}>
           <YearCalendar
             key={calendarKey}
             cols={calCols}
             year={year}
-            requests={year === 2026 ? yearRequests : segments.map(s => ({
+            requests={year === 2026 ? yearRequests : planCalendarSegments.map(s => ({
               ...s,
               startDate: new Date(s.startDate + 'T00:00:00'),
               endDate: new Date(s.endDate + 'T00:00:00'),
@@ -573,13 +819,22 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             }
             onNewRequest={year === 2026
               ? (start, end) => setNewRequestRange({ start, end })
-              : (planStatus === 'draft' ? handleAddSegment : undefined)
+              : (planStatus === 'draft' && !periodDraft
+                ? (hasExtraLeave ? (start, end) => setPeriodDraft({ mode: 'add', start, end }) : handleAddSegment)
+                : undefined)
             }
             colleagueMap={year === 2027 ? colleagueMap2027 : colleagueMap2026}
-            onDeleteRequest={year === 2027 && planStatus === 'draft'
-              ? (req) => handleRemoveSegment(req.id)
+            onResizeRequest={year === 2027 && planStatus === 'draft'
+              ? (periodDraft
+                // While the period panel is open the calendar edits the panel's range only
+                ? (req, start, end) => { setPeriodDraft(p => ({ ...p, start, end })); return true }
+                : (req, start, end) => handleResizeSegment(req.id, start, end))
               : undefined
             }
+            onResizePreview={year === 2027 && planStatus === 'draft'
+              ? (periodDraft ? (v => { if (v) setPeriodDraft(p => ({ ...p, start: v.start, end: v.end })) }) : setResizePreview)
+              : undefined}
+            lockedReqId={year === 2027 && periodDraft ? (periodDraft.mode === 'add' ? PENDING_PERIOD_ID : periodDraft.segment.id) : null}
           />
         </div>
       </div>
@@ -610,6 +865,25 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             setShowPlanModal(false)
             setPlanStatus('pending')
             setToast(t('Заявка направлена на согласование'))
+          }}
+        />
+      )}
+
+      {periodDraft && (
+        <PeriodDrawer
+          key={periodDraft.segment?.id ?? PENDING_PERIOD_ID}
+          mode={periodDraft.mode}
+          range={{ start: periodDraft.start, end: periodDraft.end }}
+          initial={periodDraft}
+          withKinds={hasExtraLeave}
+          extraFree={extraTotal - usageExcept(periodDraft.segment?.id).extra}
+          validate={(start, end, extraDays) => validatePeriod(periodDraft.segment?.id, start, end, extraDays)}
+          onClose={closePeriodDraft}
+          onExtraDaysChange={setDraftExtraDays}
+          onSubmit={extraDays => {
+            if (periodDraft.mode === 'add') addPeriod(periodDraft.start, periodDraft.end, extraDays)
+            else savePeriod(periodDraft.segment.id, periodDraft.start, periodDraft.end, extraDays)
+            closePeriodDraft()
           }}
         />
       )}

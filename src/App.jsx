@@ -6,13 +6,13 @@ import PlanningPage from './pages/PlanningPage'
 import ColleaguesPage from './pages/ColleaguesPage'
 import ManagerPage from './pages/ManagerPage'
 import HRAdminPage from './pages/HRAdminPage'
-import { COLORS, Header, useIsDocked } from './ds/index'
+import { Header, useIsDocked } from './ds/index'
 import WorkAndRestPage from './pages/WorkAndRestPage'
+import RequestsPage from './pages/RequestsPage'
 import { LOCALE } from './i18n/locale'
-import { t } from './i18n/translate'
 
 function AppInner() {
-  const { role, setRole, activeTab, setActiveTab } = useApp()
+  const { role, setRole, activeTab, setActiveTab, hasExtraLeave, setHasExtraLeave } = useApp()
   const isDocked = useIsDocked()
   const [sidebarOpen, setSidebarOpen] = useState(LOCALE !== 'en')
   const [dashYear, setDashYear] = useState(2026)
@@ -25,55 +25,44 @@ function AppInner() {
 
   function handleRoleChange(value) {
     setRole(value)
-    const tabsAlwaysAccessible = ['work', 'home', 'planning', 'colleagues']
+    const tabsAlwaysAccessible = ['work', 'home', 'planning', 'colleagues', 'requests']
     if (!tabsAlwaysAccessible.includes(activeTab)) {
       setActiveTab('home')
     }
   }
 
   const sidebarShown = isDocked && sidebarOpen
-  const contentStyle = sidebarShown
-    ? { marginLeft: 280, padding: '0 88px 88px' }
-    : { maxWidth: 1440, margin: '0 auto', padding: '0 88px 88px' }
+  // Зона контента фиксирована: 1440 с полями 88. При росте экрана растут боковые поля.
+  const shellStyle = sidebarShown ? { marginLeft: 280 } : undefined
+  const contentStyle = { maxWidth: 1440, margin: '0 auto', padding: '0 88px 88px' }
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'MTSCompact', sans-serif" }}>
-      <style>{`.modal-scroll::-webkit-scrollbar { width: 3px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 0; } .modal-scroll::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; } .mts-textarea::placeholder { color: #8C9BAB !important; } .sidebar-scroll { overflow-y: auto; scrollbar-width: none; } .sidebar-scroll::-webkit-scrollbar { width: 0; } .sidebar-scroll:hover { scrollbar-width: thin; scrollbar-color: #D0D5DC transparent; } .sidebar-scroll:hover::-webkit-scrollbar { width: 3px; } .sidebar-scroll:hover::-webkit-scrollbar-track { background: transparent; } .sidebar-scroll:hover::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; }`}</style>
+      <style>{`.modal-scroll::-webkit-scrollbar { width: 3px; } .modal-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 0; } .modal-scroll::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; } .mts-textarea::placeholder { color: #626C77 !important; } .mts-search-input::placeholder { color: #626C77; } .sidebar-scroll { overflow-y: auto; scrollbar-width: none; } .sidebar-scroll::-webkit-scrollbar { width: 0; } .sidebar-scroll:hover { scrollbar-width: thin; scrollbar-color: #D0D5DC transparent; } .sidebar-scroll:hover::-webkit-scrollbar { width: 3px; } .sidebar-scroll:hover::-webkit-scrollbar-track { background: transparent; } .sidebar-scroll:hover::-webkit-scrollbar-thumb { background: #D0D5DC; border-radius: 0; }`}</style>
 
       <Header
         role={role}
         onRoleChange={handleRoleChange}
+        extraLeave={hasExtraLeave}
+        onExtraLeaveChange={setHasExtraLeave}
         sidebarOpen={sidebarOpen}
         onSidebarToggle={LOCALE === 'en' ? undefined : () => setSidebarOpen(v => !v)}
-        onSidebarClose={() => setSidebarOpen(false)}
+        onSidebarClose={isDocked ? undefined : () => setSidebarOpen(false)}
         onNavigate={setActiveTab}
         activeTab={activeTab}
       />
 
-      {activeTab !== 'work' && (
-        <div style={{ background: '#fff' }}>
-          <div style={sidebarShown
-            ? { marginLeft: 280, padding: '0 88px' }
-            : { maxWidth: 1440, margin: '0 auto', padding: '0 88px' }
-          }>
-            <h1 style={{
-              margin: '36px 0 0',
-              fontSize: 32,
-              fontWeight: 500,
-              color: COLORS.text,
-              lineHeight: '36px',
-              fontFamily: "'MTSWide', sans-serif",
-            }}>
-              {t('Отпуск')}
-            </h1>
-            <div style={{ paddingTop: 12 }}>
+      {activeTab !== 'work' && activeTab !== 'requests' && (
+        <div style={{ background: '#fff', ...shellStyle }}>
+          <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 88px' }}>
+            <div>
               <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ background: '#fff' }}>
+      <div style={{ background: '#fff', ...shellStyle }}>
         <div style={contentStyle}>
         {activeTab === 'work' && (
           <WorkAndRestPage onGoTo={(tab, year) => { if (year) setDashYear(year); setActiveTab(tab) }} />
@@ -83,6 +72,7 @@ function AppInner() {
             onGoToPlanning={() => setActiveTab('planning')}
             onGoToTeam={() => setActiveTab('team')}
             onGoToHR={() => setActiveTab('hr')}
+            onGoToRequests={() => setActiveTab('requests')}
             initialYear={dashYear}
           />
         )}
@@ -90,6 +80,7 @@ function AppInner() {
           <PlanningPage onGoToRequests={() => setActiveTab('home')} />
         )}
         {activeTab === 'colleagues' && <ColleaguesPage />}
+        {activeTab === 'requests' && <RequestsPage />}
         {activeTab === 'team' && (role === 'manager' || role === 'hr_admin') && <ManagerPage />}
         {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
         </div>

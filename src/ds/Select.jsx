@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon } from "./icons";
+import { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon, SearchIcon } from "./icons";
 import { t } from "../i18n/translate";
+import { PersonAvatar } from "./Chip";
 
 function useOutsideClick(ref, cb) {
   useEffect(() => {
@@ -16,7 +17,9 @@ function shortName(name) {
   return parts[0] + " " + parts[1][0] + ".";
 }
 
-export function SelectField({ label, value, options, onChange, disabled, showInfo, multi, lockedHint, searchable, placeholder }) {
+// size "L": 64px field with the label inside (drawer forms); person: 72px field with avatar, label above,
+// list with a search box and people rows; readOnly: grey card without chevron, «Не указан» when empty
+export function SelectField({ label, value, options, onChange, disabled, showInfo, multi, lockedHint, searchable, placeholder, size, person, description, error, readOnly }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -51,6 +54,8 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
     : options;
 
   const hasValue = multi ? (value || []).length > 0 : !!value;
+  const large = size === "L" || person;
+  const outerLabel = label && (!large || person);
 
   const toggle = (id) => {
     if (multi) {
@@ -86,9 +91,9 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
   };
 
   return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: 4, position: "relative" }}>
+    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: readOnly && !hasValue ? 0 : person ? 8 : 4, position: "relative" }}>
       {/* External label */}
-      {label && (
+      {outerLabel && (
         <div style={{ color: disabled ? "#BCC3D0" : "#626C77", fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: "20px", display: "flex", alignItems: "center", gap: 4 }}>
           {disabled && lockedHint ? lockedHint : label}
           {disabled && <LockIcon />}
@@ -97,38 +102,44 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
       )}
 
       {/* Trigger */}
+      {readOnly && !hasValue ? (
+        <div style={{ fontSize: 17, lineHeight: "24px", color: "#1D2023", fontFamily: "'MTSCompact', sans-serif" }}>{t("Не указан")}</div>
+      ) : (
       <div
-        onClick={handleToggle}
+        onClick={readOnly ? undefined : handleToggle}
         style={{
-          height: 44,
+          height: person ? 72 : large ? 64 : 44,
           background: disabled ? "#F8F8FB" : "#F2F3F7",
-          outline: `1px ${open ? "#0066FF" : "rgba(188,195,208,0.50)"} solid`,
+          outline: readOnly ? "none" : `1px ${error ? "#E30611" : open && !person ? "#0066FF" : "rgba(188,195,208,0.50)"} solid`,
           outlineOffset: "-1px",
           borderRadius: 16,
-          cursor: disabled ? "not-allowed" : "pointer",
+          cursor: readOnly ? "default" : disabled ? "not-allowed" : "pointer",
           display: "flex",
           alignItems: "center",
           padding: "0 8px 0 12px",
           boxSizing: "border-box",
         }}
       >
-        <div style={{ flex: 1, fontSize: 17, lineHeight: "24px", color: disabled ? "#BCC3D0" : hasValue ? "#1D2023" : "#8C9BAB", overflow: "hidden", display: "flex", alignItems: "center", minWidth: 0, gap: 6 }}>
-          {multi ? (
-            <>
-              {hasValue && renderTags()}
-              {open && searchable && (
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  onClick={e => e.stopPropagation()}
-                  placeholder={hasValue ? "" : t("Начните вводить имя…")}
-                  style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 60, padding: 0, fontFamily: "inherit" }}
-                />
+        {person ? (
+          <>
+            <PersonAvatar src={hasValue ? selectedOptions?.avatar : undefined} />
+            <div style={{ flex: 1, minWidth: 0, padding: "0 4px 0 8px", display: "flex", flexDirection: "column", justifyContent: "center", fontFamily: "'MTSCompact', sans-serif" }}>
+              {hasValue ? (
+                <>
+                  <span style={{ fontSize: 17, lineHeight: "24px", color: "#1D2023", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedOptions?.name}</span>
+                  {selectedOptions?.role && <span style={{ fontSize: 14, lineHeight: "20px", color: "#626C77", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedOptions.role}</span>}
+                </>
+              ) : (
+                <span style={{ fontSize: 17, lineHeight: "24px", color: "#626C77" }}>{placeholder || t("Выберите из списка")}</span>
               )}
-            </>
-          ) : open && searchable ? (
-            <input
+            </div>
+          </>
+        ) : large ? (
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 4, display: "flex", flexDirection: "column", fontFamily: "'MTSCompact', sans-serif" }}>
+            {hasValue || open ? (
+              <>
+                <span style={{ fontSize: 14, lineHeight: "20px", color: "#626C77" }}>{label}</span>
+                {open && searchable ? <input
               ref={inputRef}
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -136,25 +147,114 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
               onKeyDown={e => { if (e.key === "Backspace" && query === "" && value) onChange(""); }}
               placeholder={selectedOptions?.name || t("Начните вводить имя…")}
               style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 0, padding: 0, fontFamily: "inherit" }}
-            />
-          ) : (
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: hasValue ? "#1D2023" : "#8C9BAB" }}>
-              {hasValue ? selectedOptions?.name : (placeholder || "")}
-            </span>
-          )}
-        </div>
+            /> : (
+                  <span style={{ fontSize: 17, lineHeight: "24px", color: hasValue ? "#1D2023" : "#626C77", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {hasValue ? selectedOptions?.name : (placeholder || "")}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span style={{ fontSize: 17, lineHeight: "24px", color: "#626C77" }}>{label}</span>
+            )}
+          </div>
+        ) : (
+          <div style={{ flex: 1, fontSize: 17, lineHeight: "24px", color: disabled ? "#BCC3D0" : hasValue ? "#1D2023" : "#8C9BAB", overflow: "hidden", display: "flex", alignItems: "center", minWidth: 0, gap: 6 }}>
+            {multi ? (
+              <>
+                {hasValue && renderTags()}
+                {open && searchable && (
+                  <input
+                    ref={inputRef}
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    placeholder={hasValue ? "" : t("Начните вводить имя…")}
+                    style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 60, padding: 0, fontFamily: "inherit" }}
+                  />
+                )}
+              </>
+            ) : open && searchable ? (
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                onKeyDown={e => { if (e.key === "Backspace" && query === "" && value) onChange(""); }}
+                placeholder={selectedOptions?.name || t("Начните вводить имя…")}
+                style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 0, padding: 0, fontFamily: "inherit" }}
+              />
+            ) : (
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: hasValue ? "#1D2023" : "#8C9BAB" }}>
+                {hasValue ? selectedOptions?.name : (placeholder || "")}
+              </span>
+            )}
+          </div>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", marginLeft: "auto", flexShrink: 0 }}>
           {multi && hasValue && !disabled && (
             <CloseCircleIcon onClick={(e) => { e.stopPropagation(); onChange([]); }} />
           )}
-          <SelectChevron up={open} />
+          {!readOnly && <SelectChevron up={open} />}
         </div>
       </div>
+      )}
+
+      {/* Person dropdown: search box + people rows */}
+      {open && !disabled && person && (
+        <div style={{
+          position: "absolute", top: label ? 108 : 80, left: 0, right: 0, zIndex: 200,
+          background: "#fff", borderRadius: 20, overflow: "hidden",
+          boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.08), 0px 4px 24px rgba(0, 0, 0, 0.12)",
+          display: "flex", flexDirection: "column",
+        }}>
+          {searchable && (
+            <div style={{ padding: 12 }}>
+              <div style={{
+                height: 44, boxSizing: "border-box", padding: "0 8px 0 12px",
+                background: "#F2F3F7", borderRadius: 16, border: "1px solid rgba(188,195,208,0.50)",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+                <span style={{ width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <SearchIcon />
+                </span>
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder={t("Поиск")}
+                  className="mts-search-input"
+                  style={{ border: "none", outline: "none", background: "transparent", fontSize: 17, lineHeight: "24px", color: "#1D2023", flex: 1, minWidth: 0, padding: 0, fontFamily: "'MTSCompact', sans-serif" }}
+                />
+              </div>
+            </div>
+          )}
+          <div className="modal-scroll" style={{ maxHeight: 360, overflowY: "auto", paddingBottom: 8 }}>
+            {filteredOptions.filter(o => o.id !== value).length === 0 && (
+              <div style={{ padding: "14px 16px", fontSize: 17, color: "#626C77", fontFamily: "'MTSCompact', sans-serif" }}>{query ? t("Ничего не найдено") : t("Нет вариантов")}</div>
+            )}
+            {filteredOptions.filter(o => o.id !== value).map(opt => (
+              <div
+                key={opt.id}
+                onClick={() => toggle(opt.id)}
+                style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", fontFamily: "'MTSCompact', sans-serif" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#F5F6F8"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#fff"; }}
+              >
+                <PersonAvatar src={opt.avatar} />
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: 17, lineHeight: "24px", color: "#1D2023", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{opt.name}</span>
+                  {opt.role && <span style={{ fontSize: 14, lineHeight: "20px", color: "#626C77", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{opt.role}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Dropdown: with label = 72, without label = 52 */}
-      {open && !disabled && (
-        <div style={{ position: "absolute", top: label ? 72 : 52, left: 0, right: 0, zIndex: 200, background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", border: "1px solid #E8EDF2", overflow: "hidden" }}>
+      {open && !disabled && !person && (
+        <div style={{ position: "absolute", top: person ? (label ? 104 : 76) : large ? 68 : label ? 72 : 52, left: 0, right: 0, zIndex: 200, background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", border: "1px solid #E8EDF2", overflow: "hidden" }}>
           {filteredOptions.length === 0 && (
             <div style={{ padding: "14px 16px", fontSize: 17, color: "#8C9BAB" }}>{query ? t("Ничего не найдено") : t("Нет вариантов")}</div>
           )}
@@ -183,6 +283,10 @@ export function SelectField({ label, value, options, onChange, disabled, showInf
           )}
         </div>
       )}
+
+      {error
+        ? <div style={{ color: "#E30611", fontSize: 12, fontFamily: "'MTSCompact', sans-serif", lineHeight: "16px" }}>{error}</div>
+        : description && <div style={{ color: "#626C77", fontSize: 12, fontFamily: "'MTSCompact', sans-serif", lineHeight: "16px" }}>{description}</div>}
     </div>
   );
 }

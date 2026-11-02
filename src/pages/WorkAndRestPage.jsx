@@ -317,7 +317,7 @@ export default function WorkAndRestPage({ onGoTo }) {
     <div>
       <div style={{ paddingTop: 20, paddingRight: 20 }}>
         <h1 style={{ margin: '0 0 8px', fontSize: 32, fontWeight: 500, color: '#1D2023', lineHeight: '36px', fontFamily: "'MTSWide', sans-serif" }}>
-          Работа и отдых
+          Работа и отпуск
         </h1>
         <p style={{ margin: 0, fontSize: 17, fontWeight: 400, color: '#626C77', lineHeight: '24px', fontFamily: "'MTSCompact', sans-serif" }}>
           Управляйте своим отпуском, графиком и форматом работы
