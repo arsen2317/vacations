@@ -69,7 +69,7 @@ export function Drawer({ title, subtitle, onClose, actions = [], children, width
 
         {/* Footer */}
         {actions.length > 0 && (
-          <div style={{ padding: "8px 20px 20px", display: "flex", gap: 12, flexShrink: 0 }}>
+          <div style={{ padding: "8px clamp(8px, calc(100% - 300px), 20px) 20px", display: "flex", flexWrap: "wrap", gap: 12, flexShrink: 0 }}>
             {actions.map(a => {
               const st = ACTION_STYLES[a.type] || ACTION_STYLES.secondary;
               return (
@@ -79,14 +79,14 @@ export function Drawer({ title, subtitle, onClose, actions = [], children, width
                   onClick={a.disabled ? undefined : a.onClick}
                   disabled={a.disabled || !a.onClick}
                   style={{
-                    flex: 1, height: 52, padding: 14, border: "none", borderRadius: 16,
+                    flex: 1, minWidth: "max-content", height: 52, padding: "0 6px", border: "none", borderRadius: 16,
                     background: a.disabled ? "rgba(188,195,208,0.5)" : st.background,
                     opacity: a.disabled ? 0.6 : 1,
                     cursor: a.disabled || !a.onClick ? "default" : "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
-                  <span style={{ ...BTN_STYLE, letterSpacing: 0.6, padding: "4px 8px", color: a.disabled ? "#969FA8" : st.color }}>
+                  <span style={{ ...BTN_STYLE, whiteSpace: "nowrap", color: a.disabled ? "#969FA8" : st.color }}>
                     {a.label}
                   </span>
                 </button>
