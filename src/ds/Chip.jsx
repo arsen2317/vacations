@@ -1,4 +1,5 @@
 import { t } from "../i18n/translate";
+import emptyAvatar from "../assets/avatar-no-gender.svg";
 
 const STATUS_STYLES = {
   draft:        { bg: '#F2F3F7', color: '#1D2023', label: 'Черновик' },
@@ -53,14 +54,17 @@ export function Chip({ active, onClick, children }) {
 
 export function PersonAvatar({ src }) {
   return (
-    <div style={{ width: 52, height: 52, borderRadius: 16, background: src ? "#E8EDF2" : "#BBC1C7", flexShrink: 0, overflow: "hidden" }}>
-      {src
-        ? <img src={src} alt="" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-        : <svg aria-hidden="true" width="52" height="52" viewBox="0 0 52 52" fill="#fff">
-            <circle cx="26" cy="18" r="10"/>
-            <path d="M5 51v-3c0-8.837 7.163-16 16-16h10c8.837 0 16 7.163 16 16v3H5Z"/>
-          </svg>
-      }
-    </div>
+    <img
+      src={src || emptyAvatar}
+      alt=""
+      width={52}
+      height={52}
+      loading={src ? "lazy" : undefined}
+      decoding="async"
+      style={{
+        width: 52, height: 52, display: "block", flexShrink: 0,
+        ...(src ? { borderRadius: 16, background: "#E8EDF2", objectFit: "cover" } : {}),
+      }}
+    />
   );
 }
