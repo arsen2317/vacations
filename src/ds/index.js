@@ -1,5 +1,5 @@
 export { FONT_CSS } from "./fonts";
-export { COLORS, BTN_STYLE } from "./tokens";
+export { COLORS, BTN_STYLE, TABLE_FRAME, TABLE_HEADER_CELL } from "./tokens";
 export { LockIcon, SelectChevron, InfoIcon, CloseCircleIcon, SearchIcon, ChevronUp, ChevronDown, BreadChevron, WarningIcon, CalculatorIcon, DoneIcon, FaqIcon, MoreIcon, CrossIcon, CalendarIcon, MinusIcon, PlusIcon } from "./icons";
 export { Banner } from "./Banner";
 export { StatusBadge, Tag, Chip, PersonAvatar } from "./Chip";

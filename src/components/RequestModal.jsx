@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
-import { countVacationDays } from '../utils/dateUtils'
+import { countVacationDays, DEMO_TODAY } from '../utils/dateUtils'
 import StatusBadge from './StatusBadge'
 import { Banner, Drawer, DateRangeField, SelectField } from '../ds/index'
 import { COLLEAGUES } from '../data/mockData'
@@ -90,7 +90,7 @@ function fmtCreated(d) {
   return `${date.getDate()} ${MONTH_GEN[date.getMonth()]} ${date.getFullYear()}, ${hh}:${mm}`
 }
 
-export default function RequestModal({ request, onClose, onAction, initialReschedule = false }) {
+export default function RequestModal({ request, onClose, onAction, initialReschedule = false, width }) {
   const { setRequests } = useApp()
   const [showReschedule, setShowReschedule] = useState(initialReschedule)
   const [rescheduleError, setRescheduleError] = useState(null)
@@ -107,9 +107,8 @@ export default function RequestModal({ request, onClose, onAction, initialResche
   const status = request.status
   const isPlanned = request.type === 'planned' || request.isPlanned
 
-  const today = new Date(); today.setHours(0, 0, 0, 0)
   const startDate = request.startDate instanceof Date ? request.startDate : new Date(request.startDate)
-  const startDaysLeft = Math.ceil((startDate - today) / 86400000)
+  const startDaysLeft = Math.ceil((startDate - DEMO_TODAY) / 86400000)
   const isPast = startDaysLeft < 0
   const tooCloseToReschedule = !isPast && startDaysLeft <= 10
   const rescheduleLeft = (request.rescheduleLimit ?? 2) - (request.rescheduleCount ?? 0)
@@ -171,6 +170,7 @@ export default function RequestModal({ request, onClose, onAction, initialResche
     const closeReschedule = () => { if (initialReschedule) onClose(); else setShowReschedule(false) }
     return (
       <Drawer
+        width={width}
         title={t('Перенести плановый отпуск')}
         subtitle={`${t('Количество дней нового периода должно совпадать с текущим —')} ${pluralDays(request.days)}`}
         onClose={closeReschedule}
@@ -209,7 +209,7 @@ export default function RequestModal({ request, onClose, onAction, initialResche
   ]
 
   return (
-    <Drawer title={modalTitle} subtitle={`№ ${request.id}`} onClose={onClose} actions={actions}>
+    <Drawer width={width} title={modalTitle} subtitle={`№ ${request.id}`} onClose={onClose} actions={actions}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ marginBottom: 12 }}>
           <StatusBadge status={status} />

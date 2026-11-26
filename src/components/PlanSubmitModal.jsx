@@ -50,7 +50,7 @@ function segmentCaption(seg) {
   return text
 }
 
-export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
+export default function PlanSubmitModal({ segments, onClose, onSubmit, width }) {
   const [approver, setApprover] = useState(DEFAULT_APPROVER_ID)
   const [extraApprover, setExtraApprover] = useState('')
 
@@ -73,6 +73,7 @@ export default function PlanSubmitModal({ segments, onClose, onSubmit }) {
 
   return (
     <Drawer
+      width={width}
       title={t('Планы на отпуск 2027')}
       subtitle={`${t('Распределено')} ${mainDays} ${pluralDays(mainDays)} ${t('основного оплачиваемого отпуска')}`}
       onClose={onClose}

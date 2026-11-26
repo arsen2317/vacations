@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { COLLEAGUES, ALL_EMPLOYEES } from '../data/mockData'
-import { Chip, SearchIcon, SelectField } from '../ds/index'
+import { Chip, SearchIcon, SelectField, TABLE_FRAME, TABLE_HEADER_CELL } from '../ds/index'
 import { t, tName, tTeam, MONTH_NAMES, MONTH_GEN, WD } from '../i18n/translate'
 import { LOCALE } from '../i18n/locale'
+import { DEMO_TODAY } from '../utils/dateUtils'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ const PERSON_W = 277
 const ROW_H    = 48
 const DIVIDER     = '1px solid #E2E5EB'
 const COL_SHADOW  = 'inset -1px 0 0 #E2E5EB'  // column divider — doesn't affect layout
+const HEADER_LABEL = { ...TABLE_HEADER_CELL, padding: 0, background: 'transparent' }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -185,20 +187,19 @@ function YearGrid({ year, people, barColor, onRemove, onBarEnter, onBarMove, onB
       <div style={{ minWidth: 860 }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', height: 40, background: '#F2F3F7' }}>
+        <div style={{ display: 'flex', height: 40, background: TABLE_HEADER_CELL.background }}>
           <div style={{ width: PERSON_W, flexShrink: 0, padding: '0 16px', boxShadow: COL_SHADOW, display: 'flex', alignItems: 'center', boxSizing: 'border-box' }}>
-            <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif" }}>{t('Сотрудник')}</span>
+            <span style={HEADER_LABEL}>{t('Сотрудник')}</span>
           </div>
           <div style={{ flex: 1, display: 'flex' }}>
             {Array.from({ length: 12 }, (_, m) => (
               <div key={m} style={{
                 flex: diMonth(year, m),
-                padding: '0 12px',
                 boxShadow: m < 11 ? COL_SHADOW : 'none',
                 display: 'flex', alignItems: 'center',
-                overflow: 'hidden',
+                minWidth: 0,
               }}>
-                <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", whiteSpace: 'nowrap' }}>
+                <span style={{ ...HEADER_LABEL, padding: '0 12px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {MONTH_NAMES[m]}
                 </span>
               </div>
@@ -250,7 +251,7 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
       <div style={{ minWidth: 860 }}>
 
         {/* Header: nav cell + day cells in one flex row */}
-        <div style={{ display: 'flex', height: 72, background: '#F2F3F7' }}>
+        <div style={{ display: 'flex', height: 72, background: TABLE_HEADER_CELL.background }}>
           {/* Nav + title */}
           <div style={{ width: PERSON_W, flexShrink: 0, boxShadow: COL_SHADOW, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxSizing: 'border-box' }}>
             <button onClick={onPrev} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}>
@@ -258,7 +259,7 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
                 <path d="M7 1L1 7L7 13" stroke="#626C77" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <span style={{ fontSize: 14, fontFamily: "'MTSCompact', sans-serif", color: '#626C77', whiteSpace: 'nowrap' }}>
+            <span style={HEADER_LABEL}>
               {MONTH_NAMES[month]} {year}
             </span>
             <button onClick={onNext} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex' }}>
@@ -276,7 +277,7 @@ function MonthGrid({ year, month, people, barColor, onRemove, onPrev, onNext, on
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               }}>
                 <span style={{ color: d.isWeekend ? '#F15641' : '#626C77', fontSize: 12, fontFamily: "'MTSCompact', sans-serif", lineHeight: '16px' }}>{WD[d.dow]}</span>
-                <span style={{ color: d.isWeekend ? '#F15641' : '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px' }}>{d.n}</span>
+                <span style={{ ...HEADER_LABEL, color: d.isWeekend ? '#F15641' : HEADER_LABEL.color }}>{d.n}</span>
               </div>
             ))}
           </div>
@@ -318,7 +319,7 @@ export default function ColleaguesPage() {
 
   const [viewMode,   setViewMode]   = useState('year')
   const [year,       setYear]       = useState(CURRENT_YEAR)
-  const [viewMonth,  setViewMonth]  = useState(new Date().getMonth())
+  const [viewMonth,  setViewMonth]  = useState(0)
   const [showDrafts, setShowDrafts] = useState(true)
   const [searchQ,    setSearchQ]    = useState('')
   const [showDrop,   setShowDrop]   = useState(false)
@@ -326,8 +327,6 @@ export default function ColleaguesPage() {
   const [tooltip,    setTooltip]    = useState(null)
 
   const searchRef = useRef(null)
-
-  useEffect(() => { setViewMonth(0) }, [year])
 
   useEffect(() => {
     function h(e) {
@@ -491,7 +490,11 @@ export default function ColleaguesPage() {
           <SelectField
             value={String(year)}
             options={[{ id: '2026', name: '2026' }, { id: '2027', name: '2027' }]}
-            onChange={v => setYear(Number(v))}
+            onChange={v => {
+              const selectedYear = Number(v)
+              setYear(selectedYear)
+              setViewMonth(selectedYear === DEMO_TODAY.getFullYear() ? DEMO_TODAY.getMonth() : 0)
+            }}
           />
         </div>
 
@@ -525,7 +528,7 @@ export default function ColleaguesPage() {
       </div>
 
       {/* ── Grid ── */}
-      <div style={{ background: '#fff', border: DIVIDER, borderTop: 'none', overflow: 'hidden' }}>
+      <div style={{ ...TABLE_FRAME, overflow: 'hidden' }}>
         {viewMode === 'year' ? (
           <YearGrid
             year={year} people={people} barColor={barColor} onRemove={removePerson}

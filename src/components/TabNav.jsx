@@ -19,7 +19,7 @@ export default function TabNav({ activeTab, onTabChange }) {
     ...(role === 'manager' || role === 'hr_admin'
       ? [{ key: 'team', label: t('Входящие заявки'), count: pendingCount > 0 ? pendingCount : undefined }]
       : []),
-    ...(role === 'hr_admin' ? [{ key: 'hr', label: 'HR – панель' }] : []),
+    ...(role === 'hr_admin' ? [{ key: 'hr', label: t('HR-админ') }] : []),
   ]
 
   return (

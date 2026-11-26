@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { CrossIcon } from "./icons";
 import { BTN_STYLE } from "./tokens";
+import { t } from "../i18n/translate";
 
 const ACTION_STYLES = {
   primary:   { background: "#0066FF", color: "#FFFFFF" },
@@ -8,10 +9,10 @@ const ACTION_STYLES = {
   danger:    { background: "#F2F3F7", color: "#D8400C" },
 };
 
-// Right-side drawer (replaces centered modals): overlay, header with title/subtitle/close,
-// scrollable body and a footer with 52px action buttons.
-// side="left" + overlay={false}: docked panel that leaves the rest of the page usable.
-export function Drawer({ title, subtitle, onClose, actions = [], children, width = 600, zIndex = 1000, side = "right", overlay = true }) {
+// The transparent backdrop prevents other drawers from opening behind this one.
+// A calendar that edits the drawer's dates can sit between the backdrop and the drawer.
+export function Drawer({ title, subtitle, onClose, actions = [], children, width = 440, zIndex = 1000, closeOnOutsideClick = true }) {
+  const titleId = useId();
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
     document.addEventListener("keydown", onKey);
@@ -19,31 +20,25 @@ export function Drawer({ title, subtitle, onClose, actions = [], children, width
   }, [onClose]);
 
   return (
-    <div style={{
-      position: "fixed", zIndex, display: "flex", justifyContent: side === "left" ? "flex-start" : "flex-end",
-      ...(overlay ? { inset: 0 } : { top: 0, bottom: 0, [side]: 0 }),
-    }}>
-      <style>{`@keyframes mts-drawer-in { from { transform: translateX(100%); } to { transform: none; } } @keyframes mts-drawer-in-left { from { transform: translateX(-100%); } to { transform: none; } } @keyframes mts-overlay-in { from { opacity: 0; } to { opacity: 1; } }`}</style>
-      {overlay && (
-        <div
-          onClick={onClose}
-          style={{ position: "absolute", inset: 0, background: "rgba(29, 32, 35, 0.40)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", animation: "mts-overlay-in 0.2s ease" }}
-        />
-      )}
-      <div style={{
-        position: "relative", width, maxWidth: "100vw", height: "100%",
+    <>
+      <style>{`@keyframes mts-drawer-in { from { transform: translateX(100%); } to { transform: none; } }`}</style>
+      <div aria-hidden="true" onClick={closeOnOutsideClick ? onClose : undefined} style={{ position: "fixed", inset: 0, zIndex: zIndex - 100 }} />
+      <div role="dialog" aria-labelledby={titleId} style={{
+        position: "fixed", right: 0, top: 0, bottom: 0, zIndex, width, maxWidth: "100vw",
         background: "#FFFFFF",
         boxShadow: "0px 8px 16px rgba(0, 0, 0, 0.08), 0px 4px 24px rgba(0, 0, 0, 0.12)",
         display: "flex", flexDirection: "column", overflow: "hidden",
-        animation: `${side === "left" ? "mts-drawer-in-left" : "mts-drawer-in"} 0.25s ease`,
+        animation: "mts-drawer-in 0.25s ease",
       }}>
         {/* Header */}
         <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-            <div style={{ flex: 1, padding: "4px 0", color: "#1D2023", fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: "24px" }}>
+            <div id={titleId} style={{ flex: 1, padding: "4px 0", color: "#1D2023", fontSize: 20, fontFamily: "'MTSWide', sans-serif", fontWeight: 500, lineHeight: "24px" }}>
               {title}
             </div>
             <button
+              type="button"
+              aria-label={t("закрыть")}
               onClick={onClose}
               style={{ padding: 4, background: "#F2F3F7", borderRadius: 12, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >
@@ -89,6 +84,6 @@ export function Drawer({ title, subtitle, onClose, actions = [], children, width
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

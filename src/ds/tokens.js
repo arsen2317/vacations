@@ -17,3 +17,21 @@ export const BTN_STYLE = {
   textTransform: "uppercase",
   fontFamily:    "'MTSWide', sans-serif",
 };
+
+export const TABLE_FRAME = {
+  border: `1px solid ${COLORS.stroke}`,
+  borderRadius: 16,
+  background: COLORS.white,
+};
+
+export const TABLE_HEADER_CELL = {
+  padding: "10px 16px",
+  fontSize: 14,
+  fontWeight: 500,
+  lineHeight: "20px",
+  color: COLORS.secondary,
+  textAlign: "left",
+  fontFamily: "'MTSCompact', sans-serif",
+  background: COLORS.bg,
+  whiteSpace: "nowrap",
+};

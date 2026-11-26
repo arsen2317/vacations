@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { t, MONTH_NAMES, WEEKDAYS } from '../i18n/translate'
+import { DEMO_TODAY } from '../utils/dateUtils'
 
 // RF production calendar holidays
 const RF_HOLIDAYS_2026 = new Set([
@@ -178,7 +179,7 @@ function MonthGrid({ year, month, start, effectiveEnd, today, onDayClick, onDayE
 }
 
 export function CalendarRange({ initialStart, initialEnd, initialViewMonth, applyLabel = t('Применить'), onApply, onClose }) {
-  const today = dayOnly(new Date())
+  const today = DEMO_TODAY
 
   const [viewMonth, setViewMonth] = useState(() => {
     if (initialViewMonth) return new Date(initialViewMonth.getFullYear(), initialViewMonth.getMonth(), 1)

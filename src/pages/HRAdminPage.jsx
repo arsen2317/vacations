@@ -1,116 +1,135 @@
 import { useApp } from '../context/AppContext'
 import { COLORS, BTN_STYLE, Banner } from '../ds/index'
+import { t } from '../i18n/translate'
 
-const CARD_STYLE = {
-  background: '#fff',
-  borderRadius: 20,
-  padding: 24,
-  outline: `1px ${COLORS.stroke} solid`,
-  outlineOffset: '-1px',
-}
-
-const STATS = [
-  { label: 'Всего сотрудников', value: '6 500', color: COLORS.text      },
-  { label: 'Согласованы',       value: '3 240', color: '#007502'        },
-  { label: 'На согласовании',   value: '2 180', color: '#005CBD'        },
-  { label: 'Черновики',         value: '1 080', color: COLORS.secondary },
+const cancellationStats = [
+  { label: 'На согласовании', count: 1, unit: 'заявка', employees: 1, days: 3, detail: '1 сотрудник, 3 дня' },
+  { label: 'Согласовано', count: 48, unit: 'заявки', employees: 42, days: 321, detail: '42 сотрудника, 321 день' },
+  { label: 'Отклонено', count: 20, unit: 'заявок', employees: 17, days: 146, detail: '17 сотрудников, 146 дней' },
 ]
 
-const PROGRESS_PCT = Math.round(3240 / 6500 * 100) // 50
-const PENDING_PCT  = Math.round(2180 / 6500 * 100) // 34
+const planningStats = [
+  { label: 'Отсутствует план', count: 1245, unit: 'сотрудников' },
+  { label: 'На согласовании', count: 721, unit: 'заявка' },
+  { label: 'На ознакомлении', count: 200, unit: 'заявок' },
+  { label: 'План выгружен в 1С', count: 3900, unit: 'сотрудников' },
+]
+
+const cardStyle = {
+  minWidth: 0, background: COLORS.white, borderRadius: 32,
+  border: `1px solid ${COLORS.stroke}`,
+  display: 'flex', flexDirection: 'column', gap: 20,
+}
+const titleStyle = {
+  margin: 0, color: COLORS.text, fontFamily: "'MTSWide', sans-serif",
+  fontSize: 24, fontWeight: 500, lineHeight: '28px',
+}
+const captionStyle = { margin: 0, fontSize: 17, lineHeight: '24px', color: COLORS.secondary }
+const inlineButtonStyle = {
+  display: 'inline-flex', alignItems: 'center', gap: 4, border: 0, padding: 0,
+  background: 'none', color: '#0070E5', font: 'inherit', fontSize: 17,
+  lineHeight: '24px', cursor: 'pointer', whiteSpace: 'nowrap',
+}
 
 function downloadCsv(filename, headers, rows) {
   const csv = [headers, ...rows]
     .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
     .join('\n')
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  a.href = url; a.download = filename; a.click()
+  a.href = url
+  a.download = filename
+  a.click()
   URL.revokeObjectURL(url)
 }
 
-export default function HRAdminPage() {
-  const { campaign } = useApp()
+function ReportCard({ title, notice, onDownload, children, footer }) {
+  return (
+    <section style={{ ...cardStyle, padding: footer ? '32px 32px 20px' : '32px 32px 36px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, paddingBottom: 8 }}>
+        <h2 style={titleStyle}>{title}</h2>
+        <button type="button" style={inlineButtonStyle} onClick={onDownload}>
+          <img src={`${import.meta.env.BASE_URL}icons/download-report.png`} width={16} height={16} alt="" />
+          {t('Скачать отчёт')}
+        </button>
+      </div>
+      <Banner type="info" title={<span style={{ color: COLORS.secondary }}>{notice}</span>} />
+      {children}
+      {footer}
+    </section>
+  )
+}
 
-  function downloadReport() {
+function StatsList({ stats, highlightUnit = false }) {
+  return (
+    <dl style={{ display: 'grid', gap: 28, margin: 0 }}>
+      {stats.map(({ label, count, unit, detail }) => (
+        <div key={label} style={{ display: 'grid', gap: 8 }}>
+          <dt style={captionStyle}>{label}</dt>
+          <dd style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: detail ? 16 : 6, margin: 0, color: COLORS.text, fontSize: 17, lineHeight: '24px' }}>
+            <strong style={{ fontSize: 24, fontWeight: 500, lineHeight: '28px' }}>{count}{highlightUnit && ` ${unit}`}</strong>
+            {!highlightUnit && <span>{unit}</span>}
+            {detail && <span>{detail}</span>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+export default function HRAdminPage() {
+  const { campaign, decemberCancellation, setDecemberCancellation } = useApp()
+
+  function downloadCancellationReport() {
+    downloadCsv(
+      'hr-cancellations-2026.csv',
+      ['Статус', 'Заявки', 'Сотрудники', 'Дни'],
+      cancellationStats.map(({ label, count, employees, days }) => [label, count, employees, days]),
+    )
+  }
+
+  function downloadPlanningReport() {
     downloadCsv(
       `hr-report-${campaign.year}.csv`,
-      ['Показатель', 'Значение'],
-      [
-        ['Всего сотрудников', '6 500'],
-        ['Согласованы',       '3 240'],
-        ['На согласовании',   '2 180'],
-        ['Черновики',         '1 080'],
-      ],
+      ['Показатель', 'Значение', 'Единица'],
+      planningStats.map(({ label, count, unit }) => [label, count, unit]),
     )
   }
 
   return (
-    <div style={{ paddingTop: 32, paddingBottom: 48, display: 'flex', flexDirection: 'column', gap: 24, fontFamily: "'MTSCompact', sans-serif" }}>
+    <div style={{
+      paddingTop: 32, paddingBottom: 48, display: 'grid', alignItems: 'start', gap: 32,
+      gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))',
+      fontFamily: "'MTSCompact', sans-serif",
+    }}>
+      <ReportCard
+        title={<>Отмена отпусков<br />в декабре 2026 г.</>}
+        notice={decemberCancellation
+          ? 'Отмена включена — любой сотрудник может отменить свой плановый отпуск с датами начала и окончания до 31 декабря включительно'
+          : 'Отмена отключена. Если включить эту опцию, то любой сотрудник сможет отменить свой плановый отпуск с датами начала и окончания до 31 декабря включительно'}
+        onDownload={downloadCancellationReport}
+        footer={(
+          <button
+            type="button"
+            aria-pressed={decemberCancellation}
+            onClick={() => setDecemberCancellation(enabled => !enabled)}
+            style={{ ...BTN_STYLE, minHeight: 44, margin: '12px -12px 0', borderRadius: 16, border: 0, background: COLORS.bg, color: COLORS.text, cursor: 'pointer' }}
+          >
+            {decemberCancellation ? 'Отключить' : 'Включить'}
+          </button>
+        )}
+      >
+        {decemberCancellation && <StatsList stats={cancellationStats} highlightUnit />}
+      </ReportCard>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ fontSize: 24, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSWide', sans-serif", lineHeight: '28px' }}>
-          HR-панель — кампания {campaign.year}
-        </div>
-        <button
-          onClick={downloadReport}
-          style={{ ...BTN_STYLE, height: 44, paddingLeft: 20, paddingRight: 20, borderRadius: 16, border: 'none', background: COLORS.bg, color: COLORS.text, cursor: 'pointer', flexShrink: 0 }}
-        >
-          Скачать отчёт
-        </button>
-      </div>
-
-      {/* Campaign banner */}
-      <Banner
-        type={campaign.active ? 'done' : 'info'}
-        title={`Кампания по планированию ${campaign.year}`}
-        subtitle={campaign.active
-          ? 'Активна — сотрудники могут распределять дни отпуска'
-          : 'Не активна — планирование закрыто'}
-      />
-
-      {/* Stats cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-        {STATS.map(s => (
-          <div key={s.label} style={CARD_STYLE}>
-            <div style={{ fontSize: 14, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif", lineHeight: '20px', marginBottom: 8 }}>
-              {s.label}
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 500, color: s.color, fontFamily: "'MTSWide', sans-serif", lineHeight: '32px' }}>
-              {s.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress */}
-      <div style={CARD_STYLE}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span style={{ fontSize: 17, fontWeight: 500, color: COLORS.text, fontFamily: "'MTSCompact', sans-serif", lineHeight: '24px' }}>
-            Прогресс согласования
-          </span>
-          <span style={{ fontSize: 14, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif" }}>
-            3 240 из 6 500
-          </span>
-        </div>
-        <div style={{ height: 8, background: COLORS.bg, borderRadius: 4, overflow: 'hidden', display: 'flex' }}>
-          <div style={{ width: `${PROGRESS_PCT}%`, background: '#26CD58' }} />
-          <div style={{ width: `${PENDING_PCT}%`, background: '#FFBB00' }} />
-        </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#26CD58', flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif" }}>Согласованы {PROGRESS_PCT}%</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FFBB00', flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: "'MTSCompact', sans-serif" }}>На согласовании {PENDING_PCT}%</span>
-          </div>
-        </div>
-      </div>
-
+      <ReportCard
+        title={<>Статус планирования<br />отпусков на {campaign.year} г.</>}
+        notice={campaign.active ? 'Кампания планирования отпусков активна' : 'Кампания планирования отпусков завершена'}
+        onDownload={downloadPlanningReport}
+      >
+        <StatsList stats={planningStats} />
+      </ReportCard>
     </div>
   )
 }

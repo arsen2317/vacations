@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { CAMPAIGN } from '../data/mockData'
-import { Banner, Chip, SearchIcon, SelectField, MoreIcon, ChevronUp, Drawer, TextAreaField } from '../ds/index'
+import { Banner, Chip, SearchIcon, SelectField, MoreIcon, ChevronUp, Drawer, TextAreaField, TABLE_FRAME, TABLE_HEADER_CELL } from '../ds/index'
 import StatusBadge from '../components/StatusBadge'
 import Toast from '../components/Toast'
 import { t, tName, tTeam, tPosition, pluralDays as unitDays, MONTH_NAMES, MONTHS_SHORT } from '../i18n/translate'
@@ -606,12 +606,6 @@ export default function ManagerPage() {
     setToast(t('Заявка отклонена'))
   }
 
-  // Table style: rounded outline, grey header, 17px rows
-  const TH = {
-    padding: '10px 16px', fontSize: 14, fontWeight: 500, lineHeight: '20px', color: '#626C77',
-    textAlign: 'left', fontFamily: "'MTSCompact', sans-serif",
-    background: '#F2F3F7', whiteSpace: 'nowrap',
-  }
   const TD = {
     padding: '10px 16px', fontSize: 17, lineHeight: '24px', color: '#1D2023',
     fontFamily: "'MTSCompact', sans-serif", verticalAlign: 'middle',
@@ -692,7 +686,7 @@ export default function ManagerPage() {
       {/* ── TABLE VIEW ── */}
       {view === 'table' && (
         <>
-          <div style={{ overflowX: 'auto', border: '1px solid rgba(188,195,208,0.5)', borderRadius: 16 }}>
+          <div style={{ ...TABLE_FRAME, overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
                 <col style={{ width: 120 }} />
@@ -704,12 +698,12 @@ export default function ManagerPage() {
               </colgroup>
               <thead>
                 <tr>
-                  <th style={TH}>{t('№ заявки')}</th>
-                  <th style={TH}>{t('Сотрудник')}</th>
-                  <th style={TH}>{t('Подразделение')}</th>
-                  <th style={TH}>{t('Период отпуска')}</th>
-                  <th style={TH}>{t('Статус')}</th>
-                  <th style={{ ...TH, textAlign: 'center' }} aria-label={t('Действия')} />
+                  <th style={TABLE_HEADER_CELL}>{t('№ заявки')}</th>
+                  <th style={TABLE_HEADER_CELL}>{t('Сотрудник')}</th>
+                  <th style={TABLE_HEADER_CELL}>{t('Подразделение')}</th>
+                  <th style={TABLE_HEADER_CELL}>{t('Период отпуска')}</th>
+                  <th style={TABLE_HEADER_CELL}>{t('Статус')}</th>
+                  <th style={{ ...TABLE_HEADER_CELL, textAlign: 'center' }} aria-label={t('Действия')} />
                 </tr>
               </thead>
               <tbody>

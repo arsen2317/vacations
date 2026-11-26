@@ -53,12 +53,12 @@ export function Chip({ active, onClick, children }) {
 
 export function PersonAvatar({ src }) {
   return (
-    <div style={{ width: 52, height: 52, borderRadius: 16, background: "#E8EDF2", flexShrink: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden" }}>
+    <div style={{ width: 52, height: 52, borderRadius: 16, background: src ? "#E8EDF2" : "#BBC1C7", flexShrink: 0, overflow: "hidden" }}>
       {src
         ? <img src={src} alt="" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-        : <svg width="42" height="42" viewBox="0 0 42 42" fill="none">
-            <circle cx="21" cy="17" r="8" fill="#BCC3D0"/>
-            <path d="M5 40c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#BCC3D0"/>
+        : <svg aria-hidden="true" width="52" height="52" viewBox="0 0 52 52" fill="#fff">
+            <circle cx="26" cy="18" r="10"/>
+            <path d="M5 51v-3c0-8.837 7.163-16 16-16h10c8.837 0 16 7.163 16 16v3H5Z"/>
           </svg>
       }
     </div>

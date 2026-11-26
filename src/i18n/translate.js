@@ -7,6 +7,7 @@ const T = {
   'отпуск': 'Vacation',
   'уведомления раздела': 'Notifications',
   'частые вопросы': 'FAQ',
+  'HR-админ': 'HR admin',
   'Мой отпуск': 'My vacation',
   'Планы коллег': "Colleagues' plans",
 

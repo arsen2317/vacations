@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
-import { countVacationDays } from '../utils/dateUtils'
+import { countVacationDays, DEMO_TODAY } from '../utils/dateUtils'
 import { COLLEAGUES } from '../data/mockData'
 import { SelectField, Banner, Drawer, DateRangeField, TextAreaField, CounterField } from '../ds/index'
 import { t, tName, MONTH_GEN, pluralDays } from '../i18n/translate'
@@ -64,31 +64,10 @@ function findColleagueOverlap(start, end) {
   return null
 }
 
-function findAllColleagueOverlaps(start, end) {
-  if (!start || !end) return []
-  const results = []
-  for (const col of COLLEAGUES) {
-    if (col.me) continue
-    for (const seg of (col.segments ?? [])) {
-      if (seg.status === 'draft' || seg.status === 'rejected' || seg.status === 'cancelled') continue
-      const segStart = new Date(seg.startDate + 'T00:00:00')
-      const segEnd   = new Date(seg.endDate   + 'T00:00:00')
-      if (start <= segEnd && end >= segStart) {
-        const overlapStart = start > segStart ? start : segStart
-        const overlapEnd   = end   < segEnd   ? end   : segEnd
-        results.push({ colleague: col, start: overlapStart, end: overlapEnd })
-      }
-    }
-  }
-  return results
-}
-
-
-export default function NewRequestModal({ onClose, onSubmitted, initialStart = null, initialEnd = null }) {
-  const { requests, setRequests, balance, setBalance } = useApp()
+export default function NewRequestModal({ onClose, onSubmitted, range, width }) {
+  const { setRequests, balance, setBalance } = useApp()
   const [type, setType] = useState('')
-  const [startDate, setStartDate] = useState(initialStart)
-  const [endDate, setEndDate] = useState(initialEnd)
+  const { start: startDate, end: endDate } = range
   const [comment, setComment] = useState('')
   const [approver, setApprover] = useState(DEFAULT_APPROVER_ID)
   const [substitute, setSubstitute] = useState('')
@@ -97,50 +76,27 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   const [extraCount, setExtraCount] = useState(1)
   const selectedType = REQUEST_TYPES.find(rt => rt.id === type)
 
-  const previewDays = useMemo(() => {
-    if (!startDate || !endDate) return null
-    try {
-      if (endDate < startDate) return null
-      return countVacationDays(startDate, endDate)
-    } catch {
-      return null
-    }
-  }, [startDate, endDate])
-
-  const overlap = useMemo(() => {
-    if (!startDate) return null
-    return findColleagueOverlap(startDate, endDate || startDate)
-  }, [startDate, endDate])
-
-  const overlaps = useMemo(() => {
-    if (!startDate) return []
-    return findAllColleagueOverlaps(startDate, endDate || startDate)
-  }, [startDate, endDate])
-
-  function validate() {
-    const errs = {}
-    if (!type) errs.type = t('Выберите тип отпуска')
-    // Days beyond the accrued balance are taken in advance — not an error
-    if (!startDate) errs.dates = t('Укажите период')
-    else if (extraError) errs.dates = extraError
-    return errs
-  }
+  const previewDays = countVacationDays(startDate, endDate)
+  const overlap = useMemo(() => findColleagueOverlap(startDate, endDate), [startDate, endDate])
 
   function handleSubmit() {
-    const errs = validate()
-    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    if (!selectedType) {
+      setErrors({ type: t('Выберите тип отпуска') })
+      return
+    }
+    if (extraError) return
     const newReq = {
       id: Date.now(),
       type: 'unplanned',
       typeLabel: TYPE_LABEL_MAP[type],
       startDate,
-      endDate: endDate || startDate,
+      endDate,
       days: previewDays,
       extraDays: extraDays || undefined,
       status: 'pending',
       approver: { name: approverName, role: approverOption?.role ?? DEFAULT_APPROVER.role },
       comment: comment || undefined,
-      createdAt: new Date(),
+      createdAt: DEMO_TODAY,
       substitute: substitute ? APPROVER_OPTIONS.find(o => o.id === substitute)?.name : undefined,
       extraApprover: extraApprover ? APPROVER_OPTIONS.find(o => o.id === extraApprover)?.name : undefined,
     }
@@ -152,18 +108,18 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
   }
 
   // Extra leave: «extra» uses only extra days, «combined» takes a chosen number of them
-  const comboMax = previewDays !== null ? Math.min(balance.extra, previewDays - 1) : 0
+  const comboMax = Math.min(balance.extra, previewDays - 1)
   const comboExtra = Math.max(1, Math.min(extraCount, Math.max(1, comboMax)))
-  const extraDays = previewDays === null ? 0 : type === 'extra' ? previewDays : type === 'combined' ? comboExtra : 0
+  const extraDays = type === 'extra' ? previewDays : type === 'combined' ? comboExtra : 0
   let extraError = null
-  if (previewDays !== null && type === 'extra' && previewDays > balance.extra) {
+  if (type === 'extra' && previewDays > balance.extra) {
     extraError = `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('доп. отпуска')}. ${t('Вам доступно только')} ${balance.extra} ${pluralDays(balance.extra)} ${t('доп. отпуска')}`
-  } else if (previewDays !== null && type === 'combined' && comboMax < 1) {
+  } else if (type === 'combined' && comboMax < 1) {
     extraError = t('В периоде должен быть хотя бы один день основного отпуска')
   }
 
   // Paid annual leave beyond the accrued balance is granted in advance
-  const advanceDays = previewDays !== null && (!selectedType || selectedType.deductsBalance) && type !== 'extra'
+  const advanceDays = (!selectedType || selectedType.deductsBalance) && type !== 'extra'
     ? Math.max(0, previewDays - extraDays - balance.main)
     : 0
   const requestTypes = REQUEST_TYPES.filter(rt => !rt.extraOnly || balance.extra > 0)
@@ -173,6 +129,8 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
 
   return (
     <Drawer
+      width={width}
+      closeOnOutsideClick={false}
       title={t('Заявка на внеплановый отпуск')}
       subtitle={`${t('Накоплено')} ${balance.main} ${pluralDays(balance.main)} ${t('основного оплачиваемого отпуска')}`}
       onClose={onClose}
@@ -186,14 +144,12 @@ export default function NewRequestModal({ onClose, onSubmitted, initialStart = n
         label={t('Период отпуска')}
         start={startDate}
         end={endDate}
-        error={extraError || errors.dates}
-        description={previewDays !== null
-          ? (type === 'combined'
+        error={extraError}
+        description={(type === 'combined'
             ? `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('отпуска')}, ${t('из них')} ${comboExtra} ${pluralDays(comboExtra)} ${t('доп. отпуска')}`
             : `${t('Выбрано')} ${previewDays} ${pluralDays(previewDays)} ${t('отпуска')}`)
             + (advanceDays > 0 ? `, ${type === 'combined' ? '' : t('из них') + ' '}${advanceDays} ${pluralDays(advanceDays)} ${t('авансом')}` : '')
-          : undefined}
-        onChange={(s, e) => { setStartDate(s); setEndDate(e); setErrors(prev => ({ ...prev, dates: undefined })) }}
+        }
       />
       {overlap && (
         <div style={{ paddingBottom: 12 }}>

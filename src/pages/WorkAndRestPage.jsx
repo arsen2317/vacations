@@ -1,5 +1,5 @@
 import { useApp } from '../context/AppContext'
-import { ChevronUp } from '../ds/index'
+import { DEMO_TODAY } from '../utils/dateUtils'
 
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
@@ -14,9 +14,8 @@ function pluralDays(n) {
 }
 
 function findNextVacation(requests) {
-  const today = new Date(2026, 5, 6)
   return requests
-    .filter(r => (r.status === 'approved' || r.status === 'pending') && r.startDate >= today)
+    .filter(r => (r.status === 'approved' || r.status === 'pending') && r.startDate >= DEMO_TODAY)
     .sort((a, b) => a.startDate - b.startDate)[0] || null
 }
 
@@ -168,9 +167,6 @@ function VacationCard({ onGoTo }) {
           </div>
           <Illustration src="/vacation.png" />
         </div>
-        <span style={{ color: '#626C77', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px' }}>
-          Чтобы оформить отпуск вне графика, создайте заявку на внеплановый отпуск. Перенести запланированный отпуск можно в разделе Планы на отпуск
-        </span>
         <WarningBanner
           title="Подтвердите свои планы на отпуск на следующий год"
           subtitle="Это нужно сделать до 25 декабря 2026"
