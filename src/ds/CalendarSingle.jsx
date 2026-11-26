@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { MONTH_NAMES, WEEKDAYS } from '../i18n/translate'
+import { DEMO_TODAY } from '../utils/dateUtils'
 
 const CELL_W = 44
 const CELL_H = 40
@@ -30,7 +31,7 @@ function getMonthWeeks(year, month) {
 const CAL_WIDTH = 7 * CELL_W + 40 // 348
 
 export function CalendarSingle({ initialDate, onApply, onClose, minDate }) {
-  const today = dayOnly(new Date())
+  const today = DEMO_TODAY
   const init = initialDate ? dayOnly(initialDate) : null
   const [viewYear, setViewYear] = useState(init ? init.getFullYear() : today.getFullYear())
   const [viewMonth, setViewMonth] = useState(init ? init.getMonth() : today.getMonth())

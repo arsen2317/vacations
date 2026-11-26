@@ -6,7 +6,7 @@ import PlanSubmitModal from '../components/PlanSubmitModal'
 import VacationCalculatorModal from '../components/VacationCalculatorModal'
 import Toast from '../components/Toast'
 import { BTN_STYLE, Banner, Chip, StatusBadge, PersonAvatar, YearCalendar, calendarWidth, CalculatorIcon, SearchIcon, DoneIcon, WarningIcon, MoreIcon, CrossIcon, Drawer, CounterField, SelectField, FieldBox } from '../ds/index'
-import { countVacationDays } from '../utils/dateUtils'
+import { countVacationDays, DEMO_TODAY } from '../utils/dateUtils'
 import { COLLEAGUES, CURRENT_USER } from '../data/mockData'
 import { t, tName, tTeam, MONTH_GEN, MONTH_GEN_SHORT, pluralDays } from '../i18n/translate'
 import { LOCALE } from '../i18n/locale'
@@ -65,7 +65,7 @@ function SmallIcon({ children }) {
   )
 }
 
-// Left panel for 2026: balance + vacation list
+// Right panel for 2026: balance + vacation list
 function Panel2026({ balance, yearRequests, setSelectedRequest, onOpenCalculator, onGoToRequests, intersections }) {
   const total = balance.main + balance.extra
   return (
@@ -155,6 +155,8 @@ function ColleagueRow({ col, onRemove }) {
         </div>
       </div>
       <button
+        type="button"
+        aria-label={`${t('Удалить')} — ${tName(col.name)}`}
         onClick={onRemove}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
@@ -184,7 +186,7 @@ function IntersectionsSection({ trackedColleagues, onAddColleague, onRemoveColle
 
       {/* Legend */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
-        <div style={{ width: 8, height: 8, borderRadius: 9999, background: '#FAC031', flexShrink: 0 }} />
+        <div style={{ width: 20, height: 2, borderRadius: 100, background: '#FAC031', flexShrink: 0 }} />
         <span style={{ color: '#626C77', fontSize: 17, fontFamily: FONT, fontWeight: 400, lineHeight: '20px' }}>
           {t('отметка пересечений в календаре')}
         </span>
@@ -296,16 +298,19 @@ function SegmentMenu({ onEdit, onRemove }) {
 }
 
 const PENDING_PERIOD_ID = 'pending-period'
-const LEFT_DRAWER_WIDTH = 487 // up to the divider between the left panel and the calendar (1440 layout)
+function getCalendarColumns() {
+  if (window.innerWidth >= 1400) return 3
+  return window.innerWidth >= 930 ? 2 : 1
+}
 
 function formatPeriodFull(start, end) {
   return `${start.getDate()} ${MONTH_GEN[start.getMonth()]} – ${end.getDate()} ${MONTH_GEN[end.getMonth()]} ${end.getFullYear()}`
 }
 
-// Create / edit a plan period in a left panel next to the calendar (no overlay).
+// Create / edit a plan period in the drawer next to the calendar.
 // The range is controlled by the calendar: the period's edges are dragged there.
 // `validate(start, end, extraDays)` returns an error text or null.
-function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onSubmit, validate, onExtraDaysChange }) {
+function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onSubmit, validate, onExtraDaysChange, width }) {
   const [kind, setKind] = useState(initial.kind ?? 'main')
   const [extraCount, setExtraCount] = useState(Math.max(1, initial.extraDays ?? 1))
   const [submitted, setSubmitted] = useState(false)
@@ -336,9 +341,8 @@ function PeriodDrawer({ mode, range, initial, withKinds, extraFree, onClose, onS
 
   return (
     <Drawer
-      side="left"
-      overlay={false}
-      width={LEFT_DRAWER_WIDTH}
+      width={width}
+      closeOnOutsideClick={false}
       title={mode === 'add' ? t('Добавление периода отпуска') : t('Редактирование периода отпуска')}
       onClose={onClose}
       actions={[
@@ -386,7 +390,7 @@ function ConditionRow({ done, children }) {
   )
 }
 
-// Left panel for 2027: planning view
+// Right panel for 2027: planning view
 function Panel2027({ totalDays, extraTotal, segments, onRemoveSegment, onEditSegment, planStatus, onOpenPlanModal, onSegmentClick, intersections }) {
   const mainDistributed  = segments.reduce((s, seg) => s + mainOf(seg), 0)
   const distributedDays  = segments.reduce((s, seg) => s + seg.days, 0)
@@ -496,13 +500,17 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [showCalculator, setShowCalculator] = useState(false)
   const [trackedColleagueIds, setTrackedColleagueIds] = useState(INITIAL_TRACKED_IDS)
-  const [calCols, setCalCols] = useState(() => window.innerWidth < 1400 ? 2 : 3)
+  const [calCols, setCalCols] = useState(getCalendarColumns)
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1399px)')
-    const handler = e => setCalCols(e.matches ? 2 : 3)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+    const handleResize = () => setCalCols(getCalendarColumns())
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  const drawerWidth = `clamp(280px, calc(100vw - ${calendarWidth(calCols) + 100}px), 440px)`
+  const lockedPeriodId = newRequestRange ? PENDING_PERIOD_ID
+    : periodDraft ? periodDraft.segment?.id ?? PENDING_PERIOD_ID
+    : null
 
   const trackedColleagues = useMemo(
     () => trackedColleagueIds.map(id => COLLEAGUES.find(c => c.id === id)).filter(Boolean),
@@ -552,6 +560,15 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
   function closeNewRequest() {
     setNewRequestRange(null)
     setCalendarKey(k => k + 1)
+  }
+
+  function resizeNewRequest(_request, start, end) {
+    setNewRequestRange({ start, end })
+    return true
+  }
+
+  function previewNewRequest(range) {
+    if (range) setNewRequestRange({ start: range.start, end: range.end })
   }
 
   function handleRemoveSegment(id) {
@@ -700,7 +717,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         ? { ...seg, startDate: toISODate(periodDraft.start), endDate: toISODate(periodDraft.end) }
         : seg)
 
-  // Segments as shown in the left panel: the dragged period follows the calendar live
+  // Segments as shown in the right panel: the dragged period follows the calendar live
   const displaySegments = periodDraft
     ? planCalendarSegments.map(seg => seg.id === (periodDraft.segment?.id ?? PENDING_PERIOD_ID)
       ? { ...seg, days: countVacationDays(periodDraft.start, periodDraft.end), extraDays: periodDraft.extraDays ?? 0 }
@@ -715,8 +732,6 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       : seg)
     : segments
 
-  const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
-
   const yearRequests = requests
     .filter(r => {
       const s = new Date(r.startDate)
@@ -726,12 +741,35 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
 
   if (year === 2026) {
-    const isPast = r => new Date(r.endDate) < today
+    const isPast = r => new Date(r.endDate) < DEMO_TODAY
     yearRequests.sort((a, b) => {
       const pa = isPast(a), pb = isPast(b)
       if (pa !== pb) return pa ? 1 : -1
       return new Date(a.startDate) - new Date(b.startDate)
     })
+  }
+
+  const requestCalendarEntries = newRequestRange
+    ? [...yearRequests, { id: PENDING_PERIOD_ID, startDate: newRequestRange.start, endDate: newRequestRange.end, status: 'draft' }]
+    : yearRequests
+
+  let onResizeRequest, onResizePreview
+  if (newRequestRange) {
+    onResizeRequest = resizeNewRequest
+    onResizePreview = previewNewRequest
+  } else if (year === 2027 && planStatus === 'draft') {
+    if (periodDraft) {
+      onResizeRequest = (_request, start, end) => {
+        setPeriodDraft(p => ({ ...p, start, end }))
+        return true
+      }
+      onResizePreview = range => {
+        if (range) setPeriodDraft(p => ({ ...p, start: range.start, end: range.end }))
+      }
+    } else {
+      onResizeRequest = (req, start, end) => handleResizeSegment(req.id, start, end)
+      onResizePreview = setResizePreview
+    }
   }
 
   const intersections = (
@@ -746,8 +784,47 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 24 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 8 }}>
 
-        {/* Left panel */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingRight: 32 }}>
+        {/* Calendar */}
+        <div style={{ flexShrink: 0, paddingRight: 32, width: calendarWidth(calCols) + 32, ...(lockedPeriodId !== null ? { position: 'relative', zIndex: 950 } : null) }}>
+          <YearCalendar
+            key={`${year}-${calendarKey}`}
+            cols={calCols}
+            year={year}
+            requests={year === 2026 ? requestCalendarEntries : planCalendarSegments.map(s => ({
+              ...s,
+              startDate: new Date(s.startDate + 'T00:00:00'),
+              endDate: new Date(s.endDate + 'T00:00:00'),
+              status: planStatus,
+              type: 'planned',
+              typeLabel: 'Ежегодный основной оплачиваемый',
+              isPlanned: true,
+              approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
+            }))}
+            onRequestClick={year === 2026
+              ? setSelectedRequest
+              : planStatus !== 'draft'
+                ? (req) => setSelectedRequest({ ...req, type: 'planned', typeLabel: 'Плановый', isPlanned: true })
+                : undefined
+            }
+            onNewRequest={year === 2026
+              ? (start, end) => setNewRequestRange({ start, end })
+              : (planStatus === 'draft' && !periodDraft
+                ? (hasExtraLeave ? (start, end) => setPeriodDraft({ mode: 'add', start, end }) : handleAddSegment)
+                : undefined)
+            }
+            colleagueMap={year === 2027 ? colleagueMap2027 : colleagueMap2026}
+            onResizeRequest={onResizeRequest}
+            onResizePreview={onResizePreview}
+            lockedReqId={lockedPeriodId}
+            allowResizeOverlap={!!newRequestRange}
+          />
+        </div>
+
+        {/* Vertical divider */}
+        <div style={{ width: 1, background: '#E8EDF2', alignSelf: 'stretch', flexShrink: 0 }} />
+
+        {/* Vacation periods */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16, paddingLeft: 32 }}>
 
           {/* Year chips */}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -788,67 +865,19 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
             />
           )}
         </div>
-
-        {/* Vertical divider */}
-        <div style={{ width: 1, background: '#E8EDF2', alignSelf: 'stretch', flexShrink: 0 }} />
-
-        {/* While the period panel is open only the calendar stays interactive */}
-        {periodDraft && <div style={{ position: 'fixed', inset: 0, zIndex: 900 }} />}
-
-        {/* Right panel */}
-        <div style={{ flexShrink: 0, paddingLeft: 32, width: calendarWidth(calCols) + 32, ...(periodDraft ? { position: 'relative', zIndex: 950 } : null) }}>
-          <YearCalendar
-            key={calendarKey}
-            cols={calCols}
-            year={year}
-            requests={year === 2026 ? yearRequests : planCalendarSegments.map(s => ({
-              ...s,
-              startDate: new Date(s.startDate + 'T00:00:00'),
-              endDate: new Date(s.endDate + 'T00:00:00'),
-              status: planStatus,
-              type: 'planned',
-              typeLabel: 'Ежегодный основной оплачиваемый',
-              isPlanned: true,
-              approver: { name: 'Дмитрий Соколов', role: 'Руководитель' },
-            }))}
-            onRequestClick={year === 2026
-              ? setSelectedRequest
-              : planStatus !== 'draft'
-                ? (req) => setSelectedRequest({ ...req, type: 'planned', typeLabel: 'Плановый', isPlanned: true })
-                : undefined
-            }
-            onNewRequest={year === 2026
-              ? (start, end) => setNewRequestRange({ start, end })
-              : (planStatus === 'draft' && !periodDraft
-                ? (hasExtraLeave ? (start, end) => setPeriodDraft({ mode: 'add', start, end }) : handleAddSegment)
-                : undefined)
-            }
-            colleagueMap={year === 2027 ? colleagueMap2027 : colleagueMap2026}
-            onResizeRequest={year === 2027 && planStatus === 'draft'
-              ? (periodDraft
-                // While the period panel is open the calendar edits the panel's range only
-                ? (req, start, end) => { setPeriodDraft(p => ({ ...p, start, end })); return true }
-                : (req, start, end) => handleResizeSegment(req.id, start, end))
-              : undefined
-            }
-            onResizePreview={year === 2027 && planStatus === 'draft'
-              ? (periodDraft ? (v => { if (v) setPeriodDraft(p => ({ ...p, start: v.start, end: v.end })) }) : setResizePreview)
-              : undefined}
-            lockedReqId={year === 2027 && periodDraft ? (periodDraft.mode === 'add' ? PENDING_PERIOD_ID : periodDraft.segment.id) : null}
-          />
-        </div>
       </div>
 
       <RequestModal
         request={selectedRequest}
+        width={drawerWidth}
         onClose={() => setSelectedRequest(null)}
         onAction={msg => { setSelectedRequest(null); setToast(msg) }}
       />
 
       {newRequestRange && (
         <NewRequestModal
-          initialStart={newRequestRange.start}
-          initialEnd={newRequestRange.end}
+          range={newRequestRange}
+          width={drawerWidth}
           onClose={closeNewRequest}
           onSubmitted={() => {
             closeNewRequest()
@@ -860,6 +889,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
       {showPlanModal && (
         <PlanSubmitModal
           segments={segments}
+          width={drawerWidth}
           onClose={() => setShowPlanModal(false)}
           onSubmit={() => {
             setShowPlanModal(false)
@@ -873,6 +903,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         <PeriodDrawer
           key={periodDraft.segment?.id ?? PENDING_PERIOD_ID}
           mode={periodDraft.mode}
+          width={drawerWidth}
           range={{ start: periodDraft.start, end: periodDraft.end }}
           initial={periodDraft}
           withKinds={hasExtraLeave}
@@ -888,7 +919,7 @@ export default function EmployeeDashboard({ onGoToPlanning, onGoToTeam, onGoToHR
         />
       )}
 
-      {showCalculator && <VacationCalculatorModal onClose={() => setShowCalculator(false)} />}
+      {showCalculator && <VacationCalculatorModal width={drawerWidth} onClose={() => setShowCalculator(false)} />}
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>

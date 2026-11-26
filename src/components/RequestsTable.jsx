@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { Chip, StatusBadge, SearchIcon, MoreIcon, ChevronUp } from '../ds/index'
 import { useApp } from '../context/AppContext'
 import { t, pluralDays, MONTHS_TABLE } from '../i18n/translate'
+import { DEMO_TODAY } from '../utils/dateUtils'
 
 const PAGE_SIZE = 10
 const FONT = "'MTSCompact', sans-serif"
@@ -40,8 +41,7 @@ function formatTableDate(d) {
 
 function canReschedule(r) {
   if (r.type !== 'planned' || r.status !== 'approved') return false
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const daysLeft = Math.ceil((r.startDate - today) / 86400000)
+  const daysLeft = Math.ceil((r.startDate - DEMO_TODAY) / 86400000)
   return daysLeft > 10 && (r.rescheduleLimit ?? 2) - (r.rescheduleCount ?? 0) > 0
 }
 

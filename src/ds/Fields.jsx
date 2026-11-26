@@ -43,7 +43,7 @@ export function FieldBox({ label, value, placeholder, active, error, onClick, ri
   );
 }
 
-// Period field with a range calendar popover
+// Passing onChange enables the range calendar popover.
 export function DateRangeField({ label, start, end, onChange, description, error, initialViewMonth }) {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState(null);
@@ -67,17 +67,17 @@ export function DateRangeField({ label, start, end, onChange, description, error
           value={value}
           active={open}
           error={!!error}
-          onClick={toggle}
-          right={
+          onClick={onChange ? toggle : undefined}
+          right={onChange && (
             <span style={{ width: 32, height: 32, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <CalendarIcon />
             </span>
-          }
+          )}
         />
       </div>
       {error ? <div style={FIELD_ERROR}>{error}</div> : description && <div style={FIELD_DESCRIPTION}>{description}</div>}
 
-      {open && rect && (
+      {onChange && open && rect && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1100 }} onClick={() => setOpen(false)}>
           <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: rect.bottom + 4, left }}>
             <CalendarRange

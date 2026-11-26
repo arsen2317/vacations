@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
 import { t, tName, MONTH_NAMES, MONTH_GEN, WEEKDAYS } from '../i18n/translate'
+import { DEMO_TODAY } from '../utils/dateUtils'
 
 const STATUS_STYLES = {
   pending:      { bg: '#D6E4FF', color: '#0964A5' },
@@ -89,7 +90,7 @@ function shiftDay(d, n) {
   return c
 }
 
-function getRequestForDay(d, requests) {
+function getRequestForDay(d, requests, lockedReqId) {
   const t = d.getTime()
   let best = null
   for (const req of requests) {
@@ -97,6 +98,7 @@ function getRequestForDay(d, requests) {
     const s = dayOnly(req.startDate).getTime()
     const e = dayOnly(req.endDate).getTime()
     if (t >= s && t <= e) {
+      if (req.id === lockedReqId) return req
       if (!best || REQ_PRIORITY.indexOf(req.status) < REQ_PRIORITY.indexOf(best.status)) {
         best = req
       }
@@ -105,7 +107,7 @@ function getRequestForDay(d, requests) {
   return best
 }
 
-function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, canResize, activeReqId, dragging, dragAnchor, onEdgeDown, onDragEnter, onReqHover }) {
+function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEnd, today, onDayClick, onDayEnter, onDayLeave, colleagueMap, onColEnter, onColLeave, canResize, activeReqId, lockedReqId, allowResizeOverlap, dragging, dragAnchor, onEdgeDown, onDragEnter, onReqHover }) {
   const weeks = getMonthWeeks(year, month)
   const r = 12
 
@@ -147,7 +149,7 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
       <div style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
         {weeks.map((week, wi) => {
           const days = week.map(date => date ? dayOnly(date) : null)
-          const reqs = days.map(d => d ? getRequestForDay(d, requests) : null)
+          const reqs = days.map(d => d ? getRequestForDay(d, requests, lockedReqId) : null)
           return (
           <div key={wi} style={{ display: 'flex', gap: GAP }}>
             {week.map((date, di) => {
@@ -186,14 +188,14 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
               // An edge pressed right against another period can't move — it gets no rim
               // Both edges stay visible while dragging; the fixed one still hides when blocked
               const isMovingEdge = !!dragAnchor && req?.id === activeReqId && !sameDay(d, dragAnchor)
-              const edgeStart = canResize && isReqStart && (isMovingEdge || !getRequestForDay(shiftDay(d, -1), requests))
-              const edgeEnd   = canResize && isReqEnd   && (isMovingEdge || !getRequestForDay(shiftDay(d, 1), requests))
+              const edgeStart = canResize && isReqStart && (allowResizeOverlap || isMovingEdge || !getRequestForDay(shiftDay(d, -1), requests))
+              const edgeEnd   = canResize && isReqEnd   && (allowResizeOverlap || isMovingEdge || !getRequestForDay(shiftDay(d, 1), requests))
               // Edges are shown only for the hovered (or dragged) period
               const resizable  = req?.id === activeReqId && (edgeStart || edgeEnd)
               const cursor = dragging || resizable ? 'ew-resize' : canClick ? 'pointer' : 'default'
 
               const inAnyHighlight = isSelected || showStripBg
-              let textColor = isToday ? '#0066FF' : isNonWorking ? '#FF0032' : '#1D2023'
+              let textColor = isToday ? '#0066FF' : isNonWorking ? '#D8400C' : '#1D2023'
               if (isPast) textColor = '#969FA8'
               if (vacStyle && !inAnyHighlight) textColor = vacStyle.color
               if (isSelected) textColor = '#FAFAFA'
@@ -205,9 +207,10 @@ function YearMonthGrid({ year, month, requests, selStart, selEnd, effectiveSelEn
                   style={{ position: 'relative', width: CELL, height: ROW_H, flexShrink: 0, cursor }}
                   onClick={() => { if (canClick) onDayClick(d, req) }}
                   onMouseDown={e => {
-                    if (!resizable) return
+                    if (!resizable || e.button !== 0) return
                     e.preventDefault()
-                    onEdgeDown(req, edgeStart && !edgeEnd ? 'start' : 'end')
+                    const cellMiddle = e.currentTarget.getBoundingClientRect().left + CELL / 2
+                    onEdgeDown(req, edgeStart && (!edgeEnd || e.clientX < cellMiddle) ? 'start' : 'end')
                   }}
                   onMouseEnter={e => {
                     if (dragging) { onDragEnter(d); return }
@@ -325,8 +328,8 @@ export function calendarWidth(cols) { return cols * MONTH_W + (cols - 1) * COL_G
 export const YEAR_CALENDAR_WIDTH = calendarWidth(3)  // 832
 
 // lockedReqId: only this period is active (highlighted, resizable); new selections and clicks are off
-export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onResizeRequest, onResizePreview, lockedReqId = null }) {
-  const today = dayOnly(new Date())
+export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest, colleagueMap, cols = 3, onResizeRequest, onResizePreview, lockedReqId = null, allowResizeOverlap = false }) {
+  const today = DEMO_TODAY
   const [selStart, setSelStart] = useState(null)
   const [selEnd,   setSelEnd]   = useState(null)
   const [hover,    setHover]    = useState(null)
@@ -362,8 +365,9 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
     const e = dayOnly(req.endDate)
     const anchor = edge === 'start' ? e : s
     // A period can't be dragged onto its neighbours: limit to the free days around it
-    let min = null, max = null
-    for (const other of requests) {
+    let min = today.getFullYear() === year ? today : null
+    let max = null
+    for (const other of allowResizeOverlap ? [] : requests) {
       if (other.id === req.id || other.status === 'rejected') continue
       const os = dayOnly(other.startDate)
       const oe = dayOnly(other.endDate)
@@ -446,6 +450,8 @@ export function YearCalendar({ year, requests = [], onRequestClick, onNewRequest
             onColLeave={() => setColTooltip(null)}
             canResize={!!onResizeRequest}
             activeReqId={drag ? drag.id : lockedReqId ?? hoverReqId}
+            lockedReqId={lockedReqId}
+            allowResizeOverlap={allowResizeOverlap}
             onReqHover={setHoverReqId}
             dragging={!!drag}
             dragAnchor={drag?.anchor ?? null}

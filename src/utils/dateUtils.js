@@ -1,5 +1,8 @@
 import { HOLIDAYS_2026, HOLIDAYS_2027 } from '../data/mockData'
 
+// Fixed local date for vacation demos.
+export const DEMO_TODAY = new Date(2026, 1, 10)
+
 function isHolidayDate(d) {
   const key = toKey(d)
   return HOLIDAYS_2026.has(key) || HOLIDAYS_2027.has(key)

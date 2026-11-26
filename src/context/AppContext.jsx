@@ -11,6 +11,7 @@ export function AppProvider({ children }) {
   const [role, setRole] = useState(LOCALE === 'en' ? 'manager' : CURRENT_USER.role)
   const [activeTab, setActiveTab] = useState(LOCALE === 'en' ? 'home' : 'work')
   const [campaign, setCampaign] = useState(CAMPAIGN)
+  const [decemberCancellation, setDecemberCancellation] = useState(true)
   const [segments, setSegments] = useState(INITIAL_SEGMENTS)
   const [draftSaved, setDraftSaved] = useState(false)
   const [planStatus, setPlanStatus] = useState('draft') // 'draft' | 'pending' | 'approved'
@@ -38,6 +39,7 @@ export function AppProvider({ children }) {
       role, setRole,
       activeTab, setActiveTab,
       campaign, setCampaign,
+      decemberCancellation, setDecemberCancellation,
       segments, setSegments,
       draftSaved, setDraftSaved,
       planStatus, setPlanStatus,

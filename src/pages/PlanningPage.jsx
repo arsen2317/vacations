@@ -10,7 +10,6 @@ import {
 import StatusBadge from '../components/StatusBadge'
 import RequestModal from '../components/RequestModal'
 
-const TODAY = new Date('2026-05-19T00:00:00')
 
 const MONTH_NAMES = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',

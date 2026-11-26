@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import { CalendarSingle, Drawer, FieldBox, CalendarIcon } from '../ds/index'
 import { LOCALE } from '../i18n/locale'
 import { t, MONTH_GEN, pluralDays, pluralMonths } from '../i18n/translate'
+import { DEMO_TODAY } from '../utils/dateUtils'
 
 const DAYS_PER_MONTH = 2.33
 
@@ -18,17 +19,16 @@ function fmtDate(d) {
   return `${d.getDate()} ${MONTH_GEN[d.getMonth()]} ${d.getFullYear()}`
 }
 
-export default function VacationCalculatorModal({ onClose }) {
+export default function VacationCalculatorModal({ onClose, width }) {
   const { balance } = useApp()
   const [targetDate, setTargetDate] = useState(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [calendarRect, setCalendarRect] = useState(null)
   const fieldRef = useRef(null)
 
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const isValid = !!targetDate && targetDate > today
+  const isValid = !!targetDate && targetDate > DEMO_TODAY
 
-  const additionalMonths = isValid ? fullMonthsBetween(today, targetDate) : 0
+  const additionalMonths = isValid ? fullMonthsBetween(DEMO_TODAY, targetDate) : 0
   const additionalDays = Math.floor(additionalMonths * DAYS_PER_MONTH)
   const total = (balance.main ?? 0) + additionalDays
 
@@ -41,6 +41,7 @@ export default function VacationCalculatorModal({ onClose }) {
   return (
     <>
       <Drawer
+        width={width}
         title={t('Калькулятор отпуска')}
         subtitle={t('Расчёт ведётся от текущего остатка отпуска. За каждый полный месяц начисляется {n} календарных дня.')
           .replace('{n}', DAYS_PER_MONTH.toString().replace('.', LOCALE === 'en' ? '.' : ','))}
@@ -106,7 +107,7 @@ export default function VacationCalculatorModal({ onClose }) {
           >
             <CalendarSingle
               initialDate={targetDate}
-              minDate={(() => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + 1); return d })()}
+              minDate={new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), DEMO_TODAY.getDate() + 1)}
               onApply={(date) => {
                 setTargetDate(date)
                 setShowCalendar(false)
