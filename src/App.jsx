@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import TabNav from './components/TabNav'
+import FaqDrawer from './components/FaqDrawer'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import PlanningPage from './pages/PlanningPage'
 import ColleaguesPage from './pages/ColleaguesPage'
@@ -16,6 +17,7 @@ function AppInner() {
   const isDocked = useIsDocked()
   const [sidebarOpen, setSidebarOpen] = useState(LOCALE !== 'en')
   const [dashYear, setDashYear] = useState(2026)
+  const [faqOpen, setFaqOpen] = useState(false)
 
   useEffect(() => {
     if (LOCALE === 'en') { setSidebarOpen(false); return }
@@ -50,6 +52,8 @@ function AppInner() {
         onSidebarClose={isDocked ? undefined : () => setSidebarOpen(false)}
         onNavigate={setActiveTab}
         activeTab={activeTab}
+        faqOpen={faqOpen}
+        onFaqOpen={() => setFaqOpen(true)}
       />
 
       {activeTab !== 'work' && activeTab !== 'requests' && (
@@ -85,6 +89,7 @@ function AppInner() {
         {activeTab === 'hr' && role === 'hr_admin' && <HRAdminPage />}
         </div>
       </div>
+      {faqOpen && <FaqDrawer onClose={() => setFaqOpen(false)} />}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { CrossIcon } from "./icons";
 import { BTN_STYLE } from "./tokens";
 import { t } from "../i18n/translate";
@@ -11,8 +11,17 @@ const ACTION_STYLES = {
 
 // The transparent backdrop prevents other drawers from opening behind this one.
 // A calendar that edits the drawer's dates can sit between the backdrop and the drawer.
-export function Drawer({ title, subtitle, onClose, actions = [], children, width = 440, zIndex = 1000, closeOnOutsideClick = true }) {
+export function Drawer({ title, subtitle, onClose, actions = [], children, width = 440, zIndex = 1000, closeOnOutsideClick = true, focusOnOpen = false }) {
   const titleId = useId();
+  const closeButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (!focusOnOpen) return;
+    const opener = document.activeElement;
+    closeButtonRef.current?.focus({ preventScroll: true });
+    return () => opener?.focus({ preventScroll: true });
+  }, [focusOnOpen]);
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
     document.addEventListener("keydown", onKey);
@@ -37,6 +46,7 @@ export function Drawer({ title, subtitle, onClose, actions = [], children, width
               {title}
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               aria-label={t("закрыть")}
               onClick={onClose}
@@ -64,14 +74,15 @@ export function Drawer({ title, subtitle, onClose, actions = [], children, width
               const st = ACTION_STYLES[a.type] || ACTION_STYLES.secondary;
               return (
                 <button
+                  type="button"
                   key={a.label}
                   onClick={a.disabled ? undefined : a.onClick}
-                  disabled={a.disabled}
+                  disabled={a.disabled || !a.onClick}
                   style={{
                     flex: 1, height: 52, padding: 14, border: "none", borderRadius: 16,
                     background: a.disabled ? "rgba(188,195,208,0.5)" : st.background,
                     opacity: a.disabled ? 0.6 : 1,
-                    cursor: a.disabled ? "default" : "pointer",
+                    cursor: a.disabled || !a.onClick ? "default" : "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >

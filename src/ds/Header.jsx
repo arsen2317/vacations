@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useIsDocked } from "./useIsDocked";
 import { LOCALE } from "../i18n/locale";
 import { t } from "../i18n/translate";
@@ -200,7 +199,7 @@ function Sidebar({ open, isDocked, onClose, onNavigate, role, onRoleChange, extr
   );
 }
 
-export function Header({ role, onRoleChange, extraLeave, onExtraLeaveChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, onNavigate, activeTab }) {
+export function Header({ role, onRoleChange, extraLeave, onExtraLeaveChange, sidebarOpen = true, onSidebarToggle, onSidebarClose, onNavigate, activeTab, faqOpen, onFaqOpen }) {
   const isDocked = useIsDocked();
   // На широких экранах меню всегда раскрыто и не сворачивается
   const sidebarShown = sidebarOpen || (isDocked && LOCALE !== 'en');
@@ -255,12 +254,18 @@ export function Header({ role, onRoleChange, extraLeave, onExtraLeaveChange, sid
               )}
             </div>
 
-            <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}>
-              <div style={{ paddingRight: 4, display: 'flex', alignItems: 'center' }}>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={faqOpen}
+              onClick={onFaqOpen}
+              style={{ padding: '8px 12px', background: 'none', border: 0, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}
+            >
+              <span aria-hidden="true" style={{ paddingRight: 4, display: 'flex', alignItems: 'center' }}>
                 <FaqIcon />
-              </div>
+              </span>
               <span style={{ color: '#1D2023', fontSize: 14, fontFamily: "'MTSCompact', sans-serif", fontWeight: 400, lineHeight: '20px', whiteSpace: 'nowrap' }}>{t('частые вопросы')}</span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
