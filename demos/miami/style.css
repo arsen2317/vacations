@@ -192,10 +192,6 @@ h2:focus {
   color: #d8400c;
 }
 
-.calendar-day[data-past] {
-  color: #969fa8;
-}
-
 .calendar-day[aria-current] {
   color: var(--blue);
 }
@@ -268,17 +264,14 @@ h2:focus {
   text-decoration: underline;
 }
 
-.back-button {
-  margin-top: 24px;
-}
-
 .tickets-dialog {
   position: fixed;
   width: min(480px, calc(100% - 32px));
   max-height: calc(100% - 32px);
-  padding: clamp(20px, 5vw, 32px);
+  padding: 24px;
   border: 0;
   border-radius: 24px;
+  background: #fff;
   color: var(--text);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
 }
@@ -287,21 +280,28 @@ h2:focus {
   background: rgba(29, 32, 35, 0.38);
 }
 
-.tickets-dialog h2 {
-  padding-right: 42px;
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dialog-header h2 {
+  padding-block: 4px;
+  font-size: 20px;
+  line-height: 24px;
 }
 
 .tickets-dialog p {
-  margin: 16px 0 24px;
+  margin: 12px 0 24px;
   color: var(--secondary);
   line-height: 24px;
 }
 
 .icon-button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
   display: grid;
+  flex-shrink: 0;
   width: 36px;
   height: 36px;
   padding: 0;
@@ -313,9 +313,14 @@ h2:focus {
 }
 
 .dialog-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 128px), 1fr));
+  gap: 12px;
+}
+
+.dialog-actions .action {
+  min-height: 52px;
+  padding-inline: 8px;
 }
 
 .result-icon {
@@ -396,5 +401,11 @@ h2:focus {
 
   .calendar-day {
     font-size: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .dialog-header h2 {
+    font-size: 18px;
   }
 }

@@ -6,7 +6,6 @@ import { DEMO_TODAY } from '../../src/utils/dateUtils'
 import vacationImage from '../../public/vacation.png?inline'
 
 const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' })
-const oneYearEnd = new Date(DEMO_TODAY.getFullYear() + 1, DEMO_TODAY.getMonth(), DEMO_TODAY.getDate() - 1)
 
 function Button({ children, onClick, secondary = false, disabled = false }) {
   return (
@@ -26,7 +25,7 @@ function Button({ children, onClick, secondary = false, disabled = false }) {
   )
 }
 
-function TicketsDialog({ onBack, onConfirm }) {
+function TicketsDialog({ onClose, onConfirm }) {
   const dialog = useRef(null)
   const title = useRef(null)
 
@@ -45,19 +44,21 @@ function TicketsDialog({ onBack, onConfirm }) {
       aria-describedby="tickets-description"
       onCancel={event => {
         event.preventDefault()
-        onBack()
+        onClose()
       }}
     >
-      <button className="icon-button" type="button" aria-label="Закрыть" onClick={onBack}>
-        <CrossIcon />
-      </button>
-      <h2 id="tickets-title" tabIndex={-1} ref={title}>
-        Оплатить вам билеты в Майами?
-      </h2>
-      <p id="tickets-description">Компания оплатит перелёт туда и обратно.</p>
+      <div className="dialog-header">
+        <h2 id="tickets-title" tabIndex={-1} ref={title}>
+          Оплатить вам билеты в&nbsp;Майами?
+        </h2>
+        <button className="icon-button" type="button" aria-label="Закрыть" onClick={onClose}>
+          <CrossIcon />
+        </button>
+      </div>
+      <p id="tickets-description">Компания оплатит перелёт туда и&nbsp;обратно.</p>
       <div className="dialog-actions">
-        <Button onClick={() => onConfirm(true)}>Да, в Майами</Button>
-        <Button secondary onClick={() => onConfirm(false)}>Без билетов</Button>
+        <Button onClick={() => onConfirm(true)}>Да, в&nbsp;Майами</Button>
+        <Button secondary onClick={() => onConfirm(false)}>Без&nbsp;билетов</Button>
       </div>
     </dialog>
   )
@@ -87,9 +88,8 @@ export default function VacationDemo() {
   }
 
   function chooseFullYear() {
-    setRange({ start: DEMO_TODAY, end: oneYearEnd })
+    setRange({ start: new Date(year, 0, 1), end: new Date(year, 11, 31) })
     setHover(null)
-    setYear(DEMO_TODAY.getFullYear())
   }
 
   function changeYear(offset) {
@@ -137,11 +137,11 @@ export default function VacationDemo() {
       <nav className="breadcrumbs" aria-label="Путь к разделу">
         <span>главная</span>
         <BreadChevron />
-        <span aria-current="page">работа и отпуск</span>
+        <span aria-current="page">работа и&nbsp;отпуск</span>
       </nav>
 
       <h1 tabIndex={-1} ref={heading}>
-        {isPickingDates ? 'Выберите даты отпуска' : screen === 'result' ? 'Отпуск оформлен' : 'Работа и отпуск'}
+        {isPickingDates ? 'Выберите даты отпуска' : screen === 'result' ? 'Отпуск оформлен' : 'Работа и\u00a0отпуск'}
       </h1>
 
       {screen === 'home' && (
@@ -175,37 +175,36 @@ export default function VacationDemo() {
             />
             <aside className="selection-panel" aria-labelledby="selection-title">
               <h2 id="selection-title">Период отпуска</h2>
-              <p aria-live="polite">{start ? dateFormat.formatRange(start, end) : 'Выберите даты начала и окончания. Лимита по дням нет.'}</p>
+              <p aria-live="polite">{start ? dateFormat.formatRange(start, end) : 'Выберите даты начала и\u00a0окончания. Лимита по\u00a0дням нет.'}</p>
               <button type="button" className="text-button" onClick={chooseFullYear}>Выбрать целый год</button>
               <div className="calendar-actions">
                 <Button disabled={!range} onClick={confirmPeriod}>Продолжить</Button>
                 {range && <button type="button" className="text-button" onClick={clearSelection}>Сбросить</button>}
               </div>
-              <button type="button" className="text-button back-button" onClick={() => setScreen('home')}>Назад</button>
             </aside>
           </div>
         </section>
       )}
 
       {screen === 'tickets' && (
-        <TicketsDialog onBack={() => setScreen('dates')} onConfirm={showResult} />
+        <TicketsDialog onClose={() => setScreen('dates')} onConfirm={showResult} />
       )}
 
       {screen === 'result' && (
         <section className="result-card" aria-labelledby="result-title">
           <div className="result-icon" aria-hidden="true"><DoneIcon /></div>
           <p className="period">{dateFormat.formatRange(range.start, range.end)}</p>
-          <h2 id="result-title">Деньги уже на карте</h2>
+          <h2 id="result-title">Деньги уже на&nbsp;карте</h2>
           <dl className="payments">
             {includesTickets && (
-              <div><dt>На билеты в Майами</dt><dd>100&nbsp;000&nbsp;₽</dd></div>
+              <div><dt>На&nbsp;билеты в&nbsp;Майами</dt><dd>100&nbsp;000&nbsp;₽</dd></div>
             )}
-            <div><dt>Бонус на карманные расходы</dt><dd>120&nbsp;000&nbsp;₽</dd></div>
+            <div><dt>Бонус на&nbsp;карманные расходы</dt><dd>120&nbsp;000&nbsp;₽</dd></div>
           </dl>
           <p className="farewell">
-            Приятного отпуска! Рабочие чаты в ручную кладь не берём.
+            Приятного отпуска! Рабочие чаты в&nbsp;ручную кладь не&nbsp;берём.
           </p>
-          <Button secondary onClick={() => setScreen('home')}>Начать заново</Button>
+          <Button secondary onClick={() => setScreen('home')}>Спасибки</Button>
         </section>
       )}
     </main>

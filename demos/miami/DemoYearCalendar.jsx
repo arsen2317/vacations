@@ -39,7 +39,6 @@ function CalendarMonth({ year, month, start, end, onSelect, onHover }) {
               data-join-left={joinsLeft || undefined}
               data-join-right={joinsRight || undefined}
               data-weekend={isWeekend || undefined}
-              data-past={date < DEMO_TODAY || undefined}
               onClick={() => onSelect(date)}
               onMouseEnter={() => onHover(date)}
             >
