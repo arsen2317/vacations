@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CalendarRange } from '../../src/ds/CalendarRange'
+import DemoYearCalendar from './DemoYearCalendar'
 import { BreadChevron, CrossIcon, DoneIcon } from '../../src/ds/icons'
 import { BTN_STYLE, COLORS } from '../../src/ds/tokens'
 import { DEMO_TODAY } from '../../src/utils/dateUtils'
@@ -8,7 +8,7 @@ import vacationImage from '../../public/vacation.png?inline'
 const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' })
 const oneYearEnd = new Date(DEMO_TODAY.getFullYear() + 1, DEMO_TODAY.getMonth(), DEMO_TODAY.getDate() - 1)
 
-function Button({ children, onClick, secondary = false }) {
+function Button({ children, onClick, secondary = false, disabled = false }) {
   return (
     <button
       type="button"
@@ -19,6 +19,7 @@ function Button({ children, onClick, secondary = false }) {
         color: secondary ? COLORS.text : COLORS.white,
       }}
       onClick={onClick}
+      disabled={disabled}
     >
       {children}
     </button>
@@ -65,7 +66,8 @@ function TicketsDialog({ onBack, onConfirm }) {
 export default function VacationDemo() {
   const [screen, setScreen] = useState('home')
   const [range, setRange] = useState(null)
-  const [calendarVersion, setCalendarVersion] = useState(0)
+  const [year, setYear] = useState(DEMO_TODAY.getFullYear())
+  const [hover, setHover] = useState(null)
   const [includesTickets, setIncludesTickets] = useState(false)
   const heading = useRef(null)
 
@@ -74,17 +76,41 @@ export default function VacationDemo() {
   }, [screen])
 
   function chooseDates() {
-    setRange(null)
+    clearSelection()
+    setYear(DEMO_TODAY.getFullYear())
     setScreen('dates')
+  }
+
+  function clearSelection() {
+    setRange(null)
+    setHover(null)
   }
 
   function chooseFullYear() {
     setRange({ start: DEMO_TODAY, end: oneYearEnd })
-    setCalendarVersion(version => version + 1)
+    setHover(null)
+    setYear(DEMO_TODAY.getFullYear())
   }
 
-  function confirmPeriod(start, end) {
-    setRange({ start, end })
+  function changeYear(offset) {
+    setHover(null)
+    setYear(current => current + offset)
+  }
+
+  function selectDay(date) {
+    setHover(null)
+    if (!range || range.end) {
+      setRange({ start: date, end: null })
+    } else {
+      const start = range.start
+      setRange(date < start ? { start: date, end: start } : { start, end: date })
+    }
+  }
+
+  function confirmPeriod() {
+    if (!range) return
+    setRange({ start: range.start, end: range.end ?? range.start })
+    setHover(null)
     setScreen('tickets')
   }
 
@@ -94,6 +120,11 @@ export default function VacationDemo() {
   }
 
   const isPickingDates = screen === 'dates' || screen === 'tickets'
+  const start = range?.start ?? null
+  const end = range?.end ?? start
+  const previewDate = range && !range.end ? hover : null
+  const previewStart = previewDate && previewDate < start ? previewDate : start
+  const previewEnd = previewDate && previewDate > end ? previewDate : end
 
   return (
     <main className="layout" style={{
@@ -125,20 +156,34 @@ export default function VacationDemo() {
 
       {isPickingDates && (
         <section className="calendar-section" aria-label="Период отпуска">
-          <div className="calendar-intro">
-            <p>Лимита по дням нет.</p>
-            <button type="button" className="text-button" onClick={chooseFullYear}>Выбрать целый год</button>
+          <div className="year-controls" aria-label="Год календаря">
+            <button type="button" className="year-arrow previous-year" aria-label="Предыдущий год" onClick={() => changeYear(-1)}>
+              <BreadChevron />
+            </button>
+            <strong aria-live="polite">{year}</strong>
+            <button type="button" className="year-arrow" aria-label="Следующий год" onClick={() => changeYear(1)}>
+              <BreadChevron />
+            </button>
           </div>
-          <div className="demo-calendar">
-            <CalendarRange
-              key={calendarVersion}
-              initialStart={range?.start}
-              initialEnd={range?.end}
-              applyLabel="Продолжить"
-              onApply={confirmPeriod}
+          <div className="calendar-layout">
+            <DemoYearCalendar
+              year={year}
+              start={previewStart}
+              end={previewEnd}
+              onSelect={selectDay}
+              onHover={setHover}
             />
+            <aside className="selection-panel" aria-labelledby="selection-title">
+              <h2 id="selection-title">Период отпуска</h2>
+              <p aria-live="polite">{start ? dateFormat.formatRange(start, end) : 'Выберите даты начала и окончания. Лимита по дням нет.'}</p>
+              <button type="button" className="text-button" onClick={chooseFullYear}>Выбрать целый год</button>
+              <div className="calendar-actions">
+                <Button disabled={!range} onClick={confirmPeriod}>Продолжить</Button>
+                {range && <button type="button" className="text-button" onClick={clearSelection}>Сбросить</button>}
+              </div>
+              <button type="button" className="text-button back-button" onClick={() => setScreen('home')}>Назад</button>
+            </aside>
           </div>
-          <button type="button" className="text-button back-button" onClick={() => setScreen('home')}>Назад</button>
         </section>
       )}
 
